@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Block admin and API paths
+Disallow: /api/
+Disallow: /_next/
+
+# Sitemap
+Sitemap: https://rooto.in/sitemap.xml

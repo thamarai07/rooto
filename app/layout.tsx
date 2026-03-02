@@ -1,0 +1,59 @@
+import type { Metadata } from 'next'
+import { Geist, Geist_Mono } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/next'
+import './globals.css'
+import CelebrationPopup from '@/components/ui/CelebrationPopup'
+import Script from 'next/script'
+
+const _geist = Geist({ subsets: ["latin"] })
+const _geistMono = Geist_Mono({ subsets: ["latin"] })
+
+export const metadata: Metadata = {
+  title: 'Rooto — Fresh Groceries Delivered',
+  description: 'Order fresh fruits, vegetables, and groceries online at Rooto. Fast delivery to your doorstep.',
+  keywords: ['fresh groceries', 'fruits', 'vegetables', 'online grocery', 'rooto', 'grocery delivery'],
+  authors: [{ name: 'Rooto' }],
+  metadataBase: new URL('https://rooto.in'),
+  openGraph: {
+    title: 'Rooto — Fresh Groceries Delivered',
+    description: 'Order fresh fruits, vegetables, and groceries online at Rooto.',
+    url: 'https://rooto.in',
+    siteName: 'Rooto',
+    locale: 'en_IN',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Rooto — Fresh Groceries Delivered',
+    description: 'Order fresh fruits, vegetables, and groceries online at Rooto.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en">
+      <head>
+        <Script
+          src="https://www.google.com/recaptcha/enterprise.js?render=6Lfm6CYsAAAAAERCxmcRMFBAcyF4_gPnN5a1pVrk"
+          strategy="afterInteractive"
+          async
+        />
+      </head>
+
+      <body className="font-sans antialiased">
+        {children}
+        <Analytics />
+        <CelebrationPopup />
+      </body>
+    </html>
+  )
+}
