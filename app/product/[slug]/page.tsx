@@ -1,3 +1,5 @@
+export const runtime = "edge";
+
 // app/product/[slug]/page.tsx
 import { notFound } from "next/navigation";
 import ClientProductPage from "./ClientProductPage";
