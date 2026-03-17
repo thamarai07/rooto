@@ -12,7 +12,7 @@ import OrderSummary from "@/components/delivery/OrderSummary"
 import OrderNotes from "@/components/delivery/OrderNotes"
 import { UserData, SavedAddress } from "@/components/types"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost/vfs_portal/vfs-admin/api"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
 
 
 interface Product {

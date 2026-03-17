@@ -29,7 +29,7 @@ interface SavedAddressesViewProps {
   onClose: () => void
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost/vfs_portal/vfs-admin/api"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
 
 export default function SavedAddressesView({
   userData,
@@ -249,8 +249,8 @@ export default function SavedAddressesView({
                     key={address.id}
                     onClick={() => setSelectedId(address.id)}
                     className={`bg-white rounded-xl border-2 p-3 cursor-pointer transition-all ${isSelected
-                        ? 'border-green-500 bg-green-50/30 shadow-sm'
-                        : 'border-gray-100 hover:border-gray-200'
+                      ? 'border-green-500 bg-green-50/30 shadow-sm'
+                      : 'border-gray-100 hover:border-gray-200'
                       }`}
                   >
                     <div className="flex gap-2.5">

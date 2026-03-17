@@ -23,7 +23,7 @@ import OrderSuccessModal from "@/components/order/OrderSuccessModal"
 // Custom hooks
 import { useCartData } from "@/hooks/Usecartdata"
 import { useCheckout } from "@/hooks/Usecheckout"
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost/vfs_portal/vfs-admin/api"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
 
 
 export default function CartPage() {

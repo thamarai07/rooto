@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Loader2, Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react"
 import { UserData } from "../types"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost/vfs_portal/vfs-admin/api"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
 
 
 interface LoginModalProps {
@@ -181,8 +181,8 @@ export default function LoginModal({ onSuccess, onSwitchToSignup }: LoginModalPr
                   }}
                   placeholder="you@example.com"
                   className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition ${formErrors.email
-                      ? 'border-red-300 focus:ring-red-200 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-green-200 focus:border-green-500'
+                    ? 'border-red-300 focus:ring-red-200 focus:border-red-500'
+                    : 'border-gray-300 focus:ring-green-200 focus:border-green-500'
                     }`}
                 />
               </div>
@@ -212,8 +212,8 @@ export default function LoginModal({ onSuccess, onSwitchToSignup }: LoginModalPr
                   }}
                   placeholder="Enter your password"
                   className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:outline-none focus:ring-1 transition ${formErrors.password
-                      ? 'border-red-300 focus:ring-red-200 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-green-200 focus:border-green-500'
+                    ? 'border-red-300 focus:ring-red-200 focus:border-red-500'
+                    : 'border-gray-300 focus:ring-green-200 focus:border-green-500'
                     }`}
                 />
                 <button

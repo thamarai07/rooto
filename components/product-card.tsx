@@ -15,7 +15,7 @@ interface Product {
   stock: number
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost/vfs_portal/vfs-admin/api"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
 
 export default function ProductCard({ product }: { product: Product }) {
   const [isWishlisted, setIsWishlisted] = useState(false)
@@ -163,8 +163,8 @@ export default function ProductCard({ product }: { product: Product }) {
     <Link href={`/product-details/${encodeURIComponent(product.name)}`}>
       <div
         className={`group relative cursor-pointer rounded-2xl overflow-hidden bg-white border-2 transition-all duration-300 ${isHovered
-            ? "border-green-400 shadow-2xl -translate-y-2"
-            : "border-gray-200 shadow-lg hover:shadow-xl"
+          ? "border-green-400 shadow-2xl -translate-y-2"
+          : "border-gray-200 shadow-lg hover:shadow-xl"
           }`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -183,8 +183,8 @@ export default function ProductCard({ product }: { product: Product }) {
             onClick={toggleWishlist}
             disabled={loading}
             className={`absolute top-3 right-3 p-3 rounded-full backdrop-blur-md transition-all duration-300 ${isWishlisted
-                ? "bg-red-500 scale-110 shadow-xl"
-                : "bg-white/90 hover:bg-white hover:scale-110"
+              ? "bg-red-500 scale-110 shadow-xl"
+              : "bg-white/90 hover:bg-white hover:scale-110"
               }`}
           >
             <Heart
@@ -243,8 +243,8 @@ export default function ProductCard({ product }: { product: Product }) {
               onClick={addToCart}
               disabled={loading || product.stock === 0}
               className={`relative px-5 py-3 rounded-full font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${addedToCart
-                  ? "bg-green-600 text-white scale-110"
-                  : "bg-gradient-to-r from-green-500 to-teal-500 text-white hover:from-green-600 hover:to-teal-600 hover:scale-110 hover:shadow-xl"
+                ? "bg-green-600 text-white scale-110"
+                : "bg-gradient-to-r from-green-500 to-teal-500 text-white hover:from-green-600 hover:to-teal-600 hover:scale-110 hover:shadow-xl"
                 }`}
             >
               {addedToCart ? (

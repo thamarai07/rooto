@@ -96,7 +96,7 @@ export default function ProductsPageLayout({ children }: { children: React.React
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE || "http://localhost/vfs_portal/vfs-admin/api"}/get-products_search.php?search=${encodeURIComponent(query)}`
+        `${process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"}/get-products_search.php?search=${encodeURIComponent(query)}`
       )
 
       if (!response.ok) {
@@ -180,8 +180,8 @@ export default function ProductsPageLayout({ children }: { children: React.React
           <div className="flex flex-col md:flex-row items-center gap-4">
             {/* Location Display */}
             <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all ${locationError
-                ? "bg-red-50 border-red-200"
-                : "bg-gradient-to-r from-green-50 to-emerald-50 border-green-200"
+              ? "bg-red-50 border-red-200"
+              : "bg-gradient-to-r from-green-50 to-emerald-50 border-green-200"
               }`}>
               <MapPin className={`w-5 h-5 ${locationError ? "text-red-500" : "text-green-600"} animate-pulse`} />
               <span className={`font-medium text-sm ${locationError ? "text-red-700" : "text-gray-700"}`}>

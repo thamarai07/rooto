@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
- 
+
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -19,7 +19,7 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'api.rooto.in',
+        hostname: 'rootoportal.onrender.com',
         pathname: '/**',
       },
       {

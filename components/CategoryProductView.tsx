@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { ShoppingCart, Heart, Check, Loader2 } from "lucide-react"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost/vfs_portal/vfs-admin/api"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
 
 interface Product {
   id: number
@@ -175,8 +175,8 @@ export default function CategoryProductView() {
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${isActive
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                ? "bg-green-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
             >
               {cat} ({count})
@@ -234,8 +234,8 @@ export default function CategoryProductView() {
                     onClick={e => addToCart(product, e)}
                     disabled={isLoading || product.stock === 0}
                     className={`p-1.5 rounded-lg transition-all ${isAdded
-                        ? "bg-green-600 text-white"
-                        : "bg-green-500 text-white hover:bg-green-600"
+                      ? "bg-green-600 text-white"
+                      : "bg-green-500 text-white hover:bg-green-600"
                       } disabled:opacity-50`}
                   >
                     {isLoading ? (

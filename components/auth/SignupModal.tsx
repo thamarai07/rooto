@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Loader2, Eye, EyeOff, User, Mail, Phone, Lock, ArrowRight, UserPlus } from "lucide-react"
 import { UserData } from "../types"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost/vfs_portal/vfs-admin/api"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
 
 
 interface SignupModalProps {

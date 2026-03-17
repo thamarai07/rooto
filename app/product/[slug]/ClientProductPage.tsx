@@ -16,8 +16,8 @@ import DeliveryModal from "@/components/delivery/DeliveryModal";
 import CheckoutSuccessView from "@/components/delivery/CheckoutSuccessView";
 import { UserData, SavedAddress } from "@/components/types";
 
-const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || `${process.env.NEXT_PUBLIC_API_BASE?.replace('/api', '') || 'http://localhost/vfs_portal/vfs-admin'}/assets/images/uploads`;
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost/vfs_portal/vfs-admin/api";
+const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || `${process.env.NEXT_PUBLIC_API_BASE?.replace('/api', '') || 'https://rootoportal.onrender.com'}/assets/images/uploads`;
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api";
 
 interface Product {
   id: number;
@@ -1094,8 +1094,8 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
                 <button
                   onClick={toggleWishlist}
                   className={`w-14 h-14 rounded-xl border-2 transition-colors flex items-center justify-center ${isWishlisted
-                      ? "border-red-200 bg-red-50 text-red-500"
-                      : "border-gray-300 hover:border-gray-400 text-gray-400 hover:text-gray-600"
+                    ? "border-red-200 bg-red-50 text-red-500"
+                    : "border-gray-300 hover:border-gray-400 text-gray-400 hover:text-gray-600"
                     }`}
                 >
                   <Heart className={`w-6 h-6 ${isWishlisted ? "fill-current" : ""}`} />
