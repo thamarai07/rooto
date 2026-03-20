@@ -3,7 +3,8 @@
 import { useState } from "react"
 import { Loader2, Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react"
 import { UserData } from "../types"
-
+// Import useAuth
+import { useAuth } from '@/hooks/useAuth'
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
 
 
@@ -23,6 +24,7 @@ export default function LoginModal({ onSuccess, onSwitchToSignup }: LoginModalPr
     password: ''
   })
   const [formErrors, setFormErrors] = useState<any>({})
+  const { setUser } = useAuth()
 
   const handleSocialLogin = async (provider: string) => {
     setSocialLoading(provider)
@@ -122,7 +124,8 @@ export default function LoginModal({ onSuccess, onSwitchToSignup }: LoginModalPr
 
       if (result.status === "success") {
         localStorage.setItem("user", JSON.stringify(result.user))
-        onSuccess(result.user)
+        setUser(result.user)   // ← sets global auth state
+  onSuccess(result.user)
       } else {
         setError(result.message || "Invalid email or password")
       }

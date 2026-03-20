@@ -108,6 +108,7 @@ const getCaptchaToken = async (): Promise<string | null> => {
       const res = await fetch(`${API_BASE}/register.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,

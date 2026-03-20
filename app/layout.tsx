@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import CelebrationPopup from '@/components/ui/CelebrationPopup'
 import Script from 'next/script'
+import { AuthProvider } from '@/hooks/useAuth'
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -50,9 +51,11 @@ export default function RootLayout({
       </head>
 
       <body className="font-sans antialiased">
-        {children}
-        <Analytics />
-        <CelebrationPopup />
+      <AuthProvider>        {/* ← wrap here */}
+          {children}
+          <Analytics />
+          <CelebrationPopup />
+        </AuthProvider>
       </body>
     </html>
   )
