@@ -74,7 +74,7 @@ const getCaptchaToken = async (): Promise<string | null> => {
       window.grecaptcha.ready(async () => {
         try {
           const token = await window.grecaptcha.execute(
-            "6Lfm6CYsAAAAAERCxmcRMFBAcyF4_gPnN5a1pVrk",
+            "6LcAV5EsAAAAAMvuJl6MMRfVuTFe2x32aE_0euu7",
             { action: "signup" }
           )
           resolve(token)

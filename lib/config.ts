@@ -18,4 +18,4 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://rooto.in";
 
 /** Google reCAPTCHA v3 site key */
 export const RECAPTCHA_SITE_KEY =
-    process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6Lfm6CYsAAAAAERCxmcRMFBAcyF4_gPnN5a1pVrk";
+    process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LcAV5EsAAAAAMvuJl6MMRfVuTFe2x32aE_0euu7";

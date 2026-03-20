@@ -43,7 +43,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <Script
-          src="https://www.google.com/recaptcha/api.js?render=6Lfm6CYsAAAAAERCxmcRMFBAcyF4_gPnN5a1pVrk"
+          src="https://www.google.com/recaptcha/api.js?render=6LcAV5EsAAAAAMvuJl6MMRfVuTFe2x32aE_0euu7"
           strategy="afterInteractive"
           async
         />
