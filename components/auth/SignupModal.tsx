@@ -66,32 +66,27 @@ export default function SignupModal({ onSuccess, onSwitchToLogin }: SignupModalP
     return Object.keys(errors).length === 0
   }
 
-  const getEnterpriseCaptchaToken = async (): Promise<string | null> => {
-    try {
-      if (!window.grecaptcha || !window.grecaptcha.enterprise) {
-        console.error("reCAPTCHA Enterprise not loaded")
-        return null
-      }
-
-      return new Promise((resolve) => {
-        window.grecaptcha.enterprise.ready(async () => {
-          try {
-            const token = await window.grecaptcha.enterprise.execute(
-              "6Lfm6CYsAAAAAERCxmcRMFBAcyF4_gPnN5a1pVrk",
-              { action: "signup" }
-            )
-            resolve(token)
-          } catch (err) {
-            console.error("Captcha execution failed:", err)
-            resolve(null)
-          }
-        })
+// SignupModal.tsx
+const getCaptchaToken = async (): Promise<string | null> => {
+  try {
+    if (!window.grecaptcha) return null
+    return new Promise((resolve) => {
+      window.grecaptcha.ready(async () => {
+        try {
+          const token = await window.grecaptcha.execute(
+            "6Lfm6CYsAAAAAERCxmcRMFBAcyF4_gPnN5a1pVrk",
+            { action: "signup" }
+          )
+          resolve(token)
+        } catch (err) {
+          resolve(null)
+        }
       })
-    } catch (err) {
-      console.error("Captcha error:", err)
-      return null
-    }
+    })
+  } catch {
+    return null
   }
+}
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -102,7 +97,7 @@ export default function SignupModal({ onSuccess, onSwitchToLogin }: SignupModalP
     setError(null)
 
     try {
-      const captchaToken = await getEnterpriseCaptchaToken()
+      const captchaToken = await getCaptchaToken()
 
       if (!captchaToken) {
         setError("Security verification failed. Please try again.")

@@ -55,29 +55,23 @@ export default function LoginModal({ onSuccess, onSwitchToSignup }: LoginModalPr
 
 
 
-  const getEnterpriseCaptchaToken = async (): Promise<string | null> => {
+  const getCaptchaToken = async (): Promise<string | null> => {
     try {
-      if (!window.grecaptcha || !window.grecaptcha.enterprise) {
-        console.error("reCAPTCHA Enterprise not loaded")
-        return null
-      }
-
+      if (!window.grecaptcha) return null
       return new Promise((resolve) => {
-        window.grecaptcha.enterprise.ready(async () => {
+        window.grecaptcha.ready(async () => {
           try {
-            const token = await window.grecaptcha.enterprise.execute(
+            const token = await window.grecaptcha.execute(
               "6Lfm6CYsAAAAAERCxmcRMFBAcyF4_gPnN5a1pVrk",
               { action: "login" }
             )
             resolve(token)
           } catch (err) {
-            console.error("Captcha execution failed:", err)
             resolve(null)
           }
         })
       })
-    } catch (err) {
-      console.error("Captcha error:", err)
+    } catch {
       return null
     }
   }
@@ -106,7 +100,7 @@ export default function LoginModal({ onSuccess, onSwitchToSignup }: LoginModalPr
     setError(null)
 
     try {
-      const captchaToken = await getEnterpriseCaptchaToken()
+      const captchaToken = await getCaptchaToken()
 
       if (!captchaToken) {
         setError("Security verification failed. Please try again.")
