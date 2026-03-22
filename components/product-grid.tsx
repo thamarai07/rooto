@@ -579,7 +579,7 @@ export default function ProductGrid() {
       await fetch(`${API_BASE}/cart.php`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_id: productId, quantity: newQuantity,user_id: getUserId()  }),
+        body: JSON.stringify({ product_id: productId, quantity: newQuantity, user_id: getUserId() }),
       })
       window.dispatchEvent(new Event("cart-updated"))
     } catch (error) {
@@ -666,9 +666,9 @@ export default function ProductGrid() {
 
       const fetchAndSortCart = async () => {
         const userId = getUserId()
-  if (!userId) return   // ← add guard
+        if (!userId) return   // ← add guard
         try {
-          
+
           const res = await fetch(`${API_BASE}/cart.php?user_id=${userId}`)
           const data = await res.json()
 
@@ -728,7 +728,7 @@ export default function ProductGrid() {
   useEffect(() => {
     const handleWishlistUpdate = async () => {
       const userId = getUserId()
-  if (!userId) return 
+      if (!userId) return
       try {
         const res = await fetch(`${API_BASE}/wishlist.php?user_id=${userId}`)
         const data = await res.json()
@@ -755,7 +755,7 @@ export default function ProductGrid() {
           `${API_BASE}/wishlist.php?product_id=${productId}&user_id=${getUserId()}`,
           { method: 'DELETE', credentials: 'include' }
         )
-        
+
         const data = await res.json()
 
         if (data.status === 'success') {
@@ -771,7 +771,7 @@ export default function ProductGrid() {
         const res = await fetch(`${API_BASE}/wishlist.php`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ product_id: productId })
+          body: JSON.stringify({ product_id: productId, user_id: getUserId() })
         })
         const data = await res.json()
 
