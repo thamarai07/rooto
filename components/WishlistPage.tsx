@@ -93,7 +93,9 @@ export default function WishlistPage() {
   // Fetch wishlist items from API
   const fetchWishlist = async () => {
     try {
-      const response = await fetch(`${API_BASE}/wishlist.php`)
+      const response = await fetch(`${API_BASE}/wishlist.php`,{
+        credentials: 'include'   // ← ADD
+      })
       const data = await response.json()
 
       if (data.status === "success") {
@@ -160,6 +162,7 @@ export default function WishlistPage() {
     try {
       const response = await fetch(`${API_BASE}/wishlist.php?product_id=${productId}`, {
         method: "DELETE",
+        credentials: 'include' 
       })
 
       const data = await response.json()
@@ -195,8 +198,9 @@ export default function WishlistPage() {
 
     try {
       const response = await fetch(`${API_BASE}/cart.php`, {
-        method: "POST",
+        method: "POST", 
         headers: { "Content-Type": "application/json" },
+        credentials: 'include', 
         body: JSON.stringify({ product_id: item.id, quantity: 0.25 }),
       })
 
@@ -237,6 +241,7 @@ export default function WishlistPage() {
       const response = await fetch(`${API_BASE}/wishlist.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({ product_id: product.id }),
       })
 

@@ -12,8 +12,8 @@ import CheckoutSuccessView from "@/components/delivery/CheckoutSuccessView"
 import OrderSummary from "@/components/delivery/OrderSummary"
 import OrderNotes from "@/components/delivery/OrderNotes"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { UserData } from "@/components/types"
 
+import { useAuth } from '@/hooks/useAuth'
 import CelebrationPopup from "@/components/CelebrationPopup"
 import { CartItemSkeleton, OrderSummarySkeleton } from "@/components/skeleto/CartItemSkeleton"
 import EmptyCart from "@/components/empty/EmptyCart"
@@ -28,7 +28,6 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrend
 
 export default function CartPage() {
   // User state
-  const [user, setUser] = useState<UserData | null>(null)
   const [showAuth, setShowAuth] = useState(false)
   const [authMode, setAuthMode] = useState<"login" | "signup">("login")
 
@@ -69,10 +68,7 @@ export default function CartPage() {
   } = useCheckout()
 
   // Load user from localStorage
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user")
-    if (savedUser) setUser(JSON.parse(savedUser))
-  }, [])
+  const { user } = useAuth() 
 
   // Handle celebration events
   useEffect(() => {
@@ -101,7 +97,6 @@ export default function CartPage() {
 
     try {
       const requestBody = {
-        customerId: user?.id,
         orderId: orderId,
       }
 
@@ -110,6 +105,7 @@ export default function CartPage() {
       const response = await fetch(`${API_BASE}/clear_cart.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify(requestBody),
       });
 
@@ -218,8 +214,6 @@ export default function CartPage() {
             <LoginModal
               onSuccess={() => {
                 setShowAuth(false)
-                const userData = JSON.parse(localStorage.getItem("user")!)
-                setUser(userData)
                 setShowDeliveryModal(true)
               }}
               onSwitchToSignup={() => setAuthMode("signup")}
@@ -228,8 +222,6 @@ export default function CartPage() {
             <SignupModal
               onSuccess={() => {
                 setShowAuth(false)
-                const userData = JSON.parse(localStorage.getItem("user")!)
-                setUser(userData)
                 setShowDeliveryModal(true)
               }}
               onSwitchToLogin={() => setAuthMode("login")}

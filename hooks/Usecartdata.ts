@@ -38,7 +38,9 @@ export function useCartData() {
 
   const fetchCart = async () => {
     try {
-      const response = await fetch(`${API_BASE}/cart.php`)
+      const response = await fetch(`${API_BASE}/cart.php`, {
+        credentials: 'include'   // ← ADD
+      })
       const data = await response.json()
       if (data.status === "success") {
         setCartItems(data.data)
@@ -83,6 +85,7 @@ export function useCartData() {
       await fetch(`${API_BASE}/cart.php`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({ product_id: productId, quantity: newQuantity }),
       })
       await fetchCart()
@@ -101,7 +104,7 @@ export function useCartData() {
     setIsUpdating(productId)
 
     try {
-      await fetch(`${API_BASE}/cart.php?product_id=${productId}`, { method: "DELETE" })
+      await fetch(`${API_BASE}/cart.php?product_id=${productId}`, { method: "DELETE",credentials: 'include' })
       if (itemToRemove) {
         window.dispatchEvent(new CustomEvent("celebrate-action", {
           detail: {
@@ -128,6 +131,7 @@ export function useCartData() {
       await fetch(`${API_BASE}/cart.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+         credentials: 'include',
         body: JSON.stringify({ product_id: product.id, quantity: 0.25 }),
       })
       await fetchCart()
