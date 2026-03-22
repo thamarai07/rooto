@@ -25,7 +25,12 @@ import { useCartData } from "@/hooks/Usecartdata"
 import { useCheckout } from "@/hooks/Usecheckout"
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
 
-
+const getUserId = (): number | null => {
+  try {
+    const user = localStorage.getItem("auth_user")
+    return user ? JSON.parse(user).id : null
+  } catch { return null }
+}
 export default function CartPage() {
   // User state
   const [showAuth, setShowAuth] = useState(false)
@@ -95,9 +100,11 @@ export default function CartPage() {
     console.log("   User ID:", user?.id)
     console.log("   Order ID:", orderId)
 
+    const userId = getUserId()
     try {
       const requestBody = {
         orderId: orderId,
+        customerId: userId  
       }
 
       console.log("📤 [CLEAR CART] Sending request:", requestBody)

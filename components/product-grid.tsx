@@ -14,6 +14,13 @@ import { UserData, SavedAddress } from "@/components/types"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
 
+const getUserId = (): number | null => {
+  try {
+    const user = localStorage.getItem("auth_user")
+    return user ? JSON.parse(user).id : null
+  } catch { return null }
+}
+
 
 interface Product {
   id: number
@@ -418,7 +425,7 @@ export default function ProductGrid() {
   }
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("user")
+    const savedUser = localStorage.getItem("auth_user")  // ← auth_user not user
     if (savedUser) {
       setUser(JSON.parse(savedUser))
       setIsLoggedIn(true)
@@ -572,7 +579,7 @@ export default function ProductGrid() {
       await fetch(`${API_BASE}/cart.php`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_id: productId, quantity: newQuantity }),
+        body: JSON.stringify({ product_id: productId, quantity: newQuantity,user_id: getUserId()  }),
       })
       window.dispatchEvent(new Event("cart-updated"))
     } catch (error) {
@@ -607,8 +614,15 @@ export default function ProductGrid() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const savedUser = JSON.parse(localStorage.getItem("user") || '{}');
-        const userId = savedUser?.id || 1;
+        const userId = getUserId()
+        if (!userId) {
+          // still load products, just skip cart/wishlist
+          const productsRes = await fetch(`${API_BASE}/get-product.php?limit=12`)
+          const productsData = await productsRes.json()
+          if (productsData.status === 'success') setProducts(productsData.items)
+          setLoading(false)
+          return
+        }
 
         const [productsRes, wishlistRes, cartRes] = await Promise.all([
           fetch(`${API_BASE}/get-product.php?limit=12`),
@@ -651,8 +665,11 @@ export default function ProductGrid() {
       lastHighlightedId = e.detail?.highlightedProductId ? Number(e.detail.highlightedProductId).toString() : null
 
       const fetchAndSortCart = async () => {
+        const userId = getUserId()
+  if (!userId) return   // ← add guard
         try {
-          const res = await fetch(`${API_BASE}/cart.php`)
+          
+          const res = await fetch(`${API_BASE}/cart.php?user_id=${userId}`)
           const data = await res.json()
 
           if (data.status === 'success') {
@@ -710,8 +727,10 @@ export default function ProductGrid() {
   // Listen to wishlist updates from header
   useEffect(() => {
     const handleWishlistUpdate = async () => {
+      const userId = getUserId()
+  if (!userId) return 
       try {
-        const res = await fetch(`${API_BASE}/wishlist.php`)
+        const res = await fetch(`${API_BASE}/wishlist.php?user_id=${userId}`)
         const data = await res.json()
         if (data.status === 'success' && data.data) {
           const ids: any = new Set(data.data.map((item: any) => Number(item.id)))
@@ -732,9 +751,11 @@ export default function ProductGrid() {
 
     try {
       if (isWishlisted) {
-        const res = await fetch(`${API_BASE}/wishlist.php?product_id=${productId}`, {
-          method: 'DELETE'
-        })
+        const res = await fetch(
+          `${API_BASE}/wishlist.php?product_id=${productId}&user_id=${getUserId()}`,
+          { method: 'DELETE', credentials: 'include' }
+        )
+        
         const data = await res.json()
 
         if (data.status === 'success') {
@@ -805,7 +826,13 @@ export default function ProductGrid() {
     setActionLoading(product.id)
 
     try {
-      const userId = user?.id || JSON.parse(localStorage.getItem("user") || '{}')?.id || 1;
+      const userId = getUserId()
+      if (!userId) {
+        setShowAuth(true)
+        setAuthMode("login")
+        setActionLoading(null)
+        return
+      }
 
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: 'POST',
@@ -845,7 +872,8 @@ export default function ProductGrid() {
     }
 
     try {
-      const userId = user?.id || JSON.parse(localStorage.getItem("user") || '{}')?.id || 1;
+      const userId = getUserId()
+      if (!userId) return
 
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: 'PUT',
@@ -871,8 +899,8 @@ export default function ProductGrid() {
 
   const handleRemoveFromCart = async (productId: number) => {
     try {
-      const userId = user?.id || JSON.parse(localStorage.getItem("user") || '{}')?.id || 1;
-
+      const userId = getUserId()
+      if (!userId) return
       const res = await fetch(`${API_BASE}/cart.php?product_id=${productId}&user_id=${userId}`, {
         method: 'DELETE'
       })
