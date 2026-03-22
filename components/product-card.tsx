@@ -64,7 +64,7 @@ export default function ProductCard({ product }: { product: Product }) {
     try {
       if (isWishlisted) {
         // Remove from wishlist
-        const res = await fetch(`${API_BASE}/wishlist.php?product_id=${product.id}`, {
+        const res = await fetch(`${API_BASE}/wishlist.php?product_id=${product.id}&user_id=${getUserId()}`, {
           method: "DELETE",
            credentials: 'include'
         })

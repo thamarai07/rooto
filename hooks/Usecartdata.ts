@@ -13,7 +13,6 @@ const getUserId = (): number | null => {
     return null
   }
 }
-const userId = getUserId()
 
 
 interface CartItem {
@@ -49,6 +48,7 @@ export function useCartData() {
 
   const fetchCart = async () => {
     try {
+      const userId = getUserId() 
       if (!userId) return   // ← don't fetch if not logged in
 
       const response = await fetch(`${API_BASE}/cart.php?user_id=${userId}`, {

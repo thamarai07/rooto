@@ -8,7 +8,12 @@ import Header from "@/components/header"
 import Footer from "@/components/footer"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
-
+const getUserId = (): number | null => {
+  try {
+    const user = localStorage.getItem("auth_user")
+    return user ? JSON.parse(user).id : null
+  } catch { return null }
+}
 interface WishlistItem {
   id: number
   name: string
@@ -92,9 +97,10 @@ export default function WishlistPage() {
 
   // Fetch wishlist items from API
   const fetchWishlist = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/wishlist.php`,{
-        credentials: 'include'   // ← ADD
+    try { const userId = getUserId()
+      if (!userId) return   
+      const response = await fetch(`${API_BASE}/wishlist.php?user_id=${userId}`, {
+        credentials: 'include'
       })
       const data = await response.json()
 
@@ -160,10 +166,10 @@ export default function WishlistPage() {
     setIsUpdating(productId)
 
     try {
-      const response = await fetch(`${API_BASE}/wishlist.php?product_id=${productId}`, {
-        method: "DELETE",
-        credentials: 'include' 
-      })
+      const response = await fetch(
+        `${API_BASE}/wishlist.php?product_id=${productId}&user_id=${getUserId()}`,
+        { method: "DELETE", credentials: 'include' }
+      )
 
       const data = await response.json()
 
@@ -201,7 +207,7 @@ export default function WishlistPage() {
         method: "POST", 
         headers: { "Content-Type": "application/json" },
         credentials: 'include', 
-        body: JSON.stringify({ product_id: item.id, quantity: 0.25 }),
+        body: JSON.stringify({ product_id: item.id, quantity: 0.25,user_id: getUserId() }),
       })
 
       const data = await response.json()
@@ -242,7 +248,7 @@ export default function WishlistPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: 'include',
-        body: JSON.stringify({ product_id: product.id }),
+        body: JSON.stringify({ product_id: product.id, user_id: getUserId()    }),
       })
 
       const data = await response.json()
