@@ -113,6 +113,7 @@ export default function LoginModal({ onSuccess, onSwitchToSignup }: LoginModalPr
       const res = await fetch(`${API_BASE}/login.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
@@ -123,7 +124,6 @@ export default function LoginModal({ onSuccess, onSwitchToSignup }: LoginModalPr
       const result = await res.json()
 
       if (result.status === "success") {
-        localStorage.setItem("user", JSON.stringify(result.user))
         setUser(result.user)   // ← sets global auth state
   onSuccess(result.user)
       } else {
