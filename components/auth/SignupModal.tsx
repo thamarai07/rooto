@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { Loader2, Eye, EyeOff, User, Mail, Phone, Lock, ArrowRight, UserPlus } from "lucide-react"
 import { UserData } from "../types"
-import { useAuth } from '@/hooks/useAuth'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
 
@@ -27,8 +26,6 @@ export default function SignupModal({ onSuccess, onSwitchToLogin }: SignupModalP
     confirmPassword: ''
   })
   const [formErrors, setFormErrors] = useState<any>({})
-  const { setUser } = useAuth()
-
 
   const handleGoogleLogin = async () => {
     setSocialLoading('google')
@@ -111,7 +108,6 @@ const getCaptchaToken = async (): Promise<string | null> => {
       const res = await fetch(`${API_BASE}/register.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: 'include',
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
@@ -124,8 +120,8 @@ const getCaptchaToken = async (): Promise<string | null> => {
       const result = await res.json()
 
       if (result.status === "success") {
-  setUser(result.user)   // ← replaces localStorage
-  onSuccess(result.user)
+        localStorage.setItem("user", JSON.stringify(result.user))
+        onSuccess(result.user)
       } else {
         setError(result.message || "Registration failed. Email or phone may already be in use.")
       }
