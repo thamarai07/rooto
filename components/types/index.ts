@@ -1,6 +1,6 @@
 
 export interface UserData {
-    id: number | string
+    id: number 
     name: string
     email: string
     phone: string

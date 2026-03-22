@@ -8,6 +8,7 @@ import LoginModal from "@/components/auth/LoginModal"
 import SignupModal from "@/components/auth/SignupModal"
 import { UserData } from "./types"
 import { usePathname } from "next/navigation"
+import { useAuth } from '@/hooks/useAuth'
 
 interface WishlistItem {
   id: string
@@ -46,7 +47,6 @@ export default function Header() {
   const [addingToCart, setAddingToCart] = useState<string | null>(null)
 
   // Auth state
-  const [user, setUser] = useState<UserData | null>(null)
   const [showAuth, setShowAuth] = useState(false)
   const [authMode, setAuthMode] = useState<"login" | "signup">("login")
 
@@ -73,45 +73,13 @@ export default function Header() {
     loadLogo()
   }, [])
 
-  /* ---------- Load user from localStorage ---------- */
-  useEffect(() => {
-    console.log("🔍 Loading user from localStorage...");
-
-    const savedUser = localStorage.getItem("user")
-
-    if (savedUser) {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-        console.log("🔍 USER ID:", parsedUser?.id);
-        setUser(parsedUser)
-      } catch (e) {
-        console.error("Error parsing user data:", e)
-        localStorage.removeItem("user")
-      }
-    }
-
-    // Listen for user updates
-    const handleUserUpdate = () => {
-      const updatedUser = localStorage.getItem("user")
-      if (updatedUser) {
-        try {
-          setUser(JSON.parse(updatedUser))
-        } catch (e) {
-          console.error("Error parsing updated user:", e)
-        }
-      } else {
-        setUser(null)
-      }
-    }
-
-    window.addEventListener("user-updated", handleUserUpdate)
-    return () => window.removeEventListener("user-updated", handleUserUpdate)
-  }, [])
+  const { user, loading, logout: authLogout, setUser } = useAuth()
 
   /* ---------- 🔥 FIXED: Removed pathname dependency ---------- */
   const refreshCounts = useCallback(async () => {
     try {
-      const userId = user?.id || 1;
+      if (!user?.id) return          // ← if no user, don't fetch
+const userId = user.id;
 
       console.log("🔄 Refreshing counts for user:", userId);
 
@@ -162,7 +130,8 @@ export default function Header() {
   /* ---------- 🔥 OPTIMIZED: Memoized fetch functions ---------- */
   const fetchWishlist = useCallback(async () => {
     try {
-      const userId = user?.id || 1;
+      if (!user?.id) return          // ← if no user, don't fetch
+const userId = user.id;
       const res = await fetch(`${API_BASE}/wishlist.php?user_id=${userId}`)
       const json = await res.json()
       if (json.status === "success") setWishlistItems(json.data)
@@ -173,7 +142,8 @@ export default function Header() {
 
   const fetchCart = useCallback(async () => {
     try {
-      const userId = user?.id || 1;
+      if (!user?.id) return          // ← if no user, don't fetch
+const userId = user.id;
       const res = await fetch(`${API_BASE}/cart.php?user_id=${userId}`)
       const json = await res.json()
       if (json.status === "success") setCartItems(json.data)
@@ -186,7 +156,8 @@ export default function Header() {
   const deleteWishlist = useCallback(async (id: string) => {
     setDeletingId(id)
     try {
-      const userId = user?.id || 1;
+      if (!user?.id) return          // ← if no user, don't fetch
+const userId = user.id;
       const res = await fetch(`${API_BASE}/wishlist.php?product_id=${id}&user_id=${userId}`, { method: "DELETE" })
       const json = await res.json()
       if (json.status === "success") {
@@ -203,7 +174,8 @@ export default function Header() {
   const deleteCart = useCallback(async (id: string) => {
     setDeletingId(id)
     try {
-      const userId = user?.id || 1;
+      if (!user?.id) return          // ← if no user, don't fetch
+const userId = user.id;
       const res = await fetch(`${API_BASE}/cart.php?product_id=${id}&user_id=${userId}`, { method: "DELETE" })
       const json = await res.json()
       if (json.status === "success") {
@@ -220,7 +192,8 @@ export default function Header() {
   const addToCartFromWishlist = useCallback(async (item: WishlistItem) => {
     setAddingToCart(item.id)
     try {
-      const userId = user?.id || 1;
+      if (!user?.id) return          // ← if no user, don't fetch
+const userId = user.id;
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -245,7 +218,8 @@ export default function Header() {
   const updateCartQuantity = useCallback(async (id: string, newQty: number) => {
     if (newQty < 1) return
     try {
-      const userId = user?.id || 1;
+      if (!user?.id) return          // ← if no user, don't fetch
+const userId = user.id;
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -266,8 +240,8 @@ export default function Header() {
   }, [user?.id, fetchCart])
 
   /* ---------- Auth Functions ---------- */
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem("user")
+  const handleLogout = useCallback(async () => {
+    await authLogout() 
     setUser(null)
     setShowProfile(false)
     setCartCount(0)
@@ -277,7 +251,10 @@ export default function Header() {
   }, [])
 
   const handleAuthSuccess = useCallback((userData: UserData) => {
-    setUser(userData)
+    setUser({
+      ...userData,
+      id: Number(userData.id)   // ← cast to number
+    })
     setShowAuth(false)
     window.dispatchEvent(new Event("user-updated"))
   }, [])
