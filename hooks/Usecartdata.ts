@@ -4,6 +4,17 @@ import { useState, useEffect } from "react"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
 
+// ← Helper to get user_id from localStorage
+const getUserId = (): number | null => {
+  try {
+    const user = localStorage.getItem("auth_user")
+    return user ? JSON.parse(user).id : null
+  } catch {
+    return null
+  }
+}
+const userId = getUserId()
+
 
 interface CartItem {
   cart_id: number
@@ -38,8 +49,10 @@ export function useCartData() {
 
   const fetchCart = async () => {
     try {
-      const response = await fetch(`${API_BASE}/cart.php`, {
-        credentials: 'include'   // ← ADD
+      if (!userId) return   // ← don't fetch if not logged in
+
+      const response = await fetch(`${API_BASE}/cart.php?user_id=${userId}`, {
+        credentials: 'include'
       })
       const data = await response.json()
       if (data.status === "success") {
@@ -76,17 +89,24 @@ export function useCartData() {
     if (newQuantity <= 0) return removeItem(productId)
 
     const updatedItems = cartItems.map(item =>
-      item.id === productId ? { ...item, quantity: newQuantity, subtotal: newQuantity * item.price } : item
+      item.id === productId
+        ? { ...item, quantity: newQuantity, subtotal: newQuantity * item.price }
+        : item
     )
     setCartItems(updatedItems)
     setIsUpdating(productId)
 
     try {
+      const userId = getUserId()
       await fetch(`${API_BASE}/cart.php`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: 'include',
-        body: JSON.stringify({ product_id: productId, quantity: newQuantity }),
+        body: JSON.stringify({
+          product_id: productId,
+          quantity: newQuantity,
+          user_id: userId   // ← pass user_id
+        }),
       })
       await fetchCart()
     } catch (error) {
@@ -104,7 +124,11 @@ export function useCartData() {
     setIsUpdating(productId)
 
     try {
-      await fetch(`${API_BASE}/cart.php?product_id=${productId}`, { method: "DELETE",credentials: 'include' })
+      const userId = getUserId()
+      await fetch(`${API_BASE}/cart.php?product_id=${productId}&user_id=${userId}`, {
+        method: "DELETE",
+        credentials: 'include'
+      })
       if (itemToRemove) {
         window.dispatchEvent(new CustomEvent("celebrate-action", {
           detail: {
@@ -128,11 +152,16 @@ export function useCartData() {
 
   const addToCart = async (product: Product) => {
     try {
+      const userId = getUserId()
       await fetch(`${API_BASE}/cart.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-         credentials: 'include',
-        body: JSON.stringify({ product_id: product.id, quantity: 0.25 }),
+        credentials: 'include',
+        body: JSON.stringify({
+          product_id: product.id,
+          quantity: 0.25,
+          user_id: userId   // ← pass user_id
+        }),
       })
       await fetchCart()
       window.dispatchEvent(new CustomEvent("celebrate-action", {

@@ -17,6 +17,15 @@ interface Product {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
 
+const getUserId = (): number | null => {
+  try {
+    const user = localStorage.getItem("auth_user")
+    return user ? JSON.parse(user).id : null
+  } catch {
+    return null
+  }
+}
+
 export default function ProductCard({ product }: { product: Product }) {
   const [isWishlisted, setIsWishlisted] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -30,7 +39,12 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const checkWishlistStatus = async () => {
     try {
-      const res = await fetch(`${API_BASE}/wishlist.php`)
+      const userId = getUserId()
+      if (!userId) return  
+      const res = await fetch(`${API_BASE}/wishlist.php?user_id=${userId}`, {
+        credentials: 'include'
+      })
+  
       const data = await res.json()
       if (data.status === "success") {
         const inWishlist = data.data.some((item: any) => item.id === product.id)
@@ -51,7 +65,8 @@ export default function ProductCard({ product }: { product: Product }) {
       if (isWishlisted) {
         // Remove from wishlist
         const res = await fetch(`${API_BASE}/wishlist.php?product_id=${product.id}`, {
-          method: "DELETE"
+          method: "DELETE",
+           credentials: 'include'
         })
         const data = await res.json()
 
@@ -80,7 +95,7 @@ export default function ProductCard({ product }: { product: Product }) {
         const res = await fetch(`${API_BASE}/wishlist.php`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ product_id: product.id })
+          body: JSON.stringify({ product_id: product.id,user_id: getUserId()  })
         })
         const data = await res.json()
 
@@ -124,7 +139,8 @@ export default function ProductCard({ product }: { product: Product }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           product_id: product.id,
-          quantity: 0.25 // Default 250g
+          quantity: 0.25, // Default 250g
+          user_id: getUserId()  
         })
       })
 
