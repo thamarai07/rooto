@@ -82,7 +82,7 @@ export default function CartPage() {
       setTimeout(() => setCelebration({ show: false, action: "", product: null }), 3000)
     }
     window.addEventListener("celebrate-action", handleCelebration)
-    return () => window.removeEventListener("celebrate-action", handleCelebration)
+    return  () => window.removeEventListener("celebrate-action", handleCelebration)
   }, [])
 
   const handleProceedToCheckout = () => {
