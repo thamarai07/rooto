@@ -59,6 +59,7 @@ export default function Header() {
   /* ---------- Load logo ---------- */
   useEffect(() => {
     const loadLogo = async () => {
+      
       try {
         const res = await fetch(`${API_BASE}/get_logo.php`)
         const json = await res.json()
