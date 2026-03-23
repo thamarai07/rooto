@@ -332,7 +332,7 @@ const userId = user.id;
   return (
     <>
       {/* ---------- Sticky Header ---------- */}
-      <header className="sticky top-0 z-[100] bg-white border-b border-gray-200">
+      <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           {/* LOGO */}
           <Link href="/" className="flex items-center gap-2">
