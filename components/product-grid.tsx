@@ -746,6 +746,13 @@ export default function ProductGrid() {
   }, [])
 
   const handleWishlistToggle = async (productId: number) => {
+    const userId = getUserId()
+    if (!userId) {
+      setShowAuth(true)
+      setAuthMode("login")
+      return
+    }
+  
     setActionLoading(productId)
     const isWishlisted = wishlistIds.has(productId)
 
