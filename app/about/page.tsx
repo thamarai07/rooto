@@ -222,13 +222,13 @@ export default function AboutPage() {
               {
                 emoji: "👨‍👩‍👧‍👦",
                 title: "For Families",
-                img: "https://images.unsplash.com/photo-1588776814546-1ffbb7d35a4c?w=400&q=80",
+                img: "https://images.unsplash.com/photo-1484665754804-74b091211472?w=400&q=80",
                 points: ["Keeps the whole family stronger", "Builds strong immunity system", "Encourages healthy eating habits"],
               },
               {
                 emoji: "🎒",
                 title: "For Students",
-                img: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=400&q=80",
+                img: "https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=400&q=80",
                 points: ["Improves focus & concentration", "Boosts natural energy levels", "Supports academic performance"],
               },
               {
