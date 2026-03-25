@@ -752,7 +752,7 @@ export default function ProductGrid() {
       setAuthMode("login")
       return
     }
-  
+
     setActionLoading(productId)
     const isWishlisted = wishlistIds.has(productId)
 
@@ -988,7 +988,7 @@ export default function ProductGrid() {
             <LoginModal
               onSuccess={() => {
                 setShowAuth(false);
-                const userData = JSON.parse(localStorage.getItem("user")!);
+                const userData = JSON.parse(localStorage.getItem("auth_user")!);
                 setUser(userData);
                 setIsLoggedIn(true);
                 setShowDeliveryModal(true);
@@ -999,7 +999,7 @@ export default function ProductGrid() {
             <SignupModal
               onSuccess={() => {
                 setShowAuth(false);
-                const userData = JSON.parse(localStorage.getItem("user")!);
+                const userData = JSON.parse(localStorage.getItem("auth_user")!);
                 setUser(userData);
                 setIsLoggedIn(true);
                 setShowDeliveryModal(true);

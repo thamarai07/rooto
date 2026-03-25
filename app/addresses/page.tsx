@@ -60,19 +60,19 @@ interface APIAddress {
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
-const getUserId = (): number => {
+const getUserId = (): number | null => {
     if (typeof window !== 'undefined') {
-        const savedUser = localStorage.getItem("user");
+        const savedUser = localStorage.getItem("auth_user");
         if (savedUser) {
             try {
                 const user = JSON.parse(savedUser);
-                return user.id || 1;
+                return user.id || null;
             } catch (e) {
                 console.error("Error parsing user data:", e);
             }
         }
     }
-    return 1;
+    return null;
 };
 
 // 🔥 Transform API response to frontend format

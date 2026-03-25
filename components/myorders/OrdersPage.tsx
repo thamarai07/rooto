@@ -147,19 +147,19 @@ const getRelativeTime = (dateString: string): string => {
 };
 
 // Get user ID from localStorage
-const getUserId = (): number => {
+const getUserId = (): number | null => {
     if (typeof window !== 'undefined') {
-        const savedUser = localStorage.getItem("user");
+        const savedUser = localStorage.getItem("auth_user");
         if (savedUser) {
             try {
                 const user = JSON.parse(savedUser);
-                return user.id || 1;
+                return user.id || null;
             } catch (e) {
                 console.error("Error parsing user data:", e);
             }
         }
     }
-    return 1; // Default fallback
+    return null;
 };
 
 // ============================================================================
@@ -563,6 +563,10 @@ export default function OrdersPage() {
         setIsLoading(true);
         try {
             const customerId = getUserId();
+            if (!customerId) {
+                setIsLoading(false);
+                return;
+            }
 
             const params = new URLSearchParams({
                 customer_id: customerId.toString(),

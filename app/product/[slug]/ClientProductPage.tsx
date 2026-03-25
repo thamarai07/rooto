@@ -429,21 +429,21 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
 
   // Load user from localStorage
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
+    const savedUser = localStorage.getItem("auth_user");
     if (savedUser) {
       try {
         const parsedUser = JSON.parse(savedUser);
         setUser(parsedUser);
         setIsLoggedIn(true);
       } catch (e) {
-        localStorage.removeItem("user");
+        localStorage.removeItem("auth_user");
         setUser(null);
         setIsLoggedIn(false);
       }
     }
 
     const handleUserUpdate = () => {
-      const updatedUser = localStorage.getItem("user");
+      const updatedUser = localStorage.getItem("auth_user");
       if (updatedUser) {
         try {
           const parsedUser = JSON.parse(updatedUser);
@@ -652,8 +652,9 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
   // Fetch cart
   useEffect(() => {
     const fetchCart = async () => {
+      if (!user?.id) return;
       try {
-        const userId = user?.id || 1;
+        const userId = user.id;
         const res = await fetch(`${API_BASE}/cart.php?user_id=${userId}`);
         const data = await res.json();
 
@@ -689,8 +690,9 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
     const handleCartUpdate = async (e: any) => {
       lastHighlightedId = e.detail?.highlightedProductId || null;
 
+      if (!user?.id) return;
       try {
-        const userId = user?.id || 1;
+        const userId = user.id;
         const res = await fetch(`${API_BASE}/cart.php?user_id=${userId}`);
         const data = await res.json();
 
@@ -768,7 +770,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
         body: JSON.stringify({
           product_id: product.id,
           quantity: quantity,
-          user_id: user?.id || 1,
+          user_id: user?.id,
           status: 'active',
           last_added_at: new Date().toISOString()
         })
@@ -779,7 +781,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
       if (data.status === 'success') {
         showToast('Added to cart!', 'success');
 
-        const cartRes = await fetch(`${API_BASE}/cart.php?user_id=${user?.id || 1}`);
+        const cartRes = await fetch(`${API_BASE}/cart.php?user_id=${user?.id}`);
         const cartData = await cartRes.json();
 
         if (cartData.status === 'success') {
@@ -824,7 +826,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
         body: JSON.stringify({
           product_id: productId,
           quantity: quantity,
-          user_id: user?.id || 1,
+          user_id: user?.id,
           last_added_at: new Date().toISOString()
         })
       });
@@ -841,8 +843,9 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
   };
 
   const handleRemoveFromCart = async (productId: number) => {
+    if (!user?.id) return;
     try {
-      const userId = user?.id || 1;
+      const userId = user.id;
       const res = await fetch(`${API_BASE}/cart.php?product_id=${productId}&user_id=${userId}`, {
         method: 'DELETE'
       });
