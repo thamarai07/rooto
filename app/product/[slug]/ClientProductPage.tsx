@@ -761,6 +761,13 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
   const addToCart = async () => {
     if (!isInStock || quantity < product.min_quantity) return;
 
+    // 🔐 Login guard
+    if (!isLoggedIn || !user) {
+      setAuthMode("login");
+      setShowAuth(true);
+      return;
+    }
+
     setIsAddingToCart(true);
 
     try {
@@ -861,6 +868,13 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
   };
 
   const toggleWishlist = () => {
+    // 🔐 Login guard
+    if (!isLoggedIn || !user) {
+      setAuthMode("login");
+      setShowAuth(true);
+      return;
+    }
+
     const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
     const exists = wishlist.some((i: any) => i.id === product.id);
 
