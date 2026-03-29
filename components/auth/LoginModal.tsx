@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Loader2, Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react"
 import { UserData } from "../types"
 import { useAuth } from '@/hooks/useAuth'
+import { clearGuestCart, getGuestCart, getGuestWishlist } from "@/lib/guestStorage"
 
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
@@ -94,6 +95,36 @@ export default function LoginModal({ onSuccess, onSwitchToSignup }: LoginModalPr
     return Object.keys(errors).length === 0
   }
 
+  const mergeGuestDataAfterLogin = async (userId: number) => {
+    const guestCart = getGuestCart()
+    const guestWishlist = getGuestWishlist()
+  
+    // Merge cart items
+    await Promise.all(guestCart.map(item =>
+      fetch(`${API_BASE}/cart.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: item.id, quantity: item.quantity, user_id: userId })
+      })
+    ))
+  
+    // Merge wishlist items
+    await Promise.all(guestWishlist.map(item =>
+      fetch(`${API_BASE}/wishlist.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: item.id, user_id: userId })
+      })
+    ))
+  
+    // Clear guest storage after merge
+    clearGuestCart()
+    localStorage.removeItem("guest_wishlist")
+    window.dispatchEvent(new Event("cart-updated"))
+    window.dispatchEvent(new Event("wishlist-updated"))
+  }
+  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -126,6 +157,7 @@ export default function LoginModal({ onSuccess, onSwitchToSignup }: LoginModalPr
 
       if (result.status === "success") {
         setUser(result.user)
+        await mergeGuestDataAfterLogin(result.user.id)
         onSuccess(result.user)
       } else {
         setError(result.message || "Invalid email or password")

@@ -15,6 +15,16 @@ import SignupModal from "@/components/auth/SignupModal";
 import DeliveryModal from "@/components/delivery/DeliveryModal";
 import CheckoutSuccessView from "@/components/delivery/CheckoutSuccessView";
 import { UserData, SavedAddress } from "@/components/types";
+// existing imports-க்கு கீழே add பண்ணு
+import {
+  getGuestCart,
+  addToGuestCart,
+  toggleGuestWishlist,
+  isInGuestWishlist,
+  updateGuestCartQty,
+  removeFromGuestCart,
+} from "@/lib/guestStorage"
+
 
 const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || `${process.env.NEXT_PUBLIC_API_BASE?.replace('/api', '') || 'https://rootoportal.onrender.com'}/assets/images/uploads`;
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api";
@@ -689,8 +699,11 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
 
     const handleCartUpdate = async (e: any) => {
       lastHighlightedId = e.detail?.highlightedProductId || null;
-
-      if (!user?.id) return;
+      if (!user?.id) {
+        const items = getGuestCart().map(i => ({ ...i, cart_id: i.id }))
+        setCartItems(items)
+        return
+      }
       try {
         const userId = user.id;
         const res = await fetch(`${API_BASE}/cart.php?user_id=${userId}`);
@@ -740,15 +753,25 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
       }
     };
 
-    handleCartUpdate({});
-    window.addEventListener('cart-updated', handleCartUpdate);
-    return () => window.removeEventListener('cart-updated', handleCartUpdate);
+    const handleGuestCartUpdate = () => {
+      const items = getGuestCart().map(i => ({ ...i, cart_id: i.id }))
+      setCartItems(items)
+    }
+  
+    handleCartUpdate({})
+    window.addEventListener('cart-updated', handleCartUpdate)
+    window.addEventListener('guest-cart-updated', handleGuestCartUpdate)  // ✅
+  
+    return () => {
+      window.removeEventListener('cart-updated', handleCartUpdate)
+      window.removeEventListener('guest-cart-updated', handleGuestCartUpdate)  // ✅
+    }
+  
   }, [isCartOpen, user?.id]);
 
   useEffect(() => {
-    const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
-    setIsWishlisted(wishlist.some((i: any) => i.id === product.id));
-  }, [product.id]);
+    setIsWishlisted(isInGuestWishlist(product.id))
+  }, [product.id])
 
   const finalPrice = product.final_price || product.price_per_kg * (1 - product.discount_percent / 100);
   const totalPrice = (finalPrice * quantity).toFixed(2);
@@ -759,17 +782,32 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
   const decrement = () => setQuantity(prev => Math.max(prev - step, product.min_quantity || 0));
 
   const addToCart = async () => {
-    if (!isInStock || quantity < product.min_quantity) return;
+    if (!isInStock || quantity < product.min_quantity) return
 
-    // 🔐 Login guard
+    setIsAddingToCart(true)
+  
+    // ✅ Guest: localStorage
     if (!isLoggedIn || !user) {
-      setAuthMode("login");
-      setShowAuth(true);
-      return;
+      addToGuestCart({
+        id: product.id,
+        name: product.name,
+        price: product.price_per_kg,
+        image: product.image,
+        category: product.category,
+        stock: product.stock,
+        slug: product.slug,
+      }, quantity)
+  
+      // Cart state update
+      setCartItems(getGuestCart().map(i => ({ ...i, cart_id: i.id })))
+      showToast('Added to cart!', 'success')
+      window.dispatchEvent(new CustomEvent('guest-cart-updated', {
+        detail: { highlightedProductId: product.id.toString() }
+      }))
+      setTimeout(() => setIsCartOpen(true), 100)
+      setIsAddingToCart(false)
+      return
     }
-
-    setIsAddingToCart(true);
-
     try {
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: 'POST',
@@ -826,6 +864,10 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
       return;
     }
 
+    if (!user?.id) {
+      updateGuestCartQty(productId, quantity)
+      return
+    }
     try {
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: 'PUT',
@@ -850,7 +892,10 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
   };
 
   const handleRemoveFromCart = async (productId: number) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      removeFromGuestCart(productId)
+      return
+    }
     try {
       const userId = user.id;
       const res = await fetch(`${API_BASE}/cart.php?product_id=${productId}&user_id=${userId}`, {
@@ -868,36 +913,23 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
   };
 
   const toggleWishlist = () => {
-    // 🔐 Login guard
-    if (!isLoggedIn || !user) {
-      setAuthMode("login");
-      setShowAuth(true);
-      return;
-    }
-
-    const wishlist = JSON.parse(localStorage.getItem("wishlist") || "[]");
-    const exists = wishlist.some((i: any) => i.id === product.id);
-
-    if (exists) {
-      const newWishlist = wishlist.filter((i: any) => i.id !== product.id);
-      localStorage.setItem("wishlist", JSON.stringify(newWishlist));
-      showToast("Removed from wishlist", 'info');
-      setIsWishlisted(false);
-    } else {
-      wishlist.push({
-        id: product.id,
-        name: product.name,
-        slug: product.slug,
-        price: finalPrice,
-        image: product.image,
-        unit: product.unit,
-      });
-      localStorage.setItem("wishlist", JSON.stringify(wishlist));
-      showToast("Added to wishlist", 'success');
-      setIsWishlisted(true);
-    }
-  };
-
+    // ✅ No login required — guest + logged-in both work
+    const result = toggleGuestWishlist({
+      id: product.id,
+      name: product.name,
+      price: product.price_per_kg,
+      image: product.image,
+      category: product.category,
+      slug: product.slug,
+    })
+  
+    setIsWishlisted(result === "added")
+    showToast(
+      result === "added" ? "Added to wishlist" : "Removed from wishlist",
+      result === "added" ? "success" : "info"
+    )
+    window.dispatchEvent(new Event("guest-wishlist-updated"))
+  }
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Toast */}

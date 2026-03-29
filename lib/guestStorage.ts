@@ -88,6 +88,12 @@ export interface GuestCartItem {
       return "added"
     }
   }
+
+
+  
   
   export const isInGuestWishlist = (productId: number): boolean =>
     getGuestWishlist().some(i => i.id === productId)
+
+
+  
