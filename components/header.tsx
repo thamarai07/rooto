@@ -37,6 +37,9 @@ export default function Header() {
   const [wishlistCount, setWishlistCount] = useState(0)
   const [cartCount, setCartCount] = useState(0)
 
+  const [guestCartCount, setGuestCartCount] = useState(0)
+const [guestWishlistCount, setGuestWishlistCount] = useState(0)
+
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([])
   const [cartItems, setCartItems] = useState<CartItem[]>([])
 
@@ -73,8 +76,43 @@ export default function Header() {
     }
     loadLogo()
   }, [])
+  
 
   const { user, loading, logout: authLogout, setUser } = useAuth()
+
+  // ✅ ADD THIS ENTIRE BLOCK — Guest count sync
+useEffect(() => {
+  const syncGuestCounts = () => {
+    if (!user) {  // Guest மட்டும்
+      try {
+        const cart = JSON.parse(localStorage.getItem("guest_cart") || "[]")
+        const wishlist = JSON.parse(localStorage.getItem("guest_wishlist") || "[]")
+        setGuestCartCount(cart.length)
+        setGuestWishlistCount(wishlist.length)
+      } catch {
+        setGuestCartCount(0)
+        setGuestWishlistCount(0)
+      }
+    } else {
+      // Logged-in ஆனா guest counts reset
+      setGuestCartCount(0)
+      setGuestWishlistCount(0)
+    }
+  }
+
+  syncGuestCounts() // mount-ல run
+
+  window.addEventListener("guest-cart-updated", syncGuestCounts)
+  window.addEventListener("guest-wishlist-updated", syncGuestCounts)
+
+  return () => {
+    window.removeEventListener("guest-cart-updated", syncGuestCounts)
+    window.removeEventListener("guest-wishlist-updated", syncGuestCounts)
+  }
+}, [user])
+
+const displayWishlistCount = user ? wishlistCount : guestWishlistCount
+const displayCartCount = user ? cartCount : guestCartCount
 
   /* ---------- 🔥 FIXED: Removed pathname dependency ---------- */
   const refreshCounts = useCallback(async () => {
@@ -356,9 +394,9 @@ const userId = user.id;
                 className="relative p-2 hover:bg-gray-100 rounded-lg transition"
               >
                 <Heart className="w-6 h-6 text-gray-700" />
-                {wishlistCount > 0 && (
+                {displayWishlistCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                    {wishlistCount}
+                    {displayWishlistCount }
                   </span>
                 )}
               </button>
@@ -382,9 +420,9 @@ const userId = user.id;
                 className="relative p-2 hover:bg-gray-100 rounded-lg transition"
               >
                 <ShoppingCart className="w-6 h-6 text-gray-700" />
-                {cartCount > 0 && (
+                {displayCartCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                    {cartCount}
+                  {displayCartCount }
                   </span>
                 )}
               </button>
@@ -441,17 +479,17 @@ const userId = user.id;
           <div className="flex md:hidden items-center gap-3">
             <button onClick={toggleWishlist} className="relative p-2">
               <Heart className="w-6 h-6 text-gray-700" />
-              {wishlistCount > 0 && (
+              {displayWishlistCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                  {wishlistCount}
+                {displayWishlistCount }
                 </span>
               )}
             </button>
             <button onClick={toggleCart} className="relative p-2">
               <ShoppingCart className="w-6 h-6 text-gray-700" />
-              {cartCount > 0 && (
+              {displayCartCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                  {cartCount}
+                 {displayCartCount }
                 </span>
               )}
             </button>

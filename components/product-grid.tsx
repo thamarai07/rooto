@@ -11,7 +11,14 @@ import CheckoutSuccessView from "@/components/delivery/CheckoutSuccessView"
 import OrderSummary from "@/components/delivery/OrderSummary"
 import OrderNotes from "@/components/delivery/OrderNotes"
 import { UserData, SavedAddress } from "@/components/types"
-
+import {
+  getGuestCart,
+  getGuestWishlist,
+  addToGuestCart,
+  toggleGuestWishlist,
+  updateGuestCartQty,    // ✅ NEW
+  removeFromGuestCart,   // ✅ NEW
+} from "@/lib/guestStorage"
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
 
 const getUserId = (): number | null => {
@@ -616,10 +623,16 @@ export default function ProductGrid() {
       try {
         const userId = getUserId()
         if (!userId) {
-          // still load products, just skip cart/wishlist
           const productsRes = await fetch(`${API_BASE}/get-product.php?limit=12`)
           const productsData = await productsRes.json()
           if (productsData.status === 'success') setProducts(productsData.items)
+        
+          // ✅ ADD: Guest cart + wishlist from localStorage
+          const guestCart = getGuestCart()
+          const guestWishlist = getGuestWishlist()
+          setCartItems(guestCart.map(i => ({ ...i, cart_id: i.id })))
+          setWishlistIds(new Set(guestWishlist.map(i => i.id)))
+        
           setLoading(false)
           return
         }
@@ -660,49 +673,52 @@ export default function ProductGrid() {
   // Listen to cart updates from header
   useEffect(() => {
     let lastHighlightedId: string | null = null
-
+  
     const handleCartUpdate = (e: any) => {
-      lastHighlightedId = e.detail?.highlightedProductId ? Number(e.detail.highlightedProductId).toString() : null
-
+      lastHighlightedId = e.detail?.highlightedProductId
+        ? Number(e.detail.highlightedProductId).toString()
+        : null
+  
       const fetchAndSortCart = async () => {
         const userId = getUserId()
-        if (!userId) return   // ← add guard
+  
+        // ✅ CHANGED: Guest users — localStorage படி
+        if (!userId) {
+          const items = getGuestCart().map(i => ({ ...i, cart_id: i.id }))
+          setCartItems(items)
+          return
+        }
+  
+        // Logged-in users — உன் existing API code (தொடாத)
         try {
-
           const res = await fetch(`${API_BASE}/cart.php?user_id=${userId}`)
           const data = await res.json()
-
+  
           if (data.status === 'success') {
             let items = data.data || data.items || []
-
             const now = new Date().toISOString()
-
-            // Frontend magic: Force the recently added item to top
+  
             const updatedItems = items.map((item: any) => {
               if (item.id === lastHighlightedId) {
-                return { ...item, last_added_at: now } // This wins the sort
+                return { ...item, last_added_at: now }
               }
               return {
                 ...item,
                 last_added_at: item.last_added_at || new Date(Date.now() - 100000000).toISOString()
               }
             })
-
-            // Sort by timestamp (newest first)
+  
             updatedItems.sort((a: any, b: any) =>
               new Date(b.last_added_at).getTime() - new Date(a.last_added_at).getTime()
             )
-
+  
             setCartItems(updatedItems)
-
-            // Auto-scroll to the newly added item
+  
             if (lastHighlightedId && isCartOpen) {
               setTimeout(() => {
                 const el = document.querySelector(`[data-product-id="${lastHighlightedId}"]`)
                   || document.getElementById(`cart-item-${lastHighlightedId}`)
                 el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-
-                // Optional: Add glow effect
                 el?.classList.add('ring-2', 'ring-green-500', 'ring-offset-2', 'bg-green-50')
                 setTimeout(() => {
                   el?.classList.remove('ring-2', 'ring-green-500', 'ring-offset-2', 'bg-green-50')
@@ -714,14 +730,24 @@ export default function ProductGrid() {
           console.error('Error updating cart:', error)
         }
       }
-
+  
       fetchAndSortCart()
     }
-
-    handleCartUpdate({}) // Initial load
+  
+    // ✅ ADD: Guest cart listener
+    const handleGuestCartUpdate = () => {
+      const items = getGuestCart().map(i => ({ ...i, cart_id: i.id }))
+      setCartItems(items)
+    }
+  
+    handleCartUpdate({})
     window.addEventListener('cart-updated', handleCartUpdate)
-
-    return () => window.removeEventListener('cart-updated', handleCartUpdate)
+    window.addEventListener('guest-cart-updated', handleGuestCartUpdate)  // ✅ NEW
+  
+    return () => {
+      window.removeEventListener('cart-updated', handleCartUpdate)
+      window.removeEventListener('guest-cart-updated', handleGuestCartUpdate)  // ✅ NEW
+    }
   }, [isCartOpen])
 
   // Listen to wishlist updates from header
@@ -748,10 +774,31 @@ export default function ProductGrid() {
   const handleWishlistToggle = async (productId: number) => {
     const userId = getUserId()
     if (!userId) {
-      setShowAuth(true)
-      setAuthMode("login")
-      return
+      // ✅ Guest: localStorage-ல save பண்ணு, login கேக்காத
+      const product = products.find(p => p.id === productId)
+      if (!product) return
+  
+      setActionLoading(productId)
+      const result = toggleGuestWishlist({
+        id: product.id,
+        name: product.name,
+        price: product.price_per_kg,
+        image: product.image,
+        category: product.category,
+        slug: product.slug,
+      })
+      setWishlistIds(prev => {
+        const next = new Set(prev)
+        result === "added" ? next.add(productId) : next.delete(productId)
+        return next
+      })
+      showToast(result === "added" ? "Added to wishlist!" : "Removed from wishlist",
+                result === "added" ? "success" : "info")
+      window.dispatchEvent(new Event("guest-wishlist-updated"))
+      setActionLoading(null)
+      return   // ← இங்க return, API call போகாது
     }
+  
 
     setActionLoading(productId)
     const isWishlisted = wishlistIds.has(productId)
@@ -834,12 +881,27 @@ export default function ProductGrid() {
 
     try {
       const userId = getUserId()
-      if (!userId) {
-        setShowAuth(true)
-        setAuthMode("login")
-        setActionLoading(null)
-        return
-      }
+      
+    if (!userId) {
+      // ✅ Guest: localStorage-ல save பண்ணு
+      addToGuestCart({
+        id: product.id,
+        name: product.name,
+        price: product.price_per_kg,
+        image: product.image,
+        category: product.category,
+        stock: product.stock,
+        slug: product.slug,
+      })
+      setCartItems(getGuestCart().map(i => ({ ...i, cart_id: i.id })))
+      showToast('Added to cart!', 'success')
+      window.dispatchEvent(new CustomEvent('guest-cart-updated', {
+        detail: { highlightedProductId: product.id.toString() }
+      }))
+      setIsCartOpen(true)
+      setActionLoading(null)
+      return   // ← இங்க return, API call போகாது
+    }
 
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: 'POST',
@@ -877,52 +939,57 @@ export default function ProductGrid() {
       handleRemoveFromCart(productId)
       return
     }
-
+  
+    const userId = getUserId()
+  
+    // ✅ Guest
+    if (!userId) {
+      updateGuestCartQty(productId, quantity)
+      return
+    }
+  
+    // Logged-in — existing code same
     try {
-      const userId = getUserId()
-      if (!userId) return
-
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          product_id: productId,
-          quantity: quantity,
-          user_id: userId
-        })
+        body: JSON.stringify({ product_id: productId, quantity, user_id: userId })
       })
-
       const data = await res.json()
-
       if (data.status === 'success') {
         window.dispatchEvent(new Event('cart-updated'))
       }
     } catch (error) {
-      console.error('Error updating quantity:', error)
       showToast('Failed to update quantity', 'error')
     }
   }
-
-
+  
   const handleRemoveFromCart = async (productId: number) => {
+    const userId = getUserId()
+  
+    // ✅ Guest
+    if (!userId) {
+      removeFromGuestCart(productId)
+      return
+    }
+  
+    // Logged-in — existing code same
     try {
-      const userId = getUserId()
-      if (!userId) return
       const res = await fetch(`${API_BASE}/cart.php?product_id=${productId}&user_id=${userId}`, {
         method: 'DELETE'
       })
-
       const data = await res.json()
-
       if (data.status === 'success') {
         showToast('Item removed from cart', 'info')
         window.dispatchEvent(new Event('cart-updated'))
       }
     } catch (error) {
-      console.error('Error removing from cart:', error)
       showToast('Failed to remove item', 'error')
     }
   }
+
+
+
 
   if (loading) {
     return (
