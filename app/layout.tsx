@@ -12,6 +12,9 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: 'Rooto — Fresh Groceries Delivered',
   description: 'Order fresh fruits, vegetables, and groceries online at Rooto. Fast delivery to your doorstep.',
+  icons: {
+    icon: '/favicon.png',
+  },
   keywords: ['fresh groceries', 'fruits', 'vegetables', 'online grocery', 'rooto', 'grocery delivery'],
   authors: [{ name: 'Rooto' }],
   metadataBase: new URL('https://rooto.in'),
