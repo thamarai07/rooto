@@ -125,7 +125,7 @@ export default function LoginModal({ onSuccess, onSwitchToSignup }: LoginModalPr
       const result = await res.json()
 
       if (result.status === "success") {
-        setUser(result.user)      
+        setUser(result.user)
         onSuccess(result.user)
       } else {
         setError(result.message || "Invalid email or password")
@@ -140,7 +140,7 @@ export default function LoginModal({ onSuccess, onSwitchToSignup }: LoginModalPr
 
 
   return (
-    <div className="w-full max-w-sm bg-white p-5">
+    <div className="w-full max-w-sm p-5">
       {/* Header Section */}
       <div className="text-center mb-6">
 
