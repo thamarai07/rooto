@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { ShoppingCart, Heart, Check, Loader2 } from "lucide-react"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
 interface Product {
   id: number

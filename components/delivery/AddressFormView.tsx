@@ -65,7 +65,7 @@ export default function AddressFormView({
         isDefault: false // Set to true if you want this as default
       }
 
-      const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
+      const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
       const response = await fetch(`${API_BASE}/save_address.php`, {
         method: 'POST',
         headers: {

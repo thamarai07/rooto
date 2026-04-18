@@ -46,18 +46,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <Script
-          src="https://www.google.com/recaptcha/api.js?render=6LcAV5EsAAAAAMvuJl6MMRfVuTFe2x32aE_0euu7"
-          strategy="afterInteractive"
-          async
-        />
+       
       </head>
 
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased" suppressHydrationWarning>
       <AuthProvider>        {/* ← wrap here */}
           {children}
           <Analytics />
           <CelebrationPopup />
+          <div id="recaptcha-container" style={{ display: 'none' }}></div>
         </AuthProvider>
       </body>
     </html>

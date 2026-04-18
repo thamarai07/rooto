@@ -26,8 +26,8 @@ import {
 } from "@/lib/guestStorage"
 
 
-const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || `${process.env.NEXT_PUBLIC_API_BASE?.replace('/api', '') || 'https://rootoportal.onrender.com'}/assets/images/uploads`;
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api";
+const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || `${process.env.NEXT_PUBLIC_API_BASE?.replace('/api', '') || 'https://seashell-skunk-617240.hostingersite.com/vfs-admin'}/assets/images/uploads`;
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api";
 
 interface Product {
   id: number;
@@ -757,16 +757,16 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
       const items = getGuestCart().map(i => ({ ...i, cart_id: i.id }))
       setCartItems(items)
     }
-  
+
     handleCartUpdate({})
     window.addEventListener('cart-updated', handleCartUpdate)
     window.addEventListener('guest-cart-updated', handleGuestCartUpdate)  // ✅
-  
+
     return () => {
       window.removeEventListener('cart-updated', handleCartUpdate)
       window.removeEventListener('guest-cart-updated', handleGuestCartUpdate)  // ✅
     }
-  
+
   }, [isCartOpen, user?.id]);
 
   useEffect(() => {
@@ -785,7 +785,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
     if (!isInStock || quantity < product.min_quantity) return
 
     setIsAddingToCart(true)
-  
+
     // ✅ Guest: localStorage
     if (!isLoggedIn || !user) {
       addToGuestCart({
@@ -797,7 +797,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
         stock: product.stock,
         slug: product.slug,
       }, quantity)
-  
+
       // Cart state update
       setCartItems(getGuestCart().map(i => ({ ...i, cart_id: i.id })))
       showToast('Added to cart!', 'success')
@@ -922,7 +922,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
       category: product.category,
       slug: product.slug,
     })
-  
+
     setIsWishlisted(result === "added")
     showToast(
       result === "added" ? "Added to wishlist" : "Removed from wishlist",

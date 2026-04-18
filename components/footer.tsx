@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Phone, Mail, Facebook, Instagram, Twitter } from "lucide-react"
 import Link from "next/link"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -115,8 +115,8 @@ export default function Footer() {
                 <a href="#" aria-label="Twitter" className="hover:text-white transition">
                   <Twitter className="w-5 h-5" />
                 </a>
-                
-                 <a href="https://www.instagram.com/rooto_in/"
+
+                <a href="https://www.instagram.com/rooto_in/"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Instagram"

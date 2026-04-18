@@ -23,7 +23,7 @@ import OrderSuccessModal from "@/components/order/OrderSuccessModal"
 // Custom hooks
 import { useCartData } from "@/hooks/Usecartdata"
 import { useCheckout } from "@/hooks/Usecheckout"
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
 const getUserId = (): number | null => {
   try {
@@ -73,7 +73,7 @@ export default function CartPage() {
   } = useCheckout()
 
   // Load user from localStorage
-  const { user } = useAuth() 
+  const { user } = useAuth()
 
   // Handle celebration events
   useEffect(() => {
@@ -82,7 +82,7 @@ export default function CartPage() {
       setTimeout(() => setCelebration({ show: false, action: "", product: null }), 3000)
     }
     window.addEventListener("celebrate-action", handleCelebration)
-    return  () => window.removeEventListener("celebrate-action", handleCelebration)
+    return () => window.removeEventListener("celebrate-action", handleCelebration)
   }, [])
 
   const handleProceedToCheckout = () => {
@@ -104,7 +104,7 @@ export default function CartPage() {
     try {
       const requestBody = {
         orderId: orderId,
-        customerId: userId  
+        customerId: userId
       }
 
       console.log("📤 [CLEAR CART] Sending request:", requestBody)

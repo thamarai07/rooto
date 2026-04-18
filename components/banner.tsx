@@ -92,7 +92,7 @@ export default function HeaderSearchBar() {
     setIsSearching(true)
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"}/get-products_search.php?search=${encodeURIComponent(query)}`
+        `${process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"}/get-products_search.php?search=${encodeURIComponent(query)}`
       )
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`)

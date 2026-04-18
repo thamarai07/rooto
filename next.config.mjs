@@ -19,7 +19,7 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'rootoportal.onrender.com',
+        hostname: 'seashell-skunk-617240.hostingersite.com',
         pathname: '/**',
       },
       {

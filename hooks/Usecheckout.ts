@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { UserData, SavedAddress } from "@/components/types"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
 
 interface CartItem {

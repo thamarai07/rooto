@@ -15,7 +15,7 @@ interface Product {
   stock: number
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
 const getUserId = (): number | null => {
   try {
@@ -40,11 +40,11 @@ export default function ProductCard({ product }: { product: Product }) {
   const checkWishlistStatus = async () => {
     try {
       const userId = getUserId()
-      if (!userId) return  
+      if (!userId) return
       const res = await fetch(`${API_BASE}/wishlist.php?user_id=${userId}`, {
         credentials: 'include'
       })
-  
+
       const data = await res.json()
       if (data.status === "success") {
         const inWishlist = data.data.some((item: any) => item.id === product.id)
@@ -66,7 +66,7 @@ export default function ProductCard({ product }: { product: Product }) {
         // Remove from wishlist
         const res = await fetch(`${API_BASE}/wishlist.php?product_id=${product.id}&user_id=${getUserId()}`, {
           method: "DELETE",
-           credentials: 'include'
+          credentials: 'include'
         })
         const data = await res.json()
 
@@ -95,7 +95,7 @@ export default function ProductCard({ product }: { product: Product }) {
         const res = await fetch(`${API_BASE}/wishlist.php`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ product_id: product.id,user_id: getUserId()  })
+          body: JSON.stringify({ product_id: product.id, user_id: getUserId() })
         })
         const data = await res.json()
 
@@ -140,7 +140,7 @@ export default function ProductCard({ product }: { product: Product }) {
         body: JSON.stringify({
           product_id: product.id,
           quantity: 0.25, // Default 250g
-          user_id: getUserId()  
+          user_id: getUserId()
         })
       })
 

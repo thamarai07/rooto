@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 const getUserId = (): number | null => {
   try {
     const user = localStorage.getItem("auth_user")
@@ -97,8 +97,9 @@ export default function WishlistPage() {
 
   // Fetch wishlist items from API
   const fetchWishlist = async () => {
-    try { const userId = getUserId()
-      if (!userId) return   
+    try {
+      const userId = getUserId()
+      if (!userId) return
       const response = await fetch(`${API_BASE}/wishlist.php?user_id=${userId}`, {
         credentials: 'include'
       })
@@ -204,10 +205,10 @@ export default function WishlistPage() {
 
     try {
       const response = await fetch(`${API_BASE}/cart.php`, {
-        method: "POST", 
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: 'include', 
-        body: JSON.stringify({ product_id: item.id, quantity: 0.25,user_id: getUserId() }),
+        credentials: 'include',
+        body: JSON.stringify({ product_id: item.id, quantity: 0.25, user_id: getUserId() }),
       })
 
       const data = await response.json()
@@ -248,7 +249,7 @@ export default function WishlistPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: 'include',
-        body: JSON.stringify({ product_id: product.id, user_id: getUserId()    }),
+        body: JSON.stringify({ product_id: product.id, user_id: getUserId() }),
       })
 
       const data = await response.json()

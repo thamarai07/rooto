@@ -6,7 +6,7 @@
 
 /** Base URL for all PHP API calls. Override via NEXT_PUBLIC_API_BASE in .env.production */
 export const API_BASE =
-    process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api";
+    process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api";
 
 /** Base URL for uploaded product images (strips /api suffix to get the uploads path) */
 export const IMAGE_BASE =

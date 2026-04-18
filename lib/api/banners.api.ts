@@ -1,6 +1,6 @@
 // lib/api/banners.api.ts
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api";
 const API_BASE_URL = API_BASE;
 
 
@@ -119,7 +119,7 @@ export async function getDynamicBanners(filters: {
     if (filters.pincode) params.append('pincode', filters.pincode);
     if (filters.user_segment) params.append('user_segment', filters.user_segment);
 
-    const response = await fetch(`${API_BASE_URL}/frontend-banners.php?${params.toString()}`, {
+    const response = await fetch(`${API_BASE_URL}/bannerapi.php?${params.toString()}`, {
 
       method: 'GET',
       headers: {

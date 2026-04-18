@@ -19,7 +19,7 @@ import {
   updateGuestCartQty,    // ✅ NEW
   removeFromGuestCart,   // ✅ NEW
 } from "@/lib/guestStorage"
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
 const getUserId = (): number | null => {
   try {
@@ -626,13 +626,13 @@ export default function ProductGrid() {
           const productsRes = await fetch(`${API_BASE}/get-product.php?limit=12`)
           const productsData = await productsRes.json()
           if (productsData.status === 'success') setProducts(productsData.items)
-        
+
           // ✅ ADD: Guest cart + wishlist from localStorage
           const guestCart = getGuestCart()
           const guestWishlist = getGuestWishlist()
           setCartItems(guestCart.map(i => ({ ...i, cart_id: i.id })))
           setWishlistIds(new Set(guestWishlist.map(i => i.id)))
-        
+
           setLoading(false)
           return
         }
@@ -673,31 +673,31 @@ export default function ProductGrid() {
   // Listen to cart updates from header
   useEffect(() => {
     let lastHighlightedId: string | null = null
-  
+
     const handleCartUpdate = (e: any) => {
       lastHighlightedId = e.detail?.highlightedProductId
         ? Number(e.detail.highlightedProductId).toString()
         : null
-  
+
       const fetchAndSortCart = async () => {
         const userId = getUserId()
-  
+
         // ✅ CHANGED: Guest users — localStorage படி
         if (!userId) {
           const items = getGuestCart().map(i => ({ ...i, cart_id: i.id }))
           setCartItems(items)
           return
         }
-  
+
         // Logged-in users — உன் existing API code (தொடாத)
         try {
           const res = await fetch(`${API_BASE}/cart.php?user_id=${userId}`)
           const data = await res.json()
-  
+
           if (data.status === 'success') {
             let items = data.data || data.items || []
             const now = new Date().toISOString()
-  
+
             const updatedItems = items.map((item: any) => {
               if (item.id === lastHighlightedId) {
                 return { ...item, last_added_at: now }
@@ -707,13 +707,13 @@ export default function ProductGrid() {
                 last_added_at: item.last_added_at || new Date(Date.now() - 100000000).toISOString()
               }
             })
-  
+
             updatedItems.sort((a: any, b: any) =>
               new Date(b.last_added_at).getTime() - new Date(a.last_added_at).getTime()
             )
-  
+
             setCartItems(updatedItems)
-  
+
             if (lastHighlightedId && isCartOpen) {
               setTimeout(() => {
                 const el = document.querySelector(`[data-product-id="${lastHighlightedId}"]`)
@@ -730,20 +730,20 @@ export default function ProductGrid() {
           console.error('Error updating cart:', error)
         }
       }
-  
+
       fetchAndSortCart()
     }
-  
+
     // ✅ ADD: Guest cart listener
     const handleGuestCartUpdate = () => {
       const items = getGuestCart().map(i => ({ ...i, cart_id: i.id }))
       setCartItems(items)
     }
-  
+
     handleCartUpdate({})
     window.addEventListener('cart-updated', handleCartUpdate)
     window.addEventListener('guest-cart-updated', handleGuestCartUpdate)  // ✅ NEW
-  
+
     return () => {
       window.removeEventListener('cart-updated', handleCartUpdate)
       window.removeEventListener('guest-cart-updated', handleGuestCartUpdate)  // ✅ NEW
@@ -777,7 +777,7 @@ export default function ProductGrid() {
       // ✅ Guest: localStorage-ல save பண்ணு, login கேக்காத
       const product = products.find(p => p.id === productId)
       if (!product) return
-  
+
       setActionLoading(productId)
       const result = toggleGuestWishlist({
         id: product.id,
@@ -793,12 +793,12 @@ export default function ProductGrid() {
         return next
       })
       showToast(result === "added" ? "Added to wishlist!" : "Removed from wishlist",
-                result === "added" ? "success" : "info")
+        result === "added" ? "success" : "info")
       window.dispatchEvent(new Event("guest-wishlist-updated"))
       setActionLoading(null)
       return   // ← இங்க return, API call போகாது
     }
-  
+
 
     setActionLoading(productId)
     const isWishlisted = wishlistIds.has(productId)
@@ -881,27 +881,27 @@ export default function ProductGrid() {
 
     try {
       const userId = getUserId()
-      
-    if (!userId) {
-      // ✅ Guest: localStorage-ல save பண்ணு
-      addToGuestCart({
-        id: product.id,
-        name: product.name,
-        price: product.price_per_kg,
-        image: product.image,
-        category: product.category,
-        stock: product.stock,
-        slug: product.slug,
-      })
-      setCartItems(getGuestCart().map(i => ({ ...i, cart_id: i.id })))
-      showToast('Added to cart!', 'success')
-      window.dispatchEvent(new CustomEvent('guest-cart-updated', {
-        detail: { highlightedProductId: product.id.toString() }
-      }))
-      setIsCartOpen(true)
-      setActionLoading(null)
-      return   // ← இங்க return, API call போகாது
-    }
+
+      if (!userId) {
+        // ✅ Guest: localStorage-ல save பண்ணு
+        addToGuestCart({
+          id: product.id,
+          name: product.name,
+          price: product.price_per_kg,
+          image: product.image,
+          category: product.category,
+          stock: product.stock,
+          slug: product.slug,
+        })
+        setCartItems(getGuestCart().map(i => ({ ...i, cart_id: i.id })))
+        showToast('Added to cart!', 'success')
+        window.dispatchEvent(new CustomEvent('guest-cart-updated', {
+          detail: { highlightedProductId: product.id.toString() }
+        }))
+        setIsCartOpen(true)
+        setActionLoading(null)
+        return   // ← இங்க return, API call போகாது
+      }
 
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: 'POST',
@@ -939,15 +939,15 @@ export default function ProductGrid() {
       handleRemoveFromCart(productId)
       return
     }
-  
+
     const userId = getUserId()
-  
+
     // ✅ Guest
     if (!userId) {
       updateGuestCartQty(productId, quantity)
       return
     }
-  
+
     // Logged-in — existing code same
     try {
       const res = await fetch(`${API_BASE}/cart.php`, {
@@ -963,16 +963,16 @@ export default function ProductGrid() {
       showToast('Failed to update quantity', 'error')
     }
   }
-  
+
   const handleRemoveFromCart = async (productId: number) => {
     const userId = getUserId()
-  
+
     // ✅ Guest
     if (!userId) {
       removeFromGuestCart(productId)
       return
     }
-  
+
     // Logged-in — existing code same
     try {
       const res = await fetch(`${API_BASE}/cart.php?product_id=${productId}&user_id=${userId}`, {
@@ -1000,7 +1000,7 @@ export default function ProductGrid() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"> {/* Adjusted gap and cols for 6-card layout */}
           {[...Array(12)].map((_, i) => (
-            <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100">
+            <div key={i} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100">
               <div className="h-48 bg-gray-200 animate-pulse"></div>
               <div className="p-4 space-y-3">
                 <div className="h-4 bg-gray-200 rounded animate-pulse"></div>

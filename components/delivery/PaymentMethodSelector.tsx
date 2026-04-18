@@ -46,8 +46,8 @@ export default function PaymentMethodSelector({
       selectedBorder: 'border-blue-500',
       checkColor: 'bg-blue-600',
       features: ['Instant confirmation', 'Multiple options', '100% secure'],
-      badge: 'Recommended',
-      badgeColor: 'bg-blue-600'
+      badge: '',                    // No badge for Online
+      badgeColor: ''
     },
     {
       id: 'cod' as PaymentMethod,
@@ -59,8 +59,8 @@ export default function PaymentMethodSelector({
       selectedBorder: 'border-emerald-500',
       checkColor: 'bg-emerald-600',
       features: ['Pay at doorstep', 'Inspect before paying', 'No advance required'],
-      badge: null,
-      badgeColor: ''
+      badge: 'Recommended',         // ← Added Recommended badge
+      badgeColor: 'bg-emerald-600'  // Nice green color for recommended
     }
   ]
 

@@ -26,7 +26,7 @@ interface CartItem {
   subtotal?: number
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://rootoportal.onrender.com/api"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
 
 export default function Header() {
@@ -38,7 +38,7 @@ export default function Header() {
   const [cartCount, setCartCount] = useState(0)
 
   const [guestCartCount, setGuestCartCount] = useState(0)
-const [guestWishlistCount, setGuestWishlistCount] = useState(0)
+  const [guestWishlistCount, setGuestWishlistCount] = useState(0)
 
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([])
   const [cartItems, setCartItems] = useState<CartItem[]>([])
@@ -62,7 +62,7 @@ const [guestWishlistCount, setGuestWishlistCount] = useState(0)
   /* ---------- Load logo ---------- */
   useEffect(() => {
     const loadLogo = async () => {
-      
+
       try {
         const res = await fetch(`${API_BASE}/get_logo.php`)
         const json = await res.json()
@@ -76,49 +76,49 @@ const [guestWishlistCount, setGuestWishlistCount] = useState(0)
     }
     loadLogo()
   }, [])
-  
+
 
   const { user, loading, logout: authLogout, setUser } = useAuth()
 
   // ✅ ADD THIS ENTIRE BLOCK — Guest count sync
-useEffect(() => {
-  const syncGuestCounts = () => {
-    if (!user) {  // Guest மட்டும்
-      try {
-        const cart = JSON.parse(localStorage.getItem("guest_cart") || "[]")
-        const wishlist = JSON.parse(localStorage.getItem("guest_wishlist") || "[]")
-        setGuestCartCount(cart.length)
-        setGuestWishlistCount(wishlist.length)
-      } catch {
+  useEffect(() => {
+    const syncGuestCounts = () => {
+      if (!user) {  // Guest மட்டும்
+        try {
+          const cart = JSON.parse(localStorage.getItem("guest_cart") || "[]")
+          const wishlist = JSON.parse(localStorage.getItem("guest_wishlist") || "[]")
+          setGuestCartCount(cart.length)
+          setGuestWishlistCount(wishlist.length)
+        } catch {
+          setGuestCartCount(0)
+          setGuestWishlistCount(0)
+        }
+      } else {
+        // Logged-in ஆனா guest counts reset
         setGuestCartCount(0)
         setGuestWishlistCount(0)
       }
-    } else {
-      // Logged-in ஆனா guest counts reset
-      setGuestCartCount(0)
-      setGuestWishlistCount(0)
     }
-  }
 
-  syncGuestCounts() // mount-ல run
+    syncGuestCounts() // mount-ல run
 
-  window.addEventListener("guest-cart-updated", syncGuestCounts)
-  window.addEventListener("guest-wishlist-updated", syncGuestCounts)
+    window.addEventListener("guest-cart-updated", syncGuestCounts)
+    window.addEventListener("guest-wishlist-updated", syncGuestCounts)
 
-  return () => {
-    window.removeEventListener("guest-cart-updated", syncGuestCounts)
-    window.removeEventListener("guest-wishlist-updated", syncGuestCounts)
-  }
-}, [user])
+    return () => {
+      window.removeEventListener("guest-cart-updated", syncGuestCounts)
+      window.removeEventListener("guest-wishlist-updated", syncGuestCounts)
+    }
+  }, [user])
 
-const displayWishlistCount = user ? wishlistCount : guestWishlistCount
-const displayCartCount = user ? cartCount : guestCartCount
+  const displayWishlistCount = user ? wishlistCount : guestWishlistCount
+  const displayCartCount = user ? cartCount : guestCartCount
 
   /* ---------- 🔥 FIXED: Removed pathname dependency ---------- */
   const refreshCounts = useCallback(async () => {
     try {
       if (!user?.id) return          // ← if no user, don't fetch
-const userId = user.id;
+      const userId = user.id;
 
       console.log("🔄 Refreshing counts for user:", userId);
 
@@ -170,7 +170,7 @@ const userId = user.id;
   const fetchWishlist = useCallback(async () => {
     try {
       if (!user?.id) return          // ← if no user, don't fetch
-const userId = user.id;
+      const userId = user.id;
       const res = await fetch(`${API_BASE}/wishlist.php?user_id=${userId}`)
       const json = await res.json()
       if (json.status === "success") setWishlistItems(json.data)
@@ -182,7 +182,7 @@ const userId = user.id;
   const fetchCart = useCallback(async () => {
     try {
       if (!user?.id) return          // ← if no user, don't fetch
-const userId = user.id;
+      const userId = user.id;
       const res = await fetch(`${API_BASE}/cart.php?user_id=${userId}`)
       const json = await res.json()
       if (json.status === "success") setCartItems(json.data)
@@ -196,7 +196,7 @@ const userId = user.id;
     setDeletingId(id)
     try {
       if (!user?.id) return          // ← if no user, don't fetch
-const userId = user.id;
+      const userId = user.id;
       const res = await fetch(`${API_BASE}/wishlist.php?product_id=${id}&user_id=${userId}`, { method: "DELETE" })
       const json = await res.json()
       if (json.status === "success") {
@@ -214,7 +214,7 @@ const userId = user.id;
     setDeletingId(id)
     try {
       if (!user?.id) return          // ← if no user, don't fetch
-const userId = user.id;
+      const userId = user.id;
       const res = await fetch(`${API_BASE}/cart.php?product_id=${id}&user_id=${userId}`, { method: "DELETE" })
       const json = await res.json()
       if (json.status === "success") {
@@ -232,7 +232,7 @@ const userId = user.id;
     setAddingToCart(item.id)
     try {
       if (!user?.id) return          // ← if no user, don't fetch
-const userId = user.id;
+      const userId = user.id;
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -258,7 +258,7 @@ const userId = user.id;
     if (newQty < 1) return
     try {
       if (!user?.id) return          // ← if no user, don't fetch
-const userId = user.id;
+      const userId = user.id;
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -280,7 +280,7 @@ const userId = user.id;
 
   /* ---------- Auth Functions ---------- */
   const handleLogout = useCallback(async () => {
-    await authLogout() 
+    await authLogout()
     setUser(null)
     setShowProfile(false)
     setCartCount(0)
@@ -396,7 +396,7 @@ const userId = user.id;
                 <Heart className="w-6 h-6 text-gray-700" />
                 {displayWishlistCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                    {displayWishlistCount }
+                    {displayWishlistCount}
                   </span>
                 )}
               </button>
@@ -422,7 +422,7 @@ const userId = user.id;
                 <ShoppingCart className="w-6 h-6 text-gray-700" />
                 {displayCartCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                  {displayCartCount }
+                    {displayCartCount}
                   </span>
                 )}
               </button>
@@ -481,7 +481,7 @@ const userId = user.id;
               <Heart className="w-6 h-6 text-gray-700" />
               {displayWishlistCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                {displayWishlistCount }
+                  {displayWishlistCount}
                 </span>
               )}
             </button>
@@ -489,7 +489,7 @@ const userId = user.id;
               <ShoppingCart className="w-6 h-6 text-gray-700" />
               {displayCartCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                 {displayCartCount }
+                  {displayCartCount}
                 </span>
               )}
             </button>
@@ -555,6 +555,9 @@ const userId = user.id;
       {/* ---------- Auth Modal ---------- */}
       <Dialog open={showAuth} onOpenChange={setShowAuth}>
         <DialogContent className="sm:max-w-md p-0">
+          <DialogHeader>
+            <DialogTitle className="sr-only">Authentication</DialogTitle>   {/* ← Add this */}
+          </DialogHeader>
           <div className="p-6">
             {authMode === "login" ? (
               <LoginModal
