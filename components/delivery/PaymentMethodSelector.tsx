@@ -273,6 +273,7 @@ export default function PaymentMethodSelector({
             <div className="flex items-center gap-1 text-xs text-gray-500">
               <BadgeCheck className="w-3.5 h-3.5 text-green-600" />
               <span>Verified</span>
+              
             </div>
           </div>
         </div>
