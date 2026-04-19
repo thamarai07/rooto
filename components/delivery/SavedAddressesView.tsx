@@ -351,7 +351,8 @@ export default function SavedAddressesView({
 
             <button
               onClick={handleSelectAndProceed}
-              disabled={!selectedId}
+              // disabled={!selectedId}
+              disabled={selectedId === null}
               className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-xl transition flex items-center justify-center gap-1.5"
             >
               Deliver Here
