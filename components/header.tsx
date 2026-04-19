@@ -9,6 +9,7 @@ import SignupModal from "@/components/auth/SignupModal"
 import { UserData } from "./types"
 import { usePathname } from "next/navigation"
 import { useAuth } from '@/hooks/useAuth'
+import ForgotPasswordModal from "@/components/auth/ForgotPasswordModal"
 
 interface WishlistItem {
   id: string
@@ -51,7 +52,9 @@ export default function Header() {
 
   // Auth state
   const [showAuth, setShowAuth] = useState(false)
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login")
+  // const [authMode, setAuthMode] = useState<"login" | "signup">("login")
+  const [authMode, setAuthMode] = useState<"login" | "signup" | "forgot">("login")
+
 
   const wishlistRef = useRef<HTMLDivElement>(null)
   const cartRef = useRef<HTMLDivElement>(null)
@@ -553,21 +556,32 @@ export default function Header() {
       )}
 
       {/* ---------- Auth Modal ---------- */}
-      <Dialog open={showAuth} onOpenChange={setShowAuth}>
+      {/* ---------- Auth Modal ---------- */}
+      <Dialog open={showAuth} onOpenChange={(open) => {
+        setShowAuth(open)
+        if (!open) setAuthMode("login") // reset to login when modal closes
+      }}>
         <DialogContent className="sm:max-w-md p-0">
           <DialogHeader>
-            <DialogTitle className="sr-only">Authentication</DialogTitle>   {/* ← Add this */}
+            <DialogTitle className="sr-only">Authentication</DialogTitle>
           </DialogHeader>
           <div className="p-6">
-            {authMode === "login" ? (
+            {authMode === "login" && (
               <LoginModal
                 onSuccess={handleAuthSuccess}
                 onSwitchToSignup={() => setAuthMode("signup")}
+                onForgotPassword={() => setAuthMode("forgot")}  
               />
-            ) : (
+            )}
+            {authMode === "signup" && (
               <SignupModal
                 onSuccess={handleAuthSuccess}
                 onSwitchToLogin={() => setAuthMode("login")}
+              />
+            )}
+            {authMode === "forgot" && (
+              <ForgotPasswordModal
+                onBack={() => setAuthMode("login")}
               />
             )}
           </div>
