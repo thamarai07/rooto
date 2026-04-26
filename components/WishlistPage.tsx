@@ -382,7 +382,7 @@ export default function WishlistPage() {
                           <div className="flex items-center justify-between mb-3">
                             <div>
                               <span className="text-2xl font-bold text-red-600">
-                                ₹{product.price_per_kg.toFixed(2)}
+                                ₹{Number(product.price_per_kg.toFixed(2))}
                               </span>
                               <span className="text-sm text-gray-500 ml-1">/kg</span>
                             </div>
@@ -465,7 +465,7 @@ export default function WishlistPage() {
                       <div className="flex items-center justify-between mb-3">
                         {item.price_per_kg && <div>
                           <span className="text-2xl font-bold text-red-600">
-                            ₹{item.price_per_kg.toFixed(2)}
+                            ₹{Number(item.price_per_kg.toFixed(2))}
                           </span>
                           <span className="text-sm text-gray-500 ml-1">/kg</span>
                         </div>}

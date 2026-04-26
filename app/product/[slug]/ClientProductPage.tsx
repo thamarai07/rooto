@@ -1070,7 +1070,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
                   <span className="text-3xl font-bold text-gray-900">₹{finalPrice.toFixed(2)}</span>
                   <span className="text-gray-500">/ {product.unit}</span>
                   {product.discount_percent > 0 && (
-                    <span className="text-lg text-gray-400 line-through">₹{product.price_per_kg.toFixed(2)}</span>
+                    <span className="text-lg text-gray-400 line-through">₹{Number(product.price_per_kg.toFixed(2))}</span>
                   )}
                 </div>
                 {product.discount_percent > 0 && (
