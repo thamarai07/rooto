@@ -278,7 +278,13 @@ const CartDrawer = memo(function CartDrawer({
 // ─── Product Card ─────────────────────────────────────────────────────────────
 // memo prevents re-render unless product/wishlist/loading actually change
 
-const ProductCard = memo(function ProductCard({ product, isWishlisted, onWishlistToggle, onAddToCart, isLoading }: {
+const ProductCard = memo(function ProductCard({
+  product,
+  isWishlisted,
+  onWishlistToggle,
+  onAddToCart,
+  isLoading
+}: {
   product: Product
   isWishlisted: boolean
   onWishlistToggle: (id: number) => void
@@ -286,59 +292,98 @@ const ProductCard = memo(function ProductCard({ product, isWishlisted, onWishlis
   isLoading: boolean
 }) {
   return (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group border border-gray-100 hover:border-gray-200">
+    <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col h-full">
+
+      {/* IMAGE */}
       <Link href={`/product/${encodeURIComponent(product.slug)}`}>
-        <div className="relative lg:h-48 bg-gray-100 overflow-hidden">
+        <div className="relative w-full aspect-square bg-gray-100 overflow-hidden">
           <img
             src={product.image}
             alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
             decoding="async"
-            onError={(e) => { e.currentTarget.src = "https://placehold.co/300x300/e5e7eb/6b7280?text=No+Image" }}
+            onError={(e) => {
+              e.currentTarget.src =
+                "https://placehold.co/300x300/e5e7eb/6b7280?text=No+Image"
+            }}
           />
-          <div className="absolute top-3 right-3 bg-green-600 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md">
+
+          {/* CATEGORY BADGE */}
+          <div className="absolute top-2 left-2 bg-green-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full">
             {product.category}
           </div>
+
+          {/* WISHLIST */}
           <button
-            onClick={(e) => { e.preventDefault(); onWishlistToggle(product.id) }}
-            className={`absolute bottom-3 right-3 p-2 rounded-full shadow-lg transition-all duration-200 hover:scale-110 ${
-              isWishlisted ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-red-500'
+            onClick={(e) => {
+              e.preventDefault()
+              onWishlistToggle(product.id)
+            }}
+            className={`absolute bottom-2 right-2 p-2 rounded-full shadow-md transition-all duration-200 ${
+              isWishlisted
+                ? "bg-red-500 text-white"
+                : "bg-white text-gray-700"
             }`}
           >
-            <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
+            <Heart
+              className={`w-4 h-4 ${isWishlisted ? "fill-current" : ""}`}
+            />
           </button>
         </div>
       </Link>
 
-      <div className="p-4">
+      {/* CONTENT */}
+      <div className="flex flex-col flex-1 p-3">
+
+        {/* TITLE */}
         <Link href={`/product/${encodeURIComponent(product.slug)}`}>
-          <h3 className="font-bold text-base text-gray-900 mb-1 line-clamp-2 hover:text-green-600 transition-colors min-h-[2rem]">
+          <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[2.5rem]">
             {product.name}
           </h3>
         </Link>
-        <p className="lg:text-[10px] lg:block hidden text-gray-600 mb-3 min-h-[2rem]">
-          {truncateWords(product.description || 'Fresh and organic product', 10)}
+
+        {/* DESCRIPTION (hidden on small) */}
+        <p className="hidden sm:block text-xs text-gray-500 mt-1 line-clamp-2 min-h-[2rem]">
+          {truncateWords(
+            product.description || "Fresh and organic product",
+            10
+          )}
         </p>
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <span className="text-md font-bold text-green-600">₹{product.price_per_kg}</span>
-            <span className="text-sm text-gray-500">/kg</span>
+
+        {/* PUSH BOTTOM */}
+        <div className="mt-auto pt-3">
+
+          {/* PRICE + BUTTON */}
+          <div className="flex items-center justify-between gap-2">
+
+            <div className="flex flex-col leading-tight">
+              <span className="text-base font-bold text-green-600">
+                ₹{product.price_per_kg}
+              </span>
+              <span className="text-[10px] text-gray-500">per kg</span>
+            </div>
+
+            <button
+              onClick={() => onAddToCart(product)}
+              disabled={isLoading || product.stock === 0}
+              className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 disabled:opacity-50"
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <ShoppingCart className="w-4 h-4" />
+              )}
+              Add
+            </button>
+
           </div>
-          <button
-            onClick={() => onAddToCart(product)}
-            disabled={isLoading || product.stock === 0}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-          >
-            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
-            Add
-          </button>
         </div>
       </div>
     </div>
   )
-}, (prev, next) =>
-  // Custom comparator — only re-render if these specific things changed
+},
+(prev, next) =>
   prev.isWishlisted === next.isWishlisted &&
   prev.isLoading === next.isLoading &&
   prev.product.id === next.product.id &&
