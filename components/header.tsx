@@ -29,6 +29,35 @@ interface CartItem {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
+// ─── Guest storage helpers (read-only, mirrors guestStorage.ts shape) ─────────
+function readGuestWishlist(): WishlistItem[] {
+  try {
+    const raw = localStorage.getItem("guest_wishlist")
+    if (!raw) return []
+    return (JSON.parse(raw) as any[]).map(i => ({
+      id:    String(i.id),
+      name:  i.name,
+      price: i.price,
+      image: i.image,
+      category: i.category,
+    }))
+  } catch { return [] }
+}
+
+function readGuestCart(): CartItem[] {
+  try {
+    const raw = localStorage.getItem("guest_cart")
+    if (!raw) return []
+    return (JSON.parse(raw) as any[]).map(i => ({
+      id:       String(i.id),
+      name:     i.name,
+      price:    i.price,
+      image:    i.image,
+      quantity: i.quantity ?? 0.25,
+      subtotal: i.subtotal ?? i.price * (i.quantity ?? 0.25),
+    }))
+  } catch { return [] }
+}
 
 export default function Header() {
   /* ---------- State ---------- */
@@ -37,7 +66,6 @@ export default function Header() {
 
   const [wishlistCount, setWishlistCount] = useState(0)
   const [cartCount, setCartCount] = useState(0)
-
   const [guestCartCount, setGuestCartCount] = useState(0)
   const [guestWishlistCount, setGuestWishlistCount] = useState(0)
 
@@ -50,238 +78,215 @@ export default function Header() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [addingToCart, setAddingToCart] = useState<string | null>(null)
 
-  // Auth state
   const [showAuth, setShowAuth] = useState(false)
-  // const [authMode, setAuthMode] = useState<"login" | "signup">("login")
   const [authMode, setAuthMode] = useState<"login" | "signup" | "forgot">("login")
 
-
   const wishlistRef = useRef<HTMLDivElement>(null)
-  const cartRef = useRef<HTMLDivElement>(null)
-  const profileRef = useRef<HTMLDivElement>(null)
+  const cartRef     = useRef<HTMLDivElement>(null)
+  const profileRef  = useRef<HTMLDivElement>(null)
 
   const pathname = usePathname()
+  const { user, loading, logout: authLogout, setUser } = useAuth()
 
-  /* ---------- Load logo ---------- */
+  /* ---------- Logo ---------- */
   useEffect(() => {
-    const loadLogo = async () => {
-
-      try {
-        const res = await fetch(`${API_BASE}/get_logo.php`)
-        const json = await res.json()
+    fetch(`${API_BASE}/get_logo.php`)
+      .then(r => r.json())
+      .then(json => {
         if (json.status === "success") {
           setLogoUrl(json.logo_url)
           setLogoName(json.logo_name || "FreshMart")
         }
-      } catch (e) {
-        console.error(e)
-      }
-    }
-    loadLogo()
+      })
+      .catch(console.error)
   }, [])
 
-
-  const { user, loading, logout: authLogout, setUser } = useAuth()
-
-  // ✅ ADD THIS ENTIRE BLOCK — Guest count sync
+  /* ---------- Guest counts + items sync ---------- */
   useEffect(() => {
-    const syncGuestCounts = () => {
-      if (!user) {  // Guest மட்டும்
-        try {
-          const cart = JSON.parse(localStorage.getItem("guest_cart") || "[]")
-          const wishlist = JSON.parse(localStorage.getItem("guest_wishlist") || "[]")
-          setGuestCartCount(cart.length)
-          setGuestWishlistCount(wishlist.length)
-        } catch {
-          setGuestCartCount(0)
-          setGuestWishlistCount(0)
-        }
-      } else {
-        // Logged-in ஆனா guest counts reset
+    const syncGuest = () => {
+      if (user) {
         setGuestCartCount(0)
         setGuestWishlistCount(0)
+        return
       }
+      const cart     = readGuestCart()
+      const wishlist = readGuestWishlist()
+      setGuestCartCount(wishlist.length)      // kept for badge
+      setGuestWishlistCount(wishlist.length)
+
+      // ✅ KEY CHANGE: also push items into state so dropdowns show them
+      setCartItems(cart)
+      setWishlistItems(wishlist)
+      setGuestCartCount(cart.length)
     }
 
-    syncGuestCounts() // mount-ல run
-
-    window.addEventListener("guest-cart-updated", syncGuestCounts)
-    window.addEventListener("guest-wishlist-updated", syncGuestCounts)
-
+    syncGuest()
+    window.addEventListener("guest-cart-updated",     syncGuest)
+    window.addEventListener("guest-wishlist-updated", syncGuest)
     return () => {
-      window.removeEventListener("guest-cart-updated", syncGuestCounts)
-      window.removeEventListener("guest-wishlist-updated", syncGuestCounts)
+      window.removeEventListener("guest-cart-updated",     syncGuest)
+      window.removeEventListener("guest-wishlist-updated", syncGuest)
     }
   }, [user])
 
   const displayWishlistCount = user ? wishlistCount : guestWishlistCount
-  const displayCartCount = user ? cartCount : guestCartCount
+  const displayCartCount     = user ? cartCount     : guestCartCount
 
-  /* ---------- 🔥 FIXED: Removed pathname dependency ---------- */
+  /* ---------- Logged-in: count refresh ---------- */
   const refreshCounts = useCallback(async () => {
+    if (!user?.id) return
     try {
-      if (!user?.id) return          // ← if no user, don't fetch
-      const userId = user.id;
-
-      console.log("🔄 Refreshing counts for user:", userId);
-
       const [wRes, cRes] = await Promise.all([
-        fetch(`${API_BASE}/get_wishlist_count.php?user_id=${userId}`),
-        fetch(`${API_BASE}/get_cart_count.php?user_id=${userId}`),
+        fetch(`${API_BASE}/get_wishlist_count.php?user_id=${user.id}`),
+        fetch(`${API_BASE}/get_cart_count.php?user_id=${user.id}`),
       ])
-
-      const w = await wRes.json()
-      const c = await cRes.json()
-
-      console.log("📊 Counts - Wishlist:", w.count, "Cart:", c.count);
-
+      const [w, c] = await Promise.all([wRes.json(), cRes.json()])
       if (w.status === "success") setWishlistCount(w.count)
       if (c.status === "success") setCartCount(c.count)
-    } catch (e) {
-      console.error("❌ Error refreshing counts:", e)
-    }
-  }, [user?.id])  // 🔥 REMOVED pathname dependency
+    } catch (e) { console.error("Error refreshing counts:", e) }
+  }, [user?.id])
 
-  // 🔥 FIXED: Refresh on pathname change with separate effect
+  useEffect(() => { refreshCounts() }, [pathname, refreshCounts])
+  useEffect(() => { refreshCounts() }, [refreshCounts])
+
   useEffect(() => {
-    console.log("🔄 Pathname changed, refreshing counts...", pathname);
-    refreshCounts()
-  }, [pathname, refreshCounts])
-
-  // 🔥 Refresh counts when user.id changes
-  useEffect(() => {
-    refreshCounts()
-  }, [refreshCounts])
-
-  // 🔥 Listen for cart/wishlist updates
-  useEffect(() => {
-    const onUpdate = () => {
-      console.log("🔔 Cart/Wishlist updated - refreshing counts")
-      refreshCounts()
-    }
-
+    const onUpdate = () => refreshCounts()
     window.addEventListener("wishlist-updated", onUpdate)
-    window.addEventListener("cart-updated", onUpdate)
-
+    window.addEventListener("cart-updated",     onUpdate)
     return () => {
       window.removeEventListener("wishlist-updated", onUpdate)
-      window.removeEventListener("cart-updated", onUpdate)
+      window.removeEventListener("cart-updated",     onUpdate)
     }
   }, [refreshCounts])
 
-  /* ---------- 🔥 OPTIMIZED: Memoized fetch functions ---------- */
+  /* ---------- Logged-in: fetch full item lists ---------- */
   const fetchWishlist = useCallback(async () => {
+    // ✅ Guest: read from localStorage, no API call needed
+    if (!user?.id) {
+      setWishlistItems(readGuestWishlist())
+      return
+    }
     try {
-      if (!user?.id) return          // ← if no user, don't fetch
-      const userId = user.id;
-      const res = await fetch(`${API_BASE}/wishlist.php?user_id=${userId}`)
+      const res  = await fetch(`${API_BASE}/wishlist.php?user_id=${user.id}`)
       const json = await res.json()
       if (json.status === "success") setWishlistItems(json.data)
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) { console.error(e) }
   }, [user?.id])
 
   const fetchCart = useCallback(async () => {
+    // ✅ Guest: read from localStorage, no API call needed
+    if (!user?.id) {
+      setCartItems(readGuestCart())
+      return
+    }
     try {
-      if (!user?.id) return          // ← if no user, don't fetch
-      const userId = user.id;
-      const res = await fetch(`${API_BASE}/cart.php?user_id=${userId}`)
+      const res  = await fetch(`${API_BASE}/cart.php?user_id=${user.id}`)
       const json = await res.json()
       if (json.status === "success") setCartItems(json.data)
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) { console.error(e) }
   }, [user?.id])
 
-  /* ---------- 🔥 OPTIMIZED: Memoized business functions ---------- */
+  /* ---------- Logged-in: mutations ---------- */
   const deleteWishlist = useCallback(async (id: string) => {
     setDeletingId(id)
     try {
-      if (!user?.id) return          // ← if no user, don't fetch
-      const userId = user.id;
-      const res = await fetch(`${API_BASE}/wishlist.php?product_id=${id}&user_id=${userId}`, { method: "DELETE" })
+      if (!user?.id) {
+        // Guest: remove from localStorage
+        const updated = readGuestWishlist().filter(i => i.id !== id)
+        localStorage.setItem("guest_wishlist", JSON.stringify(updated))
+        setWishlistItems(updated)
+        setGuestWishlistCount(updated.length)
+        window.dispatchEvent(new Event("guest-wishlist-updated"))
+        return
+      }
+      const res  = await fetch(`${API_BASE}/wishlist.php?product_id=${id}&user_id=${user.id}`, { method: "DELETE" })
       const json = await res.json()
       if (json.status === "success") {
         await fetchWishlist()
         window.dispatchEvent(new Event("wishlist-updated"))
       }
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setDeletingId(null)
-    }
+    } catch (e) { console.error(e) }
+    finally { setDeletingId(null) }
   }, [user?.id, fetchWishlist])
 
   const deleteCart = useCallback(async (id: string) => {
     setDeletingId(id)
     try {
-      if (!user?.id) return          // ← if no user, don't fetch
-      const userId = user.id;
-      const res = await fetch(`${API_BASE}/cart.php?product_id=${id}&user_id=${userId}`, { method: "DELETE" })
+      if (!user?.id) {
+        // Guest: remove from localStorage
+        const updated = readGuestCart().filter(i => i.id !== id)
+        localStorage.setItem("guest_cart", JSON.stringify(updated))
+        setCartItems(updated)
+        setGuestCartCount(updated.length)
+        window.dispatchEvent(new Event("guest-cart-updated"))
+        return
+      }
+      const res  = await fetch(`${API_BASE}/cart.php?product_id=${id}&user_id=${user.id}`, { method: "DELETE" })
       const json = await res.json()
       if (json.status === "success") {
         await fetchCart()
         window.dispatchEvent(new Event("cart-updated"))
       }
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setDeletingId(null)
-    }
+    } catch (e) { console.error(e) }
+    finally { setDeletingId(null) }
   }, [user?.id, fetchCart])
 
   const addToCartFromWishlist = useCallback(async (item: WishlistItem) => {
     setAddingToCart(item.id)
     try {
-      if (!user?.id) return          // ← if no user, don't fetch
-      const userId = user.id;
-      const res = await fetch(`${API_BASE}/cart.php`, {
+      if (!user?.id) {
+        // Guest: move from wishlist → cart in localStorage
+        const cart    = readGuestCart()
+        const exists  = cart.find(c => c.id === item.id)
+        const updated = exists
+          ? cart.map(c => c.id === item.id ? { ...c, quantity: c.quantity + 1, subtotal: (c.quantity + 1) * c.price } : c)
+          : [...cart, { id: item.id, name: item.name, price: item.price, image: item.image, quantity: 0.25, subtotal: item.price * 0.25 }]
+        localStorage.setItem("guest_cart", JSON.stringify(updated))
+        window.dispatchEvent(new Event("guest-cart-updated"))
+        await deleteWishlist(item.id)
+        return
+      }
+      const res  = await fetch(`${API_BASE}/cart.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          product_id: item.id,
-          quantity: 1,
-          user_id: userId
-        }),
+        body: JSON.stringify({ product_id: item.id, quantity: 1, user_id: user.id }),
       })
       const json = await res.json()
       if (json.status === "success") {
         await deleteWishlist(item.id)
         window.dispatchEvent(new Event("cart-updated"))
       }
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setAddingToCart(null)
-    }
+    } catch (e) { console.error(e) }
+    finally { setAddingToCart(null) }
   }, [user?.id, deleteWishlist])
 
   const updateCartQuantity = useCallback(async (id: string, newQty: number) => {
-    if (newQty < 1) return
+    if (newQty < 0.25) return
+    if (!user?.id) {
+      // Guest: update quantity in localStorage
+      const updated = readGuestCart().map(i =>
+        i.id === id ? { ...i, quantity: newQty, subtotal: newQty * i.price } : i
+      )
+      localStorage.setItem("guest_cart", JSON.stringify(updated))
+      setCartItems(updated)
+      window.dispatchEvent(new Event("guest-cart-updated"))
+      return
+    }
     try {
-      if (!user?.id) return          // ← if no user, don't fetch
-      const userId = user.id;
-      const res = await fetch(`${API_BASE}/cart.php`, {
+      const res  = await fetch(`${API_BASE}/cart.php`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          product_id: id,
-          quantity: newQty,
-          user_id: userId
-        }),
+        body: JSON.stringify({ product_id: id, quantity: newQty, user_id: user.id }),
       })
       const json = await res.json()
       if (json.status === "success") {
         await fetchCart()
         window.dispatchEvent(new Event("cart-updated"))
       }
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) { console.error(e) }
   }, [user?.id, fetchCart])
 
-  /* ---------- Auth Functions ---------- */
+  /* ---------- Auth ---------- */
   const handleLogout = useCallback(async () => {
     await authLogout()
     setUser(null)
@@ -293,87 +298,61 @@ export default function Header() {
   }, [])
 
   const handleAuthSuccess = useCallback((userData: UserData) => {
-    setUser({
-      ...userData,
-      id: Number(userData.id)   // ← cast to number
-    })
+    setUser({ ...userData, id: Number(userData.id) })
     setShowAuth(false)
     window.dispatchEvent(new Event("user-updated"))
   }, [])
 
-  /* ---------- Close on outside click ---------- */
-
+  /* ---------- Outside click ---------- */
   useEffect(() => {
     const handler = (e: MouseEvent | TouchEvent) => {
-      console.log("🔶 [CLICK OUTSIDE] Event detected:", e.type)
-      console.log("🔶 [CLICK OUTSIDE] Target:", e.target)
-
-      // Check if target has the mobile panel class or is inside it
       const target = e.target as HTMLElement
-      const isMobilePanel = target.closest('.mobile-profile-panel') ||
-        target.closest('.mobile-wishlist-panel') ||
-        target.closest('.mobile-cart-panel')
+      if (target.closest('.mobile-profile-panel') ||
+          target.closest('.mobile-wishlist-panel') ||
+          target.closest('.mobile-cart-panel')) return
 
-      if (isMobilePanel) {
-        console.log("🔶 [CLICK OUTSIDE] Click is inside mobile panel - ignoring")
-        return
-      }
-
-      if (showWishlist && wishlistRef.current && !wishlistRef.current.contains(e.target as Node)) {
-        console.log("🔶 [CLICK OUTSIDE] Closing wishlist")
-        setShowWishlist(false)
-      }
-      if (showCart && cartRef.current && !cartRef.current.contains(e.target as Node)) {
-        console.log("🔶 [CLICK OUTSIDE] Closing cart")
-        setShowCart(false)
-      }
-      if (showProfile && profileRef.current && !profileRef.current.contains(e.target as Node)) {
-        console.log("🔶 [CLICK OUTSIDE] Closing profile")
-        setShowProfile(false)
-      }
+      if (showWishlist && wishlistRef.current && !wishlistRef.current.contains(target)) setShowWishlist(false)
+      if (showCart    && cartRef.current     && !cartRef.current.contains(target))     setShowCart(false)
+      if (showProfile && profileRef.current  && !profileRef.current.contains(target))  setShowProfile(false)
     }
-
-    // Add both mouse and touch events for mobile
-    document.addEventListener("mousedown", handler)
+    document.addEventListener("mousedown",  handler)
     document.addEventListener("touchstart", handler, { passive: false })
-
     return () => {
-      document.removeEventListener("mousedown", handler)
+      document.removeEventListener("mousedown",  handler)
       document.removeEventListener("touchstart", handler)
     }
   }, [showWishlist, showCart, showProfile])
-  /* ---------- UI helpers ---------- */
+
+  /* ---------- Toggle helpers ---------- */
   const toggleWishlist = useCallback(() => {
-    setShowWishlist((v) => {
-      const newValue = !v
-      if (newValue) fetchWishlist()
-      return newValue
+    setShowWishlist(v => {
+      if (!v) fetchWishlist()   // fetch/read on open
+      return !v
     })
     setShowCart(false)
     setShowProfile(false)
   }, [fetchWishlist])
 
   const toggleCart = useCallback(() => {
-    setShowCart((v) => {
-      const newValue = !v
-      if (newValue) fetchCart()
-      return newValue
+    setShowCart(v => {
+      if (!v) fetchCart()       // fetch/read on open
+      return !v
     })
     setShowWishlist(false)
     setShowProfile(false)
   }, [fetchCart])
 
   const toggleProfile = useCallback(() => {
-    setShowProfile((v) => !v)
+    setShowProfile(v => !v)
     setShowWishlist(false)
     setShowCart(false)
   }, [])
 
   const cartTotal = cartItems.reduce((sum, item) => sum + (item.subtotal || item.price * item.quantity), 0)
 
+  /* ---------- Render ---------- */
   return (
     <>
-      {/* ---------- Sticky Header ---------- */}
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           {/* LOGO */}
@@ -381,21 +360,16 @@ export default function Header() {
             {logoUrl ? (
               <img src={logoUrl} alt="Logo" className="h-10 w-10 rounded object-cover" />
             ) : (
-              <div className="h-10 w-10 bg-green-600 rounded flex items-center justify-center text-white font-bold">
-                F
-              </div>
+              <div className="h-10 w-10 bg-green-600 rounded flex items-center justify-center text-white font-bold">F</div>
             )}
             <span className="font-semibold text-xl text-gray-900">{logoName}</span>
           </Link>
 
-          {/* ICONS – Desktop */}
+          {/* Desktop icons */}
           <div className="hidden md:flex items-center gap-3">
             {/* Wishlist */}
             <div className="relative z-[200]" ref={wishlistRef}>
-              <button
-                onClick={toggleWishlist}
-                className="relative p-2 hover:bg-gray-100 rounded-lg transition"
-              >
+              <button onClick={toggleWishlist} className="relative p-2 hover:bg-gray-100 rounded-lg transition">
                 <Heart className="w-6 h-6 text-gray-700" />
                 {displayWishlistCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
@@ -403,8 +377,6 @@ export default function Header() {
                   </span>
                 )}
               </button>
-
-              {/* Wishlist Dropdown */}
               {showWishlist && (
                 <WishlistDropdown
                   items={wishlistItems}
@@ -418,10 +390,7 @@ export default function Header() {
 
             {/* Cart */}
             <div className="relative z-[200]" ref={cartRef}>
-              <button
-                onClick={toggleCart}
-                className="relative p-2 hover:bg-gray-100 rounded-lg transition"
-              >
+              <button onClick={toggleCart} className="relative p-2 hover:bg-gray-100 rounded-lg transition">
                 <ShoppingCart className="w-6 h-6 text-gray-700" />
                 {displayCartCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
@@ -429,8 +398,6 @@ export default function Header() {
                   </span>
                 )}
               </button>
-
-              {/* Cart Dropdown */}
               {showCart && (
                 <CartDropdown
                   items={cartItems}
@@ -442,34 +409,20 @@ export default function Header() {
               )}
             </div>
 
-            {/* Profile / Auth */}
+            {/* Profile */}
             <div className="relative z-[200]" ref={profileRef}>
               {user ? (
                 <>
-                  <button
-                    onClick={toggleProfile}
-                    className="relative p-2 hover:bg-gray-100 rounded-lg transition flex items-center gap-2"
-                  >
+                  <button onClick={toggleProfile} className="relative p-2 hover:bg-gray-100 rounded-lg transition flex items-center gap-2">
                     <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold">
                       {user.name?.charAt(0).toUpperCase() || "U"}
                     </div>
                   </button>
-
-                  {/* Profile Dropdown */}
-                  {showProfile && (
-                    <ProfileDropdown
-                      user={user}
-                      onLogout={handleLogout}
-                      onClose={() => setShowProfile(false)}
-                    />
-                  )}
+                  {showProfile && <ProfileDropdown user={user} onLogout={handleLogout} onClose={() => setShowProfile(false)} />}
                 </>
               ) : (
                 <button
-                  onClick={() => {
-                    setAuthMode("login")
-                    setShowAuth(true)
-                  }}
+                  onClick={() => { setAuthMode("login"); setShowAuth(true) }}
                   className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-medium transition"
                 >
                   Login
@@ -478,7 +431,7 @@ export default function Header() {
             </div>
           </div>
 
-          {/* MOBILE ICONS */}
+          {/* Mobile icons */}
           <div className="flex md:hidden items-center gap-3">
             <button onClick={toggleWishlist} className="relative p-2">
               <Heart className="w-6 h-6 text-gray-700" />
@@ -496,7 +449,6 @@ export default function Header() {
                 </span>
               )}
             </button>
-
             {user ? (
               <button onClick={toggleProfile} className="relative p-2">
                 <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold">
@@ -504,14 +456,7 @@ export default function Header() {
                 </div>
               </button>
             ) : (
-              <button
-                onClick={() => {
-                  console.log("🟣 [MOBILE] Login button clicked")
-                  setAuthMode("login")
-                  setShowAuth(true)
-                }}
-                className="p-2"
-              >
+              <button onClick={() => { setAuthMode("login"); setShowAuth(true) }} className="p-2">
                 <User className="w-6 h-6 text-gray-700" />
               </button>
             )}
@@ -519,7 +464,7 @@ export default function Header() {
         </div>
       </header>
 
-      {/* ---------- Mobile Panels ---------- */}
+      {/* Mobile Panels */}
       {showWishlist && (
         <MobileWishlistPanel
           items={wishlistItems}
@@ -544,46 +489,18 @@ export default function Header() {
 
       {showProfile && user && (
         <div className="md:hidden">
-          <MobileProfilePanel
-            user={user}
-            onClose={() => {
-              console.log("🟣 [MOBILE PANEL] onClose called")
-              setShowProfile(false)
-            }}
-            onLogout={handleLogout}
-          />
+          <MobileProfilePanel user={user} onClose={() => setShowProfile(false)} onLogout={handleLogout} />
         </div>
       )}
 
-      {/* ---------- Auth Modal ---------- */}
-      {/* ---------- Auth Modal ---------- */}
-      <Dialog open={showAuth} onOpenChange={(open) => {
-        setShowAuth(open)
-        if (!open) setAuthMode("login") // reset to login when modal closes
-      }}>
+      {/* Auth Modal */}
+      <Dialog open={showAuth} onOpenChange={(open) => { setShowAuth(open); if (!open) setAuthMode("login") }}>
         <DialogContent className="sm:max-w-md p-0">
-          <DialogHeader>
-            <DialogTitle className="sr-only">Authentication</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle className="sr-only">Authentication</DialogTitle></DialogHeader>
           <div className="p-6">
-            {authMode === "login" && (
-              <LoginModal
-                onSuccess={handleAuthSuccess}
-                onSwitchToSignup={() => setAuthMode("signup")}
-                onForgotPassword={() => setAuthMode("forgot")}  
-              />
-            )}
-            {authMode === "signup" && (
-              <SignupModal
-                onSuccess={handleAuthSuccess}
-                onSwitchToLogin={() => setAuthMode("login")}
-              />
-            )}
-            {authMode === "forgot" && (
-              <ForgotPasswordModal
-                onBack={() => setAuthMode("login")}
-              />
-            )}
+            {authMode === "login"  && <LoginModal  onSuccess={handleAuthSuccess} onSwitchToSignup={() => setAuthMode("signup")} onForgotPassword={() => setAuthMode("forgot")} />}
+            {authMode === "signup" && <SignupModal onSuccess={handleAuthSuccess} onSwitchToLogin={() => setAuthMode("login")} />}
+            {authMode === "forgot" && <ForgotPasswordModal onBack={() => setAuthMode("login")} />}
           </div>
         </DialogContent>
       </Dialog>
@@ -591,19 +508,10 @@ export default function Header() {
   )
 }
 
-/* ---------- Profile Dropdown (Desktop) ---------- */
-function ProfileDropdown({
-  user,
-  onLogout,
-  onClose,
-}: {
-  user: UserData
-  onLogout: () => void
-  onClose: () => void
-}) {
+/* ─── ProfileDropdown ──────────────────────────────────────────────────────── */
+function ProfileDropdown({ user, onLogout, onClose }: { user: UserData; onLogout: () => void; onClose: () => void }) {
   return (
     <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-100 z-[200] overflow-hidden">
-      {/* User Info Header */}
       <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center text-white font-bold text-xl border-2 border-white/30">
@@ -615,49 +523,20 @@ function ProfileDropdown({
           </div>
         </div>
       </div>
-
-      {/* Menu Items */}
       <div className="p-2">
-        <Link
-          href="/orders"
-          onClick={onClose}
-          className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition group"
-        >
-          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center group-hover:bg-blue-100 transition">
-            <Package className="w-4 h-4 text-blue-600" />
-          </div>
-          <span className="text-sm font-medium text-gray-700">My Orders</span>
-        </Link>
-
-        <Link
-          href="/addresses"
-          onClick={onClose}
-          className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition group"
-        >
-          <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center group-hover:bg-orange-100 transition">
-            <MapPin className="w-4 h-4 text-orange-600" />
-          </div>
-          <span className="text-sm font-medium text-gray-700">Saved Addresses</span>
-        </Link>
-
-        <Link
-          href="/profile/settings"
-          onClick={onClose}
-          className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition group"
-        >
-          <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition">
-            <Settings className="w-4 h-4 text-gray-600" />
-          </div>
-          <span className="text-sm font-medium text-gray-700">Account Settings</span>
-        </Link>
+        {[
+          { href: "/orders",           icon: <Package  className="w-4 h-4 text-blue-600"  />, bg: "bg-blue-50   group-hover:bg-blue-100",   label: "My Orders"        },
+          { href: "/addresses",        icon: <MapPin   className="w-4 h-4 text-orange-600"/>, bg: "bg-orange-50 group-hover:bg-orange-100", label: "Saved Addresses"  },
+          { href: "/profile/settings", icon: <Settings className="w-4 h-4 text-gray-600"  />, bg: "bg-gray-100  group-hover:bg-gray-200",   label: "Account Settings" },
+        ].map(({ href, icon, bg, label }) => (
+          <Link key={href} href={href} onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition group">
+            <div className={`w-8 h-8 ${bg} rounded-lg flex items-center justify-center transition`}>{icon}</div>
+            <span className="text-sm font-medium text-gray-700">{label}</span>
+          </Link>
+        ))}
       </div>
-
-      {/* Logout Button */}
       <div className="p-2 border-t border-gray-100">
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-red-50 rounded-lg transition group"
-        >
+        <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-red-50 rounded-lg transition group">
           <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center group-hover:bg-red-100 transition">
             <LogOut className="w-4 h-4 text-red-600" />
           </div>
@@ -668,57 +547,17 @@ function ProfileDropdown({
   )
 }
 
-/* ---------- Mobile Profile Panel ---------- */
-function MobileProfilePanel({
-  user,
-  onClose,
-  onLogout,
-}: {
-  user: UserData
-  onClose: () => void
-  onLogout: () => void
-}) {
-  const handleNavigation = (url: string) => {
-    console.log("🔵 [MOBILE PROFILE] Navigation clicked:", url)
-    console.log("🔵 [MOBILE PROFILE] User data:", user)
-    console.log("🔵 [MOBILE PROFILE] Closing panel...")
-
-    onClose()
-
-    console.log("🔵 [MOBILE PROFILE] Panel closed, navigating in 150ms...")
-
-    setTimeout(() => {
-      console.log("🔵 [MOBILE PROFILE] Executing navigation to:", url)
-      window.location.href = url
-    }, 150)
-  }
-
-  console.log("🟢 [MOBILE PROFILE] Component rendered")
-  console.log("🟢 [MOBILE PROFILE] User:", user)
-
+/* ─── MobileProfilePanel ───────────────────────────────────────────────────── */
+function MobileProfilePanel({ user, onClose, onLogout }: { user: UserData; onClose: () => void; onLogout: () => void }) {
+  const go = (url: string) => { onClose(); setTimeout(() => { window.location.href = url }, 150) }
   return (
-    <div
-      className="mobile-profile-panel md:hidden fixed inset-0 z-[500] bg-white flex flex-col"
-      style={{ touchAction: 'auto', pointerEvents: 'auto' }}
-      onClick={(e) => {
-        console.log("🟣 [PANEL] Panel clicked:", e.target)
-      }}
-    >
+    <div className="mobile-profile-panel md:hidden fixed inset-0 z-[500] bg-white flex flex-col" style={{ touchAction: 'auto' }}>
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         <h3 className="font-semibold text-lg text-gray-900">My Profile</h3>
-        <button
-          onClick={(e) => {
-            console.log("🔴 [MOBILE PROFILE] Close button clicked")
-            e.stopPropagation()
-            onClose()
-          }}
-          className="p-2 hover:bg-gray-100 rounded-lg"
-          style={{ touchAction: 'auto' }}
-        >
+        <button onClick={(e) => { e.stopPropagation(); onClose() }} className="p-2 hover:bg-gray-100 rounded-lg">
           <X className="w-6 h-6 text-gray-600" />
         </button>
       </div>
-
       <div className="flex-1 overflow-y-auto">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center gap-4 mb-4">
@@ -730,77 +569,31 @@ function MobileProfilePanel({
               <p className="text-sm text-gray-600 truncate">{user.email}</p>
             </div>
           </div>
-          {user.phone && (
-            <p className="text-gray-600">📱 {user.phone}</p>
-          )}
+          {user.phone && <p className="text-gray-600">📱 {user.phone}</p>}
         </div>
-
         <div className="p-4 space-y-2">
-          {/* My Orders */}
-          <button
-            type="button"
-            onClick={(e) => {
-              console.log("🟡 [MY ORDERS] Button clicked!!!")
-              console.log("🟡 [MY ORDERS] Event type:", e.type)
-              console.log("🟡 [MY ORDERS] Current target:", e.currentTarget)
-              e.preventDefault()
-              e.stopPropagation()
-              handleNavigation('/orders')
-            }}
-            className="w-full flex items-center gap-3 px-4 py-4 bg-white hover:bg-gray-50 active:bg-gray-100 rounded-lg transition border border-gray-200 cursor-pointer"
-            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'rgba(0,0,0,0.1)' }}
-          >
-            <Package className="w-6 h-6 text-gray-600 pointer-events-none" />
-            <span className="font-medium text-gray-700 text-lg pointer-events-none">My Orders</span>
-          </button>
-
-          {/* Saved Addresses */}
-          <button
-            type="button"
-            onClick={(e) => {
-              console.log("🟡 [ADDRESSES] Button clicked!!!")
-              console.log("🟡 [ADDRESSES] Event type:", e.type)
-              console.log("🟡 [ADDRESSES] Current target:", e.currentTarget)
-              e.preventDefault()
-              e.stopPropagation()
-              handleNavigation('/addresses')
-            }}
-            className="w-full flex items-center gap-3 px-4 py-4 bg-white hover:bg-gray-50 active:bg-gray-100 rounded-lg transition border border-gray-200 cursor-pointer"
-            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'rgba(0,0,0,0.1)' }}
-          >
-            <MapPin className="w-6 h-6 text-gray-600 pointer-events-none" />
-            <span className="font-medium text-gray-700 text-lg pointer-events-none">Saved Addresses</span>
-          </button>
-
-          {/* Account Settings */}
-          <button
-            type="button"
-            onClick={(e) => {
-              console.log("🟡 [SETTINGS] Button clicked!!!")
-              console.log("🟡 [SETTINGS] Event type:", e.type)
-              console.log("🟡 [SETTINGS] Current target:", e.currentTarget)
-              e.preventDefault()
-              e.stopPropagation()
-              handleNavigation('/profile/settings')
-            }}
-            className="w-full flex items-center gap-3 px-4 py-4 bg-white hover:bg-gray-50 active:bg-gray-100 rounded-lg transition border border-gray-200 cursor-pointer"
-            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'rgba(0,0,0,0.1)' }}
-          >
-            <Settings className="w-6 h-6 text-gray-600 pointer-events-none" />
-            <span className="font-medium text-gray-700 text-lg pointer-events-none">Account Settings</span>
-          </button>
+          {[
+            { url: '/orders',           icon: <Package  className="w-6 h-6 text-gray-600 pointer-events-none"/>, label: 'My Orders'        },
+            { url: '/addresses',        icon: <MapPin   className="w-6 h-6 text-gray-600 pointer-events-none"/>, label: 'Saved Addresses'  },
+            { url: '/profile/settings', icon: <Settings className="w-6 h-6 text-gray-600 pointer-events-none"/>, label: 'Account Settings' },
+          ].map(({ url, icon, label }) => (
+            <button
+              key={url}
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); go(url) }}
+              className="w-full flex items-center gap-3 px-4 py-4 bg-white hover:bg-gray-50 active:bg-gray-100 rounded-lg transition border border-gray-200 cursor-pointer"
+              style={{ touchAction: 'manipulation' }}
+            >
+              {icon}
+              <span className="font-medium text-gray-700 text-lg pointer-events-none">{label}</span>
+            </button>
+          ))}
         </div>
       </div>
-
       <div className="p-4 border-t border-gray-200">
         <button
           type="button"
-          onClick={(e) => {
-            console.log("🔴 [LOGOUT] Button clicked")
-            e.stopPropagation()
-            onLogout()
-            onClose()
-          }}
+          onClick={(e) => { e.stopPropagation(); onLogout(); onClose() }}
           className="w-full flex items-center justify-center gap-2 px-4 py-4 bg-red-50 hover:bg-red-100 active:bg-red-200 text-red-600 rounded-lg font-medium text-lg transition"
           style={{ touchAction: 'manipulation' }}
         >
@@ -812,14 +605,8 @@ function MobileProfilePanel({
   )
 }
 
-/* ---------- 🔥 IMPROVED: Wishlist Dropdown (Desktop) ---------- */
-function WishlistDropdown({
-  items,
-  onDelete,
-  onAddToCart,
-  deletingId,
-  addingToCart,
-}: {
+/* ─── WishlistDropdown ─────────────────────────────────────────────────────── */
+function WishlistDropdown({ items, onDelete, onAddToCart, deletingId, addingToCart }: {
   items: WishlistItem[]
   onDelete: (id: string) => void
   onAddToCart: (item: WishlistItem) => void
@@ -828,60 +615,35 @@ function WishlistDropdown({
 }) {
   return (
     <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 z-[200] overflow-hidden" style={{ maxHeight: '420px' }}>
-      {/* Header */}
-      <div className="px-4 py-3 bg-gradient-to-r from-red-500 to-pink-500 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Heart className="w-4 h-4 text-white fill-white" />
-          <h3 className="font-semibold text-white text-sm">Wishlist ({items.length})</h3>
-        </div>
+      <div className="px-4 py-3 bg-gradient-to-r from-red-500 to-pink-500 flex items-center">
+        <Heart className="w-4 h-4 text-white fill-white mr-2" />
+        <h3 className="font-semibold text-white text-sm">Wishlist ({items.length})</h3>
       </div>
-
       {items.length > 0 ? (
         <>
-          {/* Items List */}
           <div className="overflow-y-auto" style={{ maxHeight: '280px' }}>
             {items.map((item) => (
               <div key={item.id} className="p-3 border-b border-gray-50 hover:bg-gray-50/50 transition">
                 <div className="flex gap-3">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-gray-100"
-                  />
+                  <img src={item.image} alt={item.name} className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-gray-100"
+                    onError={(e) => { e.currentTarget.src = "https://placehold.co/56x56/e5e7eb/6b7280?text=No+Image" }} />
                   <div className="flex-1 min-w-0">
-                    <Link
-                      href={`product-details/${encodeURIComponent(item.name)}`}
-                      className="font-medium text-gray-800 hover:text-green-600 text-sm line-clamp-1 transition"
-                    >
-                      {item.name}
-                    </Link>
+                    <p className="font-medium text-gray-800 text-sm line-clamp-1">{item.name}</p>
                     <p className="text-base font-bold text-gray-900 mt-0.5">₹{item.price.toFixed(2)}</p>
-
                     <div className="flex gap-1.5 mt-2">
                       <button
                         onClick={() => onAddToCart(item)}
                         disabled={addingToCart === item.id}
                         className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs py-1.5 px-2 rounded-md font-medium disabled:opacity-50 flex items-center justify-center gap-1 transition"
                       >
-                        {addingToCart === item.id ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <>
-                            <ShoppingBag className="w-3 h-3" />
-                            Add
-                          </>
-                        )}
+                        {addingToCart === item.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><ShoppingBag className="w-3 h-3" /> Add</>}
                       </button>
                       <button
                         onClick={() => onDelete(item.id)}
                         disabled={deletingId === item.id}
                         className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-md disabled:opacity-50 transition"
                       >
-                        {deletingId === item.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-3.5 h-3.5" />
-                        )}
+                        {deletingId === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                   </div>
@@ -889,13 +651,8 @@ function WishlistDropdown({
               </div>
             ))}
           </div>
-
-          {/* Footer */}
           <div className="p-3 bg-gray-50 border-t border-gray-100">
-            <Link
-              href="/wishlist"
-              className="block w-full bg-gray-900 hover:bg-gray-800 text-white text-center py-2.5 rounded-lg text-sm font-medium transition"
-            >
+            <Link href="/wishlist" className="block w-full bg-gray-900 hover:bg-gray-800 text-white text-center py-2.5 rounded-lg text-sm font-medium transition">
               View All Items
             </Link>
           </div>
@@ -913,14 +670,8 @@ function WishlistDropdown({
   )
 }
 
-/* ---------- 🔥 IMPROVED: Cart Dropdown (Desktop) - COMPACT VERSION ---------- */
-function CartDropdown({
-  items,
-  total,
-  onDelete,
-  onUpdateQty,
-  deletingId,
-}: {
+/* ─── CartDropdown ─────────────────────────────────────────────────────────── */
+function CartDropdown({ items, total, onDelete, onUpdateQty, deletingId }: {
   items: CartItem[]
   total: number
   onDelete: (id: string) => void
@@ -929,7 +680,6 @@ function CartDropdown({
 }) {
   return (
     <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 z-[200] overflow-hidden" style={{ maxHeight: '480px' }}>
-      {/* Header */}
       <div className="px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ShoppingCart className="w-4 h-4 text-white" />
@@ -937,101 +687,51 @@ function CartDropdown({
         </div>
         <span className="text-white/90 text-xs font-medium">₹{total.toFixed(2)}</span>
       </div>
-
       {items.length > 0 ? (
         <>
-          {/* Items List - Compact */}
           <div className="overflow-y-auto" style={{ maxHeight: '300px' }}>
             {items.map((item) => (
               <div key={item.id} className="p-3 border-b border-gray-50 hover:bg-gray-50/50 transition">
                 <div className="flex gap-2.5">
-                  {/* Image */}
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-gray-100"
-                  />
-
-                  {/* Content */}
+                  <img src={item.image} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-gray-100"
+                    onError={(e) => { e.currentTarget.src = "https://placehold.co/48x48/e5e7eb/6b7280?text=No+Image" }} />
                   <div className="flex-1 min-w-0">
-                    {/* Name & Delete */}
                     <div className="flex items-start justify-between gap-2">
-                      <Link
-                        href={`/product-details/${encodeURIComponent(item.name)}`}
-                        className="font-medium text-gray-800 hover:text-green-600 text-sm line-clamp-1 transition"
-                      >
-                        {item.name}
-                      </Link>
+                      <p className="font-medium text-gray-800 text-sm line-clamp-1">{item.name}</p>
                       <button
                         onClick={() => onDelete(item.id)}
                         disabled={deletingId === item.id}
                         className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded transition flex-shrink-0"
                       >
-                        {deletingId === item.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <X className="w-3.5 h-3.5" />
-                        )}
+                        {deletingId === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
                       </button>
                     </div>
-
-                    {/* Price per unit */}
                     <p className="text-xs text-gray-500 mt-0.5">₹{item.price.toFixed(2)}/kg</p>
-
-                    {/* Quantity & Total */}
                     <div className="flex items-center justify-between mt-1.5">
-                      {/* Quantity Controls - Compact */}
-                      <div className="flex items-center gap-0 border border-gray-200 rounded-md overflow-hidden">
-                        <button
-                          onClick={() => onUpdateQty(item.id, item.quantity - 0.25)}
-                          className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition text-gray-600"
-                        >
+                      <div className="flex items-center border border-gray-200 rounded-md overflow-hidden">
+                        <button onClick={() => onUpdateQty(item.id, item.quantity - 0.25)} className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition text-gray-600">
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="w-12 text-center text-xs font-semibold text-gray-800 bg-gray-50">
-                          {item.quantity} kg
-                        </span>
-                        <button
-                          onClick={() => onUpdateQty(item.id, item.quantity + 0.25)}
-                          className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition text-gray-600"
-                        >
+                        <span className="w-12 text-center text-xs font-semibold text-gray-800 bg-gray-50">{item.quantity} kg</span>
+                        <button onClick={() => onUpdateQty(item.id, item.quantity + 0.25)} className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition text-gray-600">
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
-
-                      {/* Subtotal */}
-                      <span className="text-sm font-bold text-green-600">
-                        ₹{(item.subtotal || item.price * item.quantity).toFixed(2)}
-                      </span>
+                      <span className="text-sm font-bold text-green-600">₹{(item.subtotal || item.price * item.quantity).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-
-          {/* Footer */}
           <div className="p-3 bg-gray-50 border-t border-gray-100">
-            {/* Total */}
             <div className="flex justify-between items-center mb-3 px-1">
               <span className="text-sm text-gray-600">Subtotal:</span>
               <span className="text-lg font-bold text-gray-900">₹{total.toFixed(2)}</span>
             </div>
-
-            {/* Buttons */}
             <div className="flex gap-2">
-              <Link
-                href="/cart"
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-center py-2.5 rounded-lg text-sm font-medium transition"
-              >
-                View Cart
-              </Link>
-              <Link
-                href="/cart"
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white text-center py-2.5 rounded-lg text-sm font-medium transition"
-              >
-                Checkout
-              </Link>
+              <Link href="/cart" className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-center py-2.5 rounded-lg text-sm font-medium transition">View Cart</Link>
+              <Link href="/cart" className="flex-1 bg-green-600 hover:bg-green-700 text-white text-center py-2.5 rounded-lg text-sm font-medium transition">Checkout</Link>
             </div>
           </div>
         </>
@@ -1048,89 +748,45 @@ function CartDropdown({
   )
 }
 
-/* ---------- Mobile Wishlist Panel ---------- */
-function MobileWishlistPanel({
-  items,
-  onClose,
-  onDelete,
-  onAddToCart,
-  deletingId,
-  addingToCart,
-}: {
-  items: WishlistItem[]
-  onClose: () => void
-  onDelete: (id: string) => void
-  onAddToCart: (item: WishlistItem) => void
-  deletingId: string | null
-  addingToCart: string | null
+/* ─── MobileWishlistPanel ──────────────────────────────────────────────────── */
+function MobileWishlistPanel({ items, onClose, onDelete, onAddToCart, deletingId, addingToCart }: {
+  items: WishlistItem[]; onClose: () => void; onDelete: (id: string) => void
+  onAddToCart: (item: WishlistItem) => void; deletingId: string | null; addingToCart: string | null
 }) {
   return (
-    <div className="md:hidden fixed inset-0 z-[500] bg-white flex flex-col">
+    <div className="mobile-wishlist-panel md:hidden fixed inset-0 z-[500] bg-white flex flex-col">
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         <h3 className="font-semibold text-lg text-gray-900">Wishlist ({items.length})</h3>
-        <button onClick={onClose} className="p-2">
-          <X className="w-6 h-6 text-gray-600" />
-        </button>
+        <button onClick={onClose} className="p-2"><X className="w-6 h-6 text-gray-600" /></button>
       </div>
-
       {items.length > 0 ? (
         <>
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {items.map((item) => (
               <div key={item.id} className="border border-gray-200 rounded-lg p-3">
                 <div className="flex gap-3 mb-3">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-24 h-24 rounded object-cover flex-shrink-0"
-                  />
+                  <img src={item.image} alt={item.name} className="w-24 h-24 rounded object-cover flex-shrink-0"
+                    onError={(e) => { e.currentTarget.src = "https://placehold.co/96x96/e5e7eb/6b7280?text=No+Image" }} />
                   <div className="flex-1">
-                    <Link
-                      href={`/product-details/${encodeURIComponent(item.name)}`}
-                      className="font-medium text-gray-900"
-                      onClick={onClose}
-                    >
-                      {item.name}
-                    </Link>
+                    <p className="font-medium text-gray-900">{item.name}</p>
                     <p className="text-xl font-semibold text-gray-900 mt-2">₹{item.price.toFixed(2)}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => onAddToCart(item)}
-                    disabled={addingToCart === item.id}
-                    className="flex-1 bg-green-600 text-white py-3 rounded-lg font-medium disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {addingToCart === item.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        <ShoppingBag className="w-5 h-5" />
-                        Add to Cart
-                      </>
-                    )}
+                  <button onClick={() => onAddToCart(item)} disabled={addingToCart === item.id}
+                    className="flex-1 bg-green-600 text-white py-3 rounded-lg font-medium disabled:opacity-50 flex items-center justify-center gap-2">
+                    {addingToCart === item.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ShoppingBag className="w-5 h-5" /> Add to Cart</>}
                   </button>
-                  <button
-                    onClick={() => onDelete(item.id)}
-                    disabled={deletingId === item.id}
-                    className="p-3 bg-red-50 text-red-600 rounded-lg disabled:opacity-50"
-                  >
-                    {deletingId === item.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-5 h-5" />
-                    )}
+                  <button onClick={() => onDelete(item.id)} disabled={deletingId === item.id}
+                    className="p-3 bg-red-50 text-red-600 rounded-lg disabled:opacity-50">
+                    {deletingId === item.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
             ))}
           </div>
           <div className="p-4 border-t">
-            <Link
-              href="/wishlist"
-              className="block w-full bg-gray-900 text-white text-center py-3 rounded-lg font-medium"
-              onClick={onClose}
-            >
+            <Link href="/wishlist" onClick={onClose} className="block w-full bg-gray-900 text-white text-center py-3 rounded-lg font-medium">
               View All Items
             </Link>
           </div>
@@ -1145,82 +801,40 @@ function MobileWishlistPanel({
   )
 }
 
-/* ---------- Mobile Cart Panel ---------- */
-function MobileCartPanel({
-  items,
-  total,
-  onClose,
-  onDelete,
-  onUpdateQty,
-  deletingId,
-}: {
-  items: CartItem[]
-  total: number
-  onClose: () => void
-  onDelete: (id: string) => void
-  onUpdateQty: (id: string, qty: number) => void
-  deletingId: string | null
+/* ─── MobileCartPanel ──────────────────────────────────────────────────────── */
+function MobileCartPanel({ items, total, onClose, onDelete, onUpdateQty, deletingId }: {
+  items: CartItem[]; total: number; onClose: () => void
+  onDelete: (id: string) => void; onUpdateQty: (id: string, qty: number) => void; deletingId: string | null
 }) {
   return (
-    <div className="md:hidden fixed inset-0 z-[500] bg-white flex flex-col">
+    <div className="mobile-cart-panel md:hidden fixed inset-0 z-[500] bg-white flex flex-col">
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         <h3 className="font-semibold text-lg text-gray-900">Shopping Cart ({items.length})</h3>
-        <button onClick={onClose} className="p-2">
-          <X className="w-6 h-6 text-gray-600" />
-        </button>
+        <button onClick={onClose} className="p-2"><X className="w-6 h-6 text-gray-600" /></button>
       </div>
-
       {items.length > 0 ? (
         <>
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {items.map((item) => (
               <div key={item.id} className="border border-gray-200 rounded-lg p-3">
                 <div className="flex gap-3 mb-3">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-24 h-24 rounded object-cover flex-shrink-0"
-                  />
+                  <img src={item.image} alt={item.name} className="w-24 h-24 rounded object-cover flex-shrink-0"
+                    onError={(e) => { e.currentTarget.src = "https://placehold.co/96x96/e5e7eb/6b7280?text=No+Image" }} />
                   <div className="flex-1">
-                    <Link
-                      href={`/product-details/${encodeURIComponent(item.name)}`}
-                      className="font-medium text-gray-900"
-                      onClick={onClose}
-                    >
-                      {item.name}
-                    </Link>
+                    <p className="font-medium text-gray-900">{item.name}</p>
                     <p className="text-sm text-gray-600 mt-1">₹{item.price.toFixed(2)} per kg</p>
-                    <p className="text-xl font-semibold text-gray-900 mt-2">
-                      ₹{(item.subtotal || item.price * item.quantity).toFixed(2)}
-                    </p>
+                    <p className="text-xl font-semibold text-gray-900 mt-2">₹{(item.subtotal || item.price * item.quantity).toFixed(2)}</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => onUpdateQty(item.id, item.quantity - 0.25)}
-                      className="p-2 bg-gray-100 rounded-lg"
-                    >
-                      <Minus className="w-5 h-5" />
-                    </button>
+                    <button onClick={() => onUpdateQty(item.id, item.quantity - 0.25)} className="p-2 bg-gray-100 rounded-lg"><Minus className="w-5 h-5" /></button>
                     <span className="w-16 text-center font-medium text-lg">{item.quantity} kg</span>
-                    <button
-                      onClick={() => onUpdateQty(item.id, item.quantity + 0.25)}
-                      className="p-2 bg-gray-100 rounded-lg"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
+                    <button onClick={() => onUpdateQty(item.id, item.quantity + 0.25)} className="p-2 bg-gray-100 rounded-lg"><Plus className="w-5 h-5" /></button>
                   </div>
-                  <button
-                    onClick={() => onDelete(item.id)}
-                    disabled={deletingId === item.id}
-                    className="p-3 bg-red-50 text-red-600 rounded-lg disabled:opacity-50"
-                  >
-                    {deletingId === item.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-5 h-5" />
-                    )}
+                  <button onClick={() => onDelete(item.id)} disabled={deletingId === item.id}
+                    className="p-3 bg-red-50 text-red-600 rounded-lg disabled:opacity-50">
+                    {deletingId === item.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
@@ -1231,20 +845,8 @@ function MobileCartPanel({
               <span className="font-semibold text-gray-900 text-lg">Total:</span>
               <span className="text-2xl font-bold text-gray-900">₹{total.toFixed(2)}</span>
             </div>
-            <Link
-              href="/cart"
-              className="block w-full bg-green-600 text-white text-center py-3 rounded-lg font-medium"
-              onClick={onClose}
-            >
-              Proceed to Checkout
-            </Link>
-            <Link
-              href="/cart"
-              className="block w-full bg-gray-900 text-white text-center py-3 rounded-lg font-medium"
-              onClick={onClose}
-            >
-              View Cart
-            </Link>
+            <Link href="/cart" onClick={onClose} className="block w-full bg-green-600 text-white text-center py-3 rounded-lg font-medium">Proceed to Checkout</Link>
+            <Link href="/cart" onClick={onClose} className="block w-full bg-gray-900 text-white text-center py-3 rounded-lg font-medium">View Cart</Link>
           </div>
         </>
       ) : (
