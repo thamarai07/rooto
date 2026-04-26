@@ -399,14 +399,16 @@ export default function Header() {
                 )}
               </button>
               {showCart && (
-                <CartDropdown
-                  items={cartItems}
-                  total={cartTotal}
-                  onDelete={deleteCart}
-                  onUpdateQty={updateCartQuantity}
-                  deletingId={deletingId}
-                />
-              )}
+  <CartDropdown
+    items={cartItems}
+    total={cartTotal}
+    onDelete={deleteCart}
+    onUpdateQty={updateCartQuantity}
+    deletingId={deletingId}
+    isLoggedIn={!!user}
+    onLoginClick={() => { setShowCart(false); setAuthMode("login"); setShowAuth(true) }}
+  />
+)}
             </div>
 
             {/* Profile */}
@@ -476,17 +478,18 @@ export default function Header() {
         />
       )}
 
-      {showCart && (
-        <MobileCartPanel
-          items={cartItems}
-          total={cartTotal}
-          onClose={() => setShowCart(false)}
-          onDelete={deleteCart}
-          onUpdateQty={updateCartQuantity}
-          deletingId={deletingId}
-        />
-      )}
-
+{showCart && (
+  <MobileCartPanel
+    items={cartItems}
+    total={cartTotal}
+    onClose={() => setShowCart(false)}
+    onDelete={deleteCart}
+    onUpdateQty={updateCartQuantity}
+    deletingId={deletingId}
+    isLoggedIn={!!user}
+    onLoginClick={() => { setShowCart(false); setAuthMode("login"); setShowAuth(true) }}
+  />
+)}
       {showProfile && user && (
         <div className="md:hidden">
           <MobileProfilePanel user={user} onClose={() => setShowProfile(false)} onLogout={handleLogout} />
@@ -671,12 +674,14 @@ function WishlistDropdown({ items, onDelete, onAddToCart, deletingId, addingToCa
 }
 
 /* ─── CartDropdown ─────────────────────────────────────────────────────────── */
-function CartDropdown({ items, total, onDelete, onUpdateQty, deletingId }: {
+function CartDropdown({ items, total, onDelete, onUpdateQty, deletingId, isLoggedIn, onLoginClick }: {
   items: CartItem[]
   total: number
   onDelete: (id: string) => void
   onUpdateQty: (id: string, qty: number) => void
   deletingId: string | null
+  isLoggedIn: boolean
+  onLoginClick: () => void
 }) {
   return (
     <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 z-[200] overflow-hidden" style={{ maxHeight: '480px' }}>
@@ -730,9 +735,29 @@ function CartDropdown({ items, total, onDelete, onUpdateQty, deletingId }: {
               <span className="text-lg font-bold text-gray-900">₹{total.toFixed(2)}</span>
             </div>
             <div className="flex gap-2">
-              <Link href="/cart" className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-center py-2.5 rounded-lg text-sm font-medium transition">View Cart</Link>
-              <Link href="/cart" className="flex-1 bg-green-600 hover:bg-green-700 text-white text-center py-2.5 rounded-lg text-sm font-medium transition">Checkout</Link>
-            </div>
+  {isLoggedIn ? (
+    <>
+      <Link href="/cart" className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-center py-2.5 rounded-lg text-sm font-medium transition">
+        View Cart
+      </Link>
+      <Link href="/cart" className="flex-1 bg-green-600 hover:bg-green-700 text-white text-center py-2.5 rounded-lg text-sm font-medium transition">
+        Checkout
+      </Link>
+    </>
+  ) : (
+    <>
+      <Link href="/cart" className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-center py-2.5 rounded-lg text-sm font-medium transition">
+        View Cart
+      </Link>
+      <button
+        onClick={onLoginClick}
+        className="flex-1 bg-green-600 hover:bg-green-700 text-white text-center py-2.5 rounded-lg text-sm font-medium transition"
+      >
+        Checkout
+      </button>
+    </>
+  )}
+</div>
           </div>
         </>
       ) : (
@@ -802,10 +827,12 @@ function MobileWishlistPanel({ items, onClose, onDelete, onAddToCart, deletingId
 }
 
 /* ─── MobileCartPanel ──────────────────────────────────────────────────────── */
-function MobileCartPanel({ items, total, onClose, onDelete, onUpdateQty, deletingId }: {
+function MobileCartPanel({ items, total, onClose, onDelete, onUpdateQty, deletingId, isLoggedIn, onLoginClick }: {
   items: CartItem[]; total: number; onClose: () => void
   onDelete: (id: string) => void; onUpdateQty: (id: string, qty: number) => void; deletingId: string | null
-}) {
+  isLoggedIn: boolean
+  onLoginClick: () => void
+}){
   return (
     <div className="mobile-cart-panel md:hidden fixed inset-0 z-[500] bg-white flex flex-col">
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
@@ -845,8 +872,22 @@ function MobileCartPanel({ items, total, onClose, onDelete, onUpdateQty, deletin
               <span className="font-semibold text-gray-900 text-lg">Total:</span>
               <span className="text-2xl font-bold text-gray-900">₹{total.toFixed(2)}</span>
             </div>
-            <Link href="/cart" onClick={onClose} className="block w-full bg-green-600 text-white text-center py-3 rounded-lg font-medium">Proceed to Checkout</Link>
-            <Link href="/cart" onClick={onClose} className="block w-full bg-gray-900 text-white text-center py-3 rounded-lg font-medium">View Cart</Link>
+            {isLoggedIn ? (
+  <Link href="/cart" onClick={onClose} className="block w-full bg-green-600 text-white text-center py-3 rounded-lg font-medium">
+    Proceed to Checkout
+  </Link>
+) : (
+  <button
+    onClick={() => { onClose(); onLoginClick() }}
+    className="w-full bg-green-600 text-white text-center py-3 rounded-lg font-medium"
+  >
+    Proceed to Checkout
+  </button>
+)}
+<Link href="/cart" onClick={onClose} className="block w-full bg-gray-900 text-white text-center py-3 rounded-lg font-medium">
+  View Cart
+</Link>
+ 
           </div>
         </>
       ) : (
