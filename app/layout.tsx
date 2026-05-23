@@ -6,6 +6,7 @@ import './globals.css'
 import CelebrationPopup from '@/components/ui/CelebrationPopup'
 import { AuthProvider } from '@/hooks/useAuth'
 import AuthInitializer from '@/components/auth/AuthInitializer'
+import AnnouncementBanner from '@/components/AnnouncementBanner'
 import Script from 'next/script'
 
 const _geist = Geist({ subsets: ['latin'] })
@@ -168,6 +169,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <AuthProvider>
           <AuthInitializer />
+          <AnnouncementBanner />
           {children}
           <Analytics />
           <CelebrationPopup />
