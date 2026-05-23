@@ -35,8 +35,8 @@ function readGuestWishlist(): WishlistItem[] {
     const raw = localStorage.getItem("guest_wishlist")
     if (!raw) return []
     return (JSON.parse(raw) as any[]).map(i => ({
-      id:    String(i.id),
-      name:  i.name,
+      id: String(i.id),
+      name: i.name,
       price: i.price,
       image: i.image,
       category: i.category,
@@ -49,10 +49,10 @@ function readGuestCart(): CartItem[] {
     const raw = localStorage.getItem("guest_cart")
     if (!raw) return []
     return (JSON.parse(raw) as any[]).map(i => ({
-      id:       String(i.id),
-      name:     i.name,
-      price:    i.price,
-      image:    i.image,
+      id: String(i.id),
+      name: i.name,
+      price: i.price,
+      image: i.image,
       quantity: i.quantity ?? 0.25,
       subtotal: i.subtotal ?? i.price * (i.quantity ?? 0.25),
     }))
@@ -62,7 +62,7 @@ function readGuestCart(): CartItem[] {
 export default function Header() {
   /* ---------- State ---------- */
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
-  const [logoName, setLogoName] = useState("FreshMart")
+  const [logoName, setLogoName] = useState("Rooto.in")
 
   const [wishlistCount, setWishlistCount] = useState(0)
   const [cartCount, setCartCount] = useState(0)
@@ -82,8 +82,8 @@ export default function Header() {
   const [authMode, setAuthMode] = useState<"login" | "signup" | "forgot">("login")
 
   const wishlistRef = useRef<HTMLDivElement>(null)
-  const cartRef     = useRef<HTMLDivElement>(null)
-  const profileRef  = useRef<HTMLDivElement>(null)
+  const cartRef = useRef<HTMLDivElement>(null)
+  const profileRef = useRef<HTMLDivElement>(null)
 
   const pathname = usePathname()
   const { user, loading, logout: authLogout, setUser } = useAuth()
@@ -95,7 +95,7 @@ export default function Header() {
       .then(json => {
         if (json.status === "success") {
           setLogoUrl(json.logo_url)
-          setLogoName(json.logo_name || "FreshMart")
+          setLogoName(json.logo_name || "Rooto.in")
         }
       })
       .catch(console.error)
@@ -109,7 +109,7 @@ export default function Header() {
         setGuestWishlistCount(0)
         return
       }
-      const cart     = readGuestCart()
+      const cart = readGuestCart()
       const wishlist = readGuestWishlist()
       setGuestCartCount(wishlist.length)      // kept for badge
       setGuestWishlistCount(wishlist.length)
@@ -121,16 +121,16 @@ export default function Header() {
     }
 
     syncGuest()
-    window.addEventListener("guest-cart-updated",     syncGuest)
+    window.addEventListener("guest-cart-updated", syncGuest)
     window.addEventListener("guest-wishlist-updated", syncGuest)
     return () => {
-      window.removeEventListener("guest-cart-updated",     syncGuest)
+      window.removeEventListener("guest-cart-updated", syncGuest)
       window.removeEventListener("guest-wishlist-updated", syncGuest)
     }
   }, [user])
 
   const displayWishlistCount = user ? wishlistCount : guestWishlistCount
-  const displayCartCount     = user ? cartCount     : guestCartCount
+  const displayCartCount = user ? cartCount : guestCartCount
 
   /* ---------- Logged-in: count refresh ---------- */
   const refreshCounts = useCallback(async () => {
@@ -152,10 +152,10 @@ export default function Header() {
   useEffect(() => {
     const onUpdate = () => refreshCounts()
     window.addEventListener("wishlist-updated", onUpdate)
-    window.addEventListener("cart-updated",     onUpdate)
+    window.addEventListener("cart-updated", onUpdate)
     return () => {
       window.removeEventListener("wishlist-updated", onUpdate)
-      window.removeEventListener("cart-updated",     onUpdate)
+      window.removeEventListener("cart-updated", onUpdate)
     }
   }, [refreshCounts])
 
@@ -167,7 +167,7 @@ export default function Header() {
       return
     }
     try {
-      const res  = await fetch(`${API_BASE}/wishlist.php?user_id=${user.id}`)
+      const res = await fetch(`${API_BASE}/wishlist.php?user_id=${user.id}`)
       const json = await res.json()
       if (json.status === "success") setWishlistItems(json.data)
     } catch (e) { console.error(e) }
@@ -180,7 +180,7 @@ export default function Header() {
       return
     }
     try {
-      const res  = await fetch(`${API_BASE}/cart.php?user_id=${user.id}`)
+      const res = await fetch(`${API_BASE}/cart.php?user_id=${user.id}`)
       const json = await res.json()
       if (json.status === "success") setCartItems(json.data)
     } catch (e) { console.error(e) }
@@ -199,7 +199,7 @@ export default function Header() {
         window.dispatchEvent(new Event("guest-wishlist-updated"))
         return
       }
-      const res  = await fetch(`${API_BASE}/wishlist.php?product_id=${id}&user_id=${user.id}`, { method: "DELETE" })
+      const res = await fetch(`${API_BASE}/wishlist.php?product_id=${id}&user_id=${user.id}`, { method: "DELETE" })
       const json = await res.json()
       if (json.status === "success") {
         await fetchWishlist()
@@ -221,7 +221,7 @@ export default function Header() {
         window.dispatchEvent(new Event("guest-cart-updated"))
         return
       }
-      const res  = await fetch(`${API_BASE}/cart.php?product_id=${id}&user_id=${user.id}`, { method: "DELETE" })
+      const res = await fetch(`${API_BASE}/cart.php?product_id=${id}&user_id=${user.id}`, { method: "DELETE" })
       const json = await res.json()
       if (json.status === "success") {
         await fetchCart()
@@ -236,8 +236,8 @@ export default function Header() {
     try {
       if (!user?.id) {
         // Guest: move from wishlist → cart in localStorage
-        const cart    = readGuestCart()
-        const exists  = cart.find(c => c.id === item.id)
+        const cart = readGuestCart()
+        const exists = cart.find(c => c.id === item.id)
         const updated = exists
           ? cart.map(c => c.id === item.id ? { ...c, quantity: c.quantity + 1, subtotal: (c.quantity + 1) * c.price } : c)
           : [...cart, { id: item.id, name: item.name, price: item.price, image: item.image, quantity: 0.25, subtotal: item.price * 0.25 }]
@@ -246,7 +246,7 @@ export default function Header() {
         await deleteWishlist(item.id)
         return
       }
-      const res  = await fetch(`${API_BASE}/cart.php`, {
+      const res = await fetch(`${API_BASE}/cart.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ product_id: item.id, quantity: 1, user_id: user.id }),
@@ -273,7 +273,7 @@ export default function Header() {
       return
     }
     try {
-      const res  = await fetch(`${API_BASE}/cart.php`, {
+      const res = await fetch(`${API_BASE}/cart.php`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ product_id: id, quantity: newQty, user_id: user.id }),
@@ -308,17 +308,17 @@ export default function Header() {
     const handler = (e: MouseEvent | TouchEvent) => {
       const target = e.target as HTMLElement
       if (target.closest('.mobile-profile-panel') ||
-          target.closest('.mobile-wishlist-panel') ||
-          target.closest('.mobile-cart-panel')) return
+        target.closest('.mobile-wishlist-panel') ||
+        target.closest('.mobile-cart-panel')) return
 
       if (showWishlist && wishlistRef.current && !wishlistRef.current.contains(target)) setShowWishlist(false)
-      if (showCart    && cartRef.current     && !cartRef.current.contains(target))     setShowCart(false)
-      if (showProfile && profileRef.current  && !profileRef.current.contains(target))  setShowProfile(false)
+      if (showCart && cartRef.current && !cartRef.current.contains(target)) setShowCart(false)
+      if (showProfile && profileRef.current && !profileRef.current.contains(target)) setShowProfile(false)
     }
-    document.addEventListener("mousedown",  handler)
+    document.addEventListener("mousedown", handler)
     document.addEventListener("touchstart", handler, { passive: false })
     return () => {
-      document.removeEventListener("mousedown",  handler)
+      document.removeEventListener("mousedown", handler)
       document.removeEventListener("touchstart", handler)
     }
   }, [showWishlist, showCart, showProfile])
@@ -360,7 +360,7 @@ export default function Header() {
             {logoUrl ? (
               <img src={logoUrl} alt="Logo" className="h-10 w-10 rounded object-cover" />
             ) : (
-              <div className="h-10 w-10 bg-green-600 rounded flex items-center justify-center text-white font-bold">F</div>
+              <div className="h-10 w-10 bg-green-600 rounded flex items-center justify-center text-white font-bold">R</div>
             )}
             <span className="font-semibold text-xl text-gray-900">{logoName}</span>
           </Link>
@@ -399,16 +399,16 @@ export default function Header() {
                 )}
               </button>
               {showCart && (
-  <CartDropdown
-    items={cartItems}
-    total={cartTotal}
-    onDelete={deleteCart}
-    onUpdateQty={updateCartQuantity}
-    deletingId={deletingId}
-    isLoggedIn={!!user}
-    onLoginClick={() => { setShowCart(false); setAuthMode("login"); setShowAuth(true) }}
-  />
-)}
+                <CartDropdown
+                  items={cartItems}
+                  total={cartTotal}
+                  onDelete={deleteCart}
+                  onUpdateQty={updateCartQuantity}
+                  deletingId={deletingId}
+                  isLoggedIn={!!user}
+                  onLoginClick={() => { setShowCart(false); setAuthMode("login"); setShowAuth(true) }}
+                />
+              )}
             </div>
 
             {/* Profile */}
@@ -478,18 +478,18 @@ export default function Header() {
         />
       )}
 
-{showCart && (
-  <MobileCartPanel
-    items={cartItems}
-    total={cartTotal}
-    onClose={() => setShowCart(false)}
-    onDelete={deleteCart}
-    onUpdateQty={updateCartQuantity}
-    deletingId={deletingId}
-    isLoggedIn={!!user}
-    onLoginClick={() => { setShowCart(false); setAuthMode("login"); setShowAuth(true) }}
-  />
-)}
+      {showCart && (
+        <MobileCartPanel
+          items={cartItems}
+          total={cartTotal}
+          onClose={() => setShowCart(false)}
+          onDelete={deleteCart}
+          onUpdateQty={updateCartQuantity}
+          deletingId={deletingId}
+          isLoggedIn={!!user}
+          onLoginClick={() => { setShowCart(false); setAuthMode("login"); setShowAuth(true) }}
+        />
+      )}
       {showProfile && user && (
         <div className="md:hidden">
           <MobileProfilePanel user={user} onClose={() => setShowProfile(false)} onLogout={handleLogout} />
@@ -501,7 +501,7 @@ export default function Header() {
         <DialogContent className="sm:max-w-md p-0">
           <DialogHeader><DialogTitle className="sr-only">Authentication</DialogTitle></DialogHeader>
           <div className="p-6">
-            {authMode === "login"  && <LoginModal  onSuccess={handleAuthSuccess} onSwitchToSignup={() => setAuthMode("signup")} onForgotPassword={() => setAuthMode("forgot")} />}
+            {authMode === "login" && <LoginModal onSuccess={handleAuthSuccess} onSwitchToSignup={() => setAuthMode("signup")} onForgotPassword={() => setAuthMode("forgot")} />}
             {authMode === "signup" && <SignupModal onSuccess={handleAuthSuccess} onSwitchToLogin={() => setAuthMode("login")} />}
             {authMode === "forgot" && <ForgotPasswordModal onBack={() => setAuthMode("login")} />}
           </div>
@@ -528,9 +528,9 @@ function ProfileDropdown({ user, onLogout, onClose }: { user: UserData; onLogout
       </div>
       <div className="p-2">
         {[
-          { href: "/orders",           icon: <Package  className="w-4 h-4 text-blue-600"  />, bg: "bg-blue-50   group-hover:bg-blue-100",   label: "My Orders"        },
-          { href: "/addresses",        icon: <MapPin   className="w-4 h-4 text-orange-600"/>, bg: "bg-orange-50 group-hover:bg-orange-100", label: "Saved Addresses"  },
-          { href: "/profile/settings", icon: <Settings className="w-4 h-4 text-gray-600"  />, bg: "bg-gray-100  group-hover:bg-gray-200",   label: "Account Settings" },
+          { href: "/orders", icon: <Package className="w-4 h-4 text-blue-600" />, bg: "bg-blue-50   group-hover:bg-blue-100", label: "My Orders" },
+          { href: "/addresses", icon: <MapPin className="w-4 h-4 text-orange-600" />, bg: "bg-orange-50 group-hover:bg-orange-100", label: "Saved Addresses" },
+          { href: "/profile/settings", icon: <Settings className="w-4 h-4 text-gray-600" />, bg: "bg-gray-100  group-hover:bg-gray-200", label: "Account Settings" },
         ].map(({ href, icon, bg, label }) => (
           <Link key={href} href={href} onClick={onClose} className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-lg transition group">
             <div className={`w-8 h-8 ${bg} rounded-lg flex items-center justify-center transition`}>{icon}</div>
@@ -576,9 +576,9 @@ function MobileProfilePanel({ user, onClose, onLogout }: { user: UserData; onClo
         </div>
         <div className="p-4 space-y-2">
           {[
-            { url: '/orders',           icon: <Package  className="w-6 h-6 text-gray-600 pointer-events-none"/>, label: 'My Orders'        },
-            { url: '/addresses',        icon: <MapPin   className="w-6 h-6 text-gray-600 pointer-events-none"/>, label: 'Saved Addresses'  },
-            { url: '/profile/settings', icon: <Settings className="w-6 h-6 text-gray-600 pointer-events-none"/>, label: 'Account Settings' },
+            { url: '/orders', icon: <Package className="w-6 h-6 text-gray-600 pointer-events-none" />, label: 'My Orders' },
+            { url: '/addresses', icon: <MapPin className="w-6 h-6 text-gray-600 pointer-events-none" />, label: 'Saved Addresses' },
+            { url: '/profile/settings', icon: <Settings className="w-6 h-6 text-gray-600 pointer-events-none" />, label: 'Account Settings' },
           ].map(({ url, icon, label }) => (
             <button
               key={url}
@@ -735,29 +735,29 @@ function CartDropdown({ items, total, onDelete, onUpdateQty, deletingId, isLogge
               <span className="text-lg font-bold text-gray-900">₹{total.toFixed(2)}</span>
             </div>
             <div className="flex gap-2">
-  {isLoggedIn ? (
-    <>
-      <Link href="/cart" className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-center py-2.5 rounded-lg text-sm font-medium transition">
-        View Cart
-      </Link>
-      <Link href="/cart" className="flex-1 bg-green-600 hover:bg-green-700 text-white text-center py-2.5 rounded-lg text-sm font-medium transition">
-        Checkout
-      </Link>
-    </>
-  ) : (
-    <>
-      <Link href="/cart" className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-center py-2.5 rounded-lg text-sm font-medium transition">
-        View Cart
-      </Link>
-      <button
-        onClick={onLoginClick}
-        className="flex-1 bg-green-600 hover:bg-green-700 text-white text-center py-2.5 rounded-lg text-sm font-medium transition"
-      >
-        Checkout
-      </button>
-    </>
-  )}
-</div>
+              {isLoggedIn ? (
+                <>
+                  <Link href="/cart" className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-center py-2.5 rounded-lg text-sm font-medium transition">
+                    View Cart
+                  </Link>
+                  <Link href="/cart" className="flex-1 bg-green-600 hover:bg-green-700 text-white text-center py-2.5 rounded-lg text-sm font-medium transition">
+                    Checkout
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/cart" className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-center py-2.5 rounded-lg text-sm font-medium transition">
+                    View Cart
+                  </Link>
+                  <button
+                    onClick={onLoginClick}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white text-center py-2.5 rounded-lg text-sm font-medium transition"
+                  >
+                    Checkout
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </>
       ) : (
@@ -832,7 +832,7 @@ function MobileCartPanel({ items, total, onClose, onDelete, onUpdateQty, deletin
   onDelete: (id: string) => void; onUpdateQty: (id: string, qty: number) => void; deletingId: string | null
   isLoggedIn: boolean
   onLoginClick: () => void
-}){
+}) {
   return (
     <div className="mobile-cart-panel md:hidden fixed inset-0 z-[500] bg-white flex flex-col">
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
@@ -873,21 +873,21 @@ function MobileCartPanel({ items, total, onClose, onDelete, onUpdateQty, deletin
               <span className="text-2xl font-bold text-gray-900">₹{total.toFixed(2)}</span>
             </div>
             {isLoggedIn ? (
-  <Link href="/cart" onClick={onClose} className="block w-full bg-green-600 text-white text-center py-3 rounded-lg font-medium">
-    Proceed to Checkout
-  </Link>
-) : (
-  <button
-    onClick={() => { onClose(); onLoginClick() }}
-    className="w-full bg-green-600 text-white text-center py-3 rounded-lg font-medium"
-  >
-    Proceed to Checkout
-  </button>
-)}
-<Link href="/cart" onClick={onClose} className="block w-full bg-gray-900 text-white text-center py-3 rounded-lg font-medium">
-  View Cart
-</Link>
- 
+              <Link href="/cart" onClick={onClose} className="block w-full bg-green-600 text-white text-center py-3 rounded-lg font-medium">
+                Proceed to Checkout
+              </Link>
+            ) : (
+              <button
+                onClick={() => { onClose(); onLoginClick() }}
+                className="w-full bg-green-600 text-white text-center py-3 rounded-lg font-medium"
+              >
+                Proceed to Checkout
+              </button>
+            )}
+            <Link href="/cart" onClick={onClose} className="block w-full bg-gray-900 text-white text-center py-3 rounded-lg font-medium">
+              View Cart
+            </Link>
+
           </div>
         </>
       ) : (
