@@ -320,11 +320,10 @@ const ProductCard = memo(function ProductCard({
               e.preventDefault()
               onWishlistToggle(product.id)
             }}
-            className={`absolute bottom-2 right-2 p-2 rounded-full shadow-md transition-all duration-200 ${
-              isWishlisted
+            className={`absolute bottom-2 right-2 p-2 rounded-full shadow-md transition-all duration-200 ${isWishlisted
                 ? "bg-red-500 text-white"
                 : "bg-white text-gray-700"
-            }`}
+              }`}
           >
             <Heart
               className={`w-4 h-4 ${isWishlisted ? "fill-current" : ""}`}
@@ -383,11 +382,11 @@ const ProductCard = memo(function ProductCard({
     </div>
   )
 },
-(prev, next) =>
-  prev.isWishlisted === next.isWishlisted &&
-  prev.isLoading === next.isLoading &&
-  prev.product.id === next.product.id &&
-  prev.product.stock === next.product.stock
+  (prev, next) =>
+    prev.isWishlisted === next.isWishlisted &&
+    prev.isLoading === next.isLoading &&
+    prev.product.id === next.product.id &&
+    prev.product.stock === next.product.stock
 )
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -411,6 +410,7 @@ export default function ProductGrid() {
   const [orderNotes, setOrderNotes] = useState("")
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false)
   const [isUpdating, setIsUpdating] = useState<number | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string>("All")
 
   // Ref to avoid stale closure in event handlers
   const isCartOpenRef = useRef(isCartOpen)
@@ -420,22 +420,22 @@ export default function ProductGrid() {
   // const toastTimer = useRef<ReturnType<typeof setTimeout>>(0)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-const showToast = useCallback(
-  (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+  const showToast = useCallback(
+    (message: string, type: 'success' | 'error' | 'info' = 'success') => {
 
-    if (toastTimer.current) {
-      clearTimeout(toastTimer.current)
-    }
+      if (toastTimer.current) {
+        clearTimeout(toastTimer.current)
+      }
 
-    setToast({ show: true, message, type })
+      setToast({ show: true, message, type })
 
-    toastTimer.current = setTimeout(() => {
-      setToast({ show: false, message: '', type: 'success' })
-    }, 3000)
+      toastTimer.current = setTimeout(() => {
+        setToast({ show: false, message: '', type: 'success' })
+      }, 3000)
 
-  },
-  []
-)
+    },
+    []
+  )
 
   // ─── Debounced quantity update (avoids API spam on rapid clicks) ──────────────
   const debouncedUpdateQty = useRef(
@@ -953,27 +953,109 @@ const showToast = useCallback(
         />
       )}
 
-      <div className="mb-8 text-center md:text-left">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2 inline-block border-b-2 border-green-600 pb-2">
-          Fresh & Healthy Choices
-        </h2>
-        <p className="text-gray-600 text-lg">
-          Showing {products.length} carefully selected products for a healthier lifestyle
-        </p>
-      </div>
+      {/* ── Category filter chips ── */}
+      {(() => {
+        const uniqueCategories = ["All", ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))]
+        const filteredProducts = selectedCategory === "All"
+          ? products
+          : products.filter(p => p.category === selectedCategory)
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {products.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            isWishlisted={wishlistIds.has(product.id)} 
-            onWishlistToggle={handleWishlistToggle}
-            onAddToCart={handleAddToCart}
-            isLoading={actionLoading === product.id}    
-          />
-        ))}
-      </div>
+        // Emoji map for known categories
+        const categoryEmoji: Record<string, string> = {
+          All: "🛒",
+          Fruits: "🍎",
+          Vegetables: "🥦",
+          Dairy: "🥛",
+          Grains: "🌾",
+          Meat: "🥩",
+          Seafood: "🐟",
+          Bakery: "🍞",
+          Beverages: "🧃",
+          Snacks: "🍿",
+          Herbs: "🌿",
+          Spices: "🧂",
+          Organic: "🌱",
+        }
+
+        return (
+          <>
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-4 text-center md:text-left">
+                <h2 className="text-3xl font-bold text-gray-900 inline-block border-b-2 border-green-600 pb-2">
+                  Fresh &amp; Healthy Choices
+                </h2>
+              </div>
+              <p className="text-gray-500 text-sm mb-4">
+                {filteredProducts.length === products.length
+                  ? `Showing all ${products.length} products`
+                  : `Showing ${filteredProducts.length} of ${products.length} products in "${selectedCategory}"`
+                }
+              </p>
+
+              {/* Chip scroll row */}
+              <div
+                className="flex gap-2 overflow-x-auto pb-2"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {uniqueCategories.map((cat) => {
+                  const isActive = selectedCategory === cat
+                  const count = cat === "All" ? products.length : products.filter(p => p.category === cat).length
+                  const emoji = categoryEmoji[cat] ?? "🏷️"
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 border-2 ${isActive
+                          ? "bg-green-600 text-white border-green-600 shadow-md scale-105"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-green-400 hover:text-green-700 hover:bg-green-50"
+                        }`}
+                    >
+                      <span>{emoji}</span>
+                      <span>{cat}</span>
+                      <span
+                        className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${isActive ? "bg-white/30 text-white" : "bg-gray-100 text-gray-500"
+                          }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Product grid */}
+            {filteredProducts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mb-4 text-4xl">
+                  {categoryEmoji[selectedCategory] ?? "🏷️"}
+                </div>
+                <h3 className="text-lg font-bold text-gray-700 mb-1">No products in "{selectedCategory}"</h3>
+                <p className="text-gray-500 text-sm mb-4">Try a different category</p>
+                <button
+                  onClick={() => setSelectedCategory("All")}
+                  className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-full font-medium text-sm transition"
+                >
+                  View All Products
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {filteredProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    isWishlisted={wishlistIds.has(product.id)}
+                    onWishlistToggle={handleWishlistToggle}
+                    onAddToCart={handleAddToCart}
+                    isLoading={actionLoading === product.id}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )
+      })()}
 
       <style jsx>{`
         @keyframes slideIn {
