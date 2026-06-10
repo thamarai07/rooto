@@ -112,13 +112,10 @@ export default function Header() {
       }
       const cart = readGuestCart()
       const wishlist = readGuestWishlist()
-      setGuestCartCount(wishlist.length)      // kept for badge
+      setGuestCartCount(cart.length)        // ← only set once, correctly
       setGuestWishlistCount(wishlist.length)
-
-      // ✅ KEY CHANGE: also push items into state so dropdowns show them
       setCartItems(cart)
       setWishlistItems(wishlist)
-      setGuestCartCount(cart.length)
     }
 
     syncGuest()
@@ -146,6 +143,12 @@ export default function Header() {
       if (c.status === "success") setCartCount(c.count)
     } catch (e) { console.error("Error refreshing counts:", e) }
   }, [user?.id])
+  // Add this effect after the existing refreshCounts effects:
+  useEffect(() => {
+    if (user?.id) {
+      refreshCounts()
+    }
+  }, [user?.id]) // fires specifically when user logs in
 
   useEffect(() => { refreshCounts() }, [pathname, refreshCounts])
   useEffect(() => { refreshCounts() }, [refreshCounts])
