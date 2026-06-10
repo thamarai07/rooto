@@ -163,6 +163,12 @@ export default function HeaderSearchBar() {
     setIsSearching(false)
   }
 
+  const fixImageUrl = (url: string): string => {
+    if (!url) return ""
+    return url.replace(/^https?:\/\/localhost(:\d+)?\/vfs_portal/,
+      "https://seashell-skunk-617240.hostingersite.com")
+  }
+
   return (
     <div className="w-full bg-white shadow-md border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row gap-3 items-center">
@@ -228,7 +234,7 @@ export default function HeaderSearchBar() {
                           className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-green-50 transition text-left group"
                         >
                           <img
-                            src={p.image}
+                            src={fixImageUrl(p.image)}
                             alt={p.name}
                             className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                             onError={(e) => {
@@ -269,7 +275,7 @@ export default function HeaderSearchBar() {
                             {i + 1}
                           </span>
                           <img
-                            src={p.image}
+                            src={fixImageUrl(p.image)}
                             alt={p.name}
                             className="w-10 h-10 rounded object-cover flex-shrink-0"
                             onError={(e) => {

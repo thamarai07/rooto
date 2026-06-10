@@ -19,6 +19,7 @@ import { CartItemSkeleton, OrderSummarySkeleton } from "@/components/skeleto/Car
 import EmptyCart from "@/components/empty/EmptyCart"
 import OrderSummarySidebar from "@/components/order/OrderSummarySidebar"
 import OrderSuccessModal from "@/components/order/OrderSuccessModal"
+import { authHeaders } from "@/lib/auth"
 
 // Custom hooks
 import { useCartData } from "@/hooks/Usecartdata"
@@ -103,16 +104,14 @@ export default function CartPage() {
     const userId = getUserId()
     try {
       const requestBody = {
-        orderId: orderId,
-        customerId: userId
+        orderId: orderId
       }
 
       console.log("📤 [CLEAR CART] Sending request:", requestBody)
 
       const response = await fetch(`${API_BASE}/clear_cart.php`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: 'include',
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify(requestBody),
       });
 

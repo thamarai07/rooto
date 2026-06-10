@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, User, Mail, Phone, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { clearGuestCart, getGuestCart, getGuestWishlist } from "@/lib/guestStorage";
+import { saveToken, authHeaders } from "@/lib/auth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api";
 
@@ -40,27 +41,28 @@ export default function SignupModal({ onSuccess, onSwitchToLogin }: any) {
     return Object.keys(err).length === 0;
   };
 
-  const mergeGuestData = async (userId: number) => {
+  const mergeGuestData = async () => {
     const guestCart = getGuestCart();
     const guestWishlist = getGuestWishlist();
+    const hdrs = authHeaders();  // token saved before this is called
 
     await Promise.all([
       ...guestCart.map((item) =>
         fetch(`${API_BASE}/cart.php`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...hdrs },
           body: JSON.stringify({
             product_id: item.id,
             quantity: item.quantity,
-            user_id: userId,
+            // user_id omitted — backend reads from JWT
           }),
         })
       ),
       ...guestWishlist.map((item) =>
         fetch(`${API_BASE}/wishlist.php`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ product_id: item.id, user_id: userId }),
+          headers: { "Content-Type": "application/json", ...hdrs },
+          body: JSON.stringify({ product_id: item.id }),
         })
       ),
     ]);
@@ -87,8 +89,19 @@ export default function SignupModal({ onSuccess, onSwitchToLogin }: any) {
       const data = await res.json();
 
       if (data.status === "success") {
+        // Register doesn't return a token — auto-login to get one
+        const loginRes = await fetch(`${API_BASE}/login.php`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ login: formData.email, password: formData.password }),
+        });
+        const loginData = await loginRes.json();
+        if (loginData.token) {
+          saveToken(loginData.token);
+        }
+
         setUser(data.user);
-        await mergeGuestData(data.user.id);
+        await mergeGuestData();
         onSuccess?.(data.user);
       } else {
         setError(data.message || "Signup failed");

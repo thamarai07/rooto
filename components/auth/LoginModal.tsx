@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, Phone, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { clearGuestCart, getGuestCart, getGuestWishlist } from "@/lib/guestStorage";
+import { authHeaders } from "@/lib/auth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api";
 
@@ -14,26 +15,27 @@ export default function LoginModal({ onSuccess, onSwitchToSignup, onForgotPasswo
 
   const [formData, setFormData] = useState({ login: "", password: "" });
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError]     = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const mergeGuestData = async (userId: number) => {
-    const guestCart     = getGuestCart();
+  const mergeGuestData = async () => {
+    const guestCart = getGuestCart();
     const guestWishlist = getGuestWishlist();
+    const hdrs = authHeaders(); // token already saved before this call
 
     await Promise.all([
       ...guestCart.map((item) =>
         fetch(`${API_BASE}/cart.php`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ product_id: item.id, quantity: item.quantity, user_id: userId }),
+          headers: { "Content-Type": "application/json", ...hdrs },
+          body: JSON.stringify({ product_id: item.id, quantity: item.quantity }),
         })
       ),
       ...guestWishlist.map((item) =>
         fetch(`${API_BASE}/wishlist.php`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ product_id: item.id, user_id: userId }),
+          headers: { "Content-Type": "application/json", ...hdrs },
+          body: JSON.stringify({ product_id: item.id }),
         })
       ),
     ]);
@@ -74,7 +76,7 @@ export default function LoginModal({ onSuccess, onSwitchToSignup, onForgotPasswo
         }
 
         setUser(data.user);
-        await mergeGuestData(data.user.id);
+        await mergeGuestData();
         onSuccess?.(data.user);
       } else {
         setError(data.message || "Invalid credentials");

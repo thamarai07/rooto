@@ -1,19 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { authHeaders } from "@/lib/auth"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
-
-// ← Helper to get user_id from localStorage
-const getUserId = (): number | null => {
-  try {
-    const user = localStorage.getItem("auth_user")
-    return user ? JSON.parse(user).id : null
-  } catch {
-    return null
-  }
-}
-
 
 interface CartItem {
   cart_id: number
@@ -48,11 +38,12 @@ export function useCartData() {
 
   const fetchCart = async () => {
     try {
-      const userId = getUserId()
-      if (!userId) return   // ← don't fetch if not logged in
+      const headers = authHeaders()
+      if (!headers.Authorization) return  // not logged in — skip
 
-      const response = await fetch(`${API_BASE}/cart.php?user_id=${userId}`, {
-        credentials: 'include'
+      const response = await fetch(`${API_BASE}/cart.php`, {
+        credentials: 'include',
+        headers,
       })
       const data = await response.json()
       if (data.status === "success") {
@@ -97,15 +88,16 @@ export function useCartData() {
     setIsUpdating(productId)
 
     try {
-      const userId = getUserId()
       await fetch(`${API_BASE}/cart.php`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders(),
+        },
         credentials: 'include',
         body: JSON.stringify({
           product_id: productId,
           quantity: newQuantity,
-          user_id: userId   // ← pass user_id
         }),
       })
       await fetchCart()
@@ -124,10 +116,10 @@ export function useCartData() {
     setIsUpdating(productId)
 
     try {
-      const userId = getUserId()
-      await fetch(`${API_BASE}/cart.php?product_id=${productId}&user_id=${userId}`, {
+      await fetch(`${API_BASE}/cart.php?product_id=${productId}`, {
         method: "DELETE",
-        credentials: 'include'
+        credentials: 'include',
+        headers: authHeaders(),
       })
       if (itemToRemove) {
         window.dispatchEvent(new CustomEvent("celebrate-action", {
@@ -152,15 +144,16 @@ export function useCartData() {
 
   const addToCart = async (product: Product) => {
     try {
-      const userId = getUserId()
       await fetch(`${API_BASE}/cart.php`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders(),
+        },
         credentials: 'include',
         body: JSON.stringify({
           product_id: product.id,
           quantity: 0.25,
-          user_id: userId   // ← pass user_id
         }),
       })
       await fetchCart()

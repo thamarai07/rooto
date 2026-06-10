@@ -6,6 +6,7 @@ import { Heart, ArrowLeft, ShoppingCart, Loader2, TrendingUp, Star, Check, Trash
 import { Button } from "@/components/ui/button"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
+import { authHeaders } from "@/lib/auth"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 const getUserId = (): number | null => {
@@ -100,8 +101,8 @@ export default function WishlistPage() {
     try {
       const userId = getUserId()
       if (!userId) return
-      const response = await fetch(`${API_BASE}/wishlist.php?user_id=${userId}`, {
-        credentials: 'include'
+      const response = await fetch(`${API_BASE}/wishlist.php`, {
+        headers: authHeaders()
       })
       const data = await response.json()
 
@@ -168,8 +169,8 @@ export default function WishlistPage() {
 
     try {
       const response = await fetch(
-        `${API_BASE}/wishlist.php?product_id=${productId}&user_id=${getUserId()}`,
-        { method: "DELETE", credentials: 'include' }
+        `${API_BASE}/wishlist.php?product_id=${productId}`,
+        { method: "DELETE", headers: authHeaders() }
       )
 
       const data = await response.json()
@@ -206,9 +207,8 @@ export default function WishlistPage() {
     try {
       const response = await fetch(`${API_BASE}/cart.php`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: 'include',
-        body: JSON.stringify({ product_id: item.id, quantity: 0.25, user_id: getUserId() }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ product_id: item.id, quantity: 0.25 }),
       })
 
       const data = await response.json()
@@ -247,9 +247,8 @@ export default function WishlistPage() {
     try {
       const response = await fetch(`${API_BASE}/wishlist.php`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: 'include',
-        body: JSON.stringify({ product_id: product.id, user_id: getUserId() }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ product_id: product.id }),
       })
 
       const data = await response.json()

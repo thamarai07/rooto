@@ -7,6 +7,7 @@ import {
     X, Phone, Mail, Download, Loader2
 } from "lucide-react";
 import OrderCancelSuccessModal from "../Cancellmodel";
+import { authHeaders, getToken } from "@/lib/auth";
 
 // ============================================================================
 // CONFIGURATION
@@ -273,7 +274,8 @@ function OrderDetailsModal({
     const customerId = getUserId();
 
     const handleDownloadInvoice = () => {
-        window.open(`${API_BASE}/download_invoice.php?order_id=${order.id}&customer_id=${customerId}`, '_blank');
+        const token = getToken();
+        window.open(`${API_BASE}/download_invoice.php?order_id=${order.id}&token=${token}`, '_blank');
     };
 
     const handleCancelOrder = async () => {
@@ -286,10 +288,9 @@ function OrderDetailsModal({
         try {
             const response = await fetch(`${API_BASE}/cancel_order.php`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify({
                     order_id: order.id,
-                    customer_id: customerId,
                     reason: cancelReason
                 })
             });
@@ -569,14 +570,15 @@ export default function OrdersPage() {
             }
 
             const params = new URLSearchParams({
-                customer_id: customerId.toString(),
                 status: filterStatus,
                 search: searchQuery,
                 page: pagination.page.toString(),
                 limit: "20"
             });
 
-            const response = await fetch(`${API_BASE}/get_orderssite.php?${params}`);
+            const response = await fetch(`${API_BASE}/get_orderssite.php?${params}`, {
+                headers: authHeaders()
+            });
             const data = await response.json();
 
             if (data.status === "success") {

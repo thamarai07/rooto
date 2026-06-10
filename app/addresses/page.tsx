@@ -10,6 +10,7 @@ import AddressFormModal from "@/components/addresses/AddressFormModal";
 import DeleteConfirmModal from "@/components/addresses/DeleteConfirmModal";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import { authHeaders } from "@/lib/auth";
 
 // ============================================================================
 // CONFIGURATION
@@ -143,7 +144,9 @@ export default function AddressesPage() {
             const customerId = getUserId();
             console.log("🔍 Fetching addresses for customer:", customerId);
 
-            const response = await fetch(`${API_BASE}/get_addresses.php?customerId=${customerId}`);
+            const response = await fetch(`${API_BASE}/get_addresses.php`, {
+                headers: authHeaders()
+            });
             const data = await response.json();
 
             console.log("📦 API Response:", data);
@@ -194,11 +197,8 @@ export default function AddressesPage() {
 
             const response = await fetch(`${API_BASE}/save_address.php`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    customerId,
-                    ...apiData
-                })
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                body: JSON.stringify(apiData)
             });
 
             const data = await response.json();
@@ -224,7 +224,7 @@ export default function AddressesPage() {
 
             const response = await fetch(`${API_BASE}/update_address.php`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify({
                     id: selectedAddress?.id,
                     ...apiData
@@ -255,10 +255,9 @@ export default function AddressesPage() {
             const customerId = getUserId();
             const response = await fetch(`${API_BASE}/delete_address.php`, {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify({
-                    id: selectedAddress.id,
-                    customer_id: customerId
+                    id: selectedAddress.id
                 })
             });
 
@@ -284,10 +283,9 @@ export default function AddressesPage() {
             const customerId = getUserId();
             const response = await fetch(`${API_BASE}/set_default_address.php`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...authHeaders() },
                 body: JSON.stringify({
-                    id: addressId,
-                    customer_id: customerId
+                    id: addressId
                 })
             });
 

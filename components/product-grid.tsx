@@ -17,6 +17,7 @@ import {
   updateGuestCartQty,
   removeFromGuestCart,
 } from "@/lib/guestStorage"
+import { authHeaders } from "@/lib/auth"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
@@ -321,8 +322,8 @@ const ProductCard = memo(function ProductCard({
               onWishlistToggle(product.id)
             }}
             className={`absolute bottom-2 right-2 p-2 rounded-full shadow-md transition-all duration-200 ${isWishlisted
-                ? "bg-red-500 text-white"
-                : "bg-white text-gray-700"
+              ? "bg-red-500 text-white"
+              : "bg-white text-gray-700"
               }`}
           >
             <Heart
@@ -443,8 +444,8 @@ export default function ProductGrid() {
       try {
         await fetch(`${API_BASE}/cart.php`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ product_id: productId, quantity, user_id: userId })
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({ product_id: productId, quantity })
         })
         window.dispatchEvent(new Event('cart-updated'))
       } catch {
@@ -492,8 +493,8 @@ export default function ProductGrid() {
           // Logged-in: parallel fetch all 3
           const [productsRes, wishlistRes, cartRes] = await Promise.all([
             fetch(`${API_BASE}/get-product.php?limit=12`),
-            fetch(`${API_BASE}/wishlist.php?user_id=${userId}`),
-            fetch(`${API_BASE}/cart.php?user_id=${userId}`)
+            fetch(`${API_BASE}/wishlist.php`, { headers: authHeaders() }),
+            fetch(`${API_BASE}/cart.php`, { headers: authHeaders() })
           ])
 
           // Parse all in parallel
@@ -534,7 +535,7 @@ export default function ProductGrid() {
       // Only hit the API if the drawer is open OR on the initial load
       // When drawer is closed, skip the fetch — data will refresh when it opens
       try {
-        const res = await fetch(`${API_BASE}/cart.php?user_id=${userId}`)
+        const res = await fetch(`${API_BASE}/cart.php`, { headers: authHeaders() })
         const data = await res.json()
         if (data.status !== 'success') return
 
@@ -583,7 +584,7 @@ export default function ProductGrid() {
       const userId = getUserId()
       if (!userId) return
       try {
-        const res = await fetch(`${API_BASE}/wishlist.php?user_id=${userId}`)
+        const res = await fetch(`${API_BASE}/wishlist.php`, { headers: authHeaders() })
         const data = await res.json()
         if (data.status === 'success' && data.data)
           setWishlistIds(new Set(data.data.map((i: any) => Number(i.id))))
@@ -624,8 +625,8 @@ export default function ProductGrid() {
     try {
       if (isWishlisted) {
         const res = await fetch(
-          `${API_BASE}/wishlist.php?product_id=${productId}&user_id=${userId}`,
-          { method: 'DELETE', credentials: 'include' }
+          `${API_BASE}/wishlist.php?product_id=${productId}`,
+          { method: 'DELETE', headers: authHeaders() }
         )
         const data = await res.json()
         if (data.status === 'success') {
@@ -638,8 +639,8 @@ export default function ProductGrid() {
       } else {
         const res = await fetch(`${API_BASE}/wishlist.php`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ product_id: productId, user_id: userId })
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({ product_id: productId })
         })
         const data = await res.json()
         if (data.status === 'success' || data.status === 'info') {
@@ -682,8 +683,8 @@ export default function ProductGrid() {
     try {
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: product.id, quantity: 0.25, user_id: userId })
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ product_id: product.id, quantity: 0.25 })
       })
       const data = await res.json()
       if (data.status === 'success') {
@@ -733,7 +734,7 @@ export default function ProductGrid() {
     setCartItems(prev => prev.filter(item => Number(item.id) !== productId))
 
     try {
-      const res = await fetch(`${API_BASE}/cart.php?product_id=${productId}&user_id=${userId}`, { method: 'DELETE' })
+      const res = await fetch(`${API_BASE}/cart.php?product_id=${productId}`, { method: 'DELETE', headers: authHeaders() })
       const data = await res.json()
       if (data.status === 'success') {
         showToast('Item removed from cart', 'info')
@@ -752,9 +753,9 @@ export default function ProductGrid() {
       try {
         await fetch(`${API_BASE}/save_address.php`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders() },
           body: JSON.stringify({
-            customerId: user?.id, name: address.name, phoneNumber: address.phoneNumber,
+            name: address.name, phoneNumber: address.phoneNumber,
             email: address.email, flatNo: address.flatNo, landmark: address.landmark || '',
             fullAddress: address.fullAddress, label: address.label,
             coordinates: address.coordinates, isDefault: false
@@ -774,8 +775,8 @@ export default function ProductGrid() {
     try {
       const res = await fetch(`${API_BASE}/clear_cart.php`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerId: user?.id, orderId }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ orderId }),
       })
       const result = await res.json()
       if (result.success) {
@@ -793,8 +794,8 @@ export default function ProductGrid() {
     try {
       await fetch(`${API_BASE}/cart.php`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_id: productId, quantity: newQuantity, user_id: getUserId() }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ product_id: productId, quantity: newQuantity }),
       })
       window.dispatchEvent(new Event("cart-updated"))
     } catch { /* silent */ }
@@ -1006,8 +1007,8 @@ export default function ProductGrid() {
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
                       className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 border-2 ${isActive
-                          ? "bg-green-600 text-white border-green-600 shadow-md scale-105"
-                          : "bg-white text-gray-600 border-gray-200 hover:border-green-400 hover:text-green-700 hover:bg-green-50"
+                        ? "bg-green-600 text-white border-green-600 shadow-md scale-105"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-green-400 hover:text-green-700 hover:bg-green-50"
                         }`}
                     >
                       <span>{emoji}</span>

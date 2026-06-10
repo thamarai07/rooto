@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Heart, ShoppingCart, Star, Plus, Check } from "lucide-react"
+import { authHeaders } from "@/lib/auth"
 
 interface Product {
   id: number
@@ -41,8 +42,8 @@ export default function ProductCard({ product }: { product: Product }) {
     try {
       const userId = getUserId()
       if (!userId) return
-      const res = await fetch(`${API_BASE}/wishlist.php?user_id=${userId}`, {
-        credentials: 'include'
+      const res = await fetch(`${API_BASE}/wishlist.php`, {
+        headers: authHeaders()
       })
 
       const data = await res.json()
@@ -64,9 +65,9 @@ export default function ProductCard({ product }: { product: Product }) {
     try {
       if (isWishlisted) {
         // Remove from wishlist
-        const res = await fetch(`${API_BASE}/wishlist.php?product_id=${product.id}&user_id=${getUserId()}`, {
+        const res = await fetch(`${API_BASE}/wishlist.php?product_id=${product.id}`, {
           method: "DELETE",
-          credentials: 'include'
+          headers: authHeaders()
         })
         const data = await res.json()
 
@@ -94,8 +95,8 @@ export default function ProductCard({ product }: { product: Product }) {
         // Add to wishlist
         const res = await fetch(`${API_BASE}/wishlist.php`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ product_id: product.id, user_id: getUserId() })
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ product_id: product.id })
         })
         const data = await res.json()
 
@@ -136,11 +137,10 @@ export default function ProductCard({ product }: { product: Product }) {
     try {
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({
           product_id: product.id,
           quantity: 0.25, // Default 250g
-          user_id: getUserId()
         })
       })
 

@@ -1,8 +1,36 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
+// ─── JWT Token helpers ────────────────────────────────────────────────────────
+
+/** Returns the stored JWT string, or null if not logged in. */
+export function getToken(): string | null {
+  try {
+    return localStorage.getItem("auth_token")
+  } catch {
+    return null
+  }
+}
+
+/** Persist the JWT returned by the login API. */
+export function saveToken(token: string) {
+  localStorage.setItem("auth_token", token)
+}
+
+/** Build Authorization header object — returns {} if no token. */
+export function authHeaders(): Record<string, string> {
+  const token = getToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+/** Remove the stored JWT (call on logout). */
+export function clearToken() {
+  localStorage.removeItem("auth_token")
+}
+
+// ─── User profile helpers ─────────────────────────────────────────────────────
+
 export async function getMe() {
   try {
-    // First check localStorage for user data (instant, no network)
     const savedUser = localStorage.getItem("auth_user")
     if (savedUser) {
       return JSON.parse(savedUser)
@@ -15,14 +43,14 @@ export async function getMe() {
 
 export async function logout() {
   try {
-    // Clear localStorage
+    clearToken()
     localStorage.removeItem("auth_user")
-    // Also clear backend cookie
     await fetch(`${API_BASE}/logout.php`, {
       method: 'POST',
       credentials: 'include',
     })
   } catch {
+    clearToken()
     localStorage.removeItem("auth_user")
   }
 }
@@ -32,7 +60,7 @@ export function saveUser(user: object) {
   localStorage.setItem("auth_user", JSON.stringify(user))
 }
 
-// Clear user from localStorage  
+// Clear user from localStorage
 export function clearUser() {
   localStorage.removeItem("auth_user")
 }

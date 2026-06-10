@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { UserData, SavedAddress } from "@/components/types"
+import { authHeaders } from "@/lib/auth"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
@@ -38,7 +39,7 @@ export function useCheckout() {
       try {
         const response = await fetch(`${API_BASE}/save_address.php`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders() },
           body: JSON.stringify({
             customerId: user?.id,
             name: address.name,
@@ -94,7 +95,7 @@ export function useCheckout() {
 
 
         const requestBody = {
-          customerId: user?.id,
+          // customerId intentionally omitted — backend reads it from JWT Bearer token
           items: cartItems.map(item => ({
             id: item.id,
             name: item.name,
@@ -124,7 +125,7 @@ export function useCheckout() {
 
         const response = await fetch(`${API_BASE}/create_order.php`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders() },
           body: JSON.stringify(requestBody),
         })
 

@@ -10,6 +10,7 @@ import { UserData } from "./types"
 import { usePathname } from "next/navigation"
 import { useAuth } from '@/hooks/useAuth'
 import ForgotPasswordModal from "@/components/auth/ForgotPasswordModal"
+import { authHeaders } from "@/lib/auth"
 
 interface WishlistItem {
   id: string
@@ -137,8 +138,8 @@ export default function Header() {
     if (!user?.id) return
     try {
       const [wRes, cRes] = await Promise.all([
-        fetch(`${API_BASE}/get_wishlist_count.php?user_id=${user.id}`),
-        fetch(`${API_BASE}/get_cart_count.php?user_id=${user.id}`),
+        fetch(`${API_BASE}/get_wishlist_count.php`, { headers: authHeaders() }),
+        fetch(`${API_BASE}/get_cart_count.php`, { headers: authHeaders() }),
       ])
       const [w, c] = await Promise.all([wRes.json(), cRes.json()])
       if (w.status === "success") setWishlistCount(w.count)
@@ -167,7 +168,7 @@ export default function Header() {
       return
     }
     try {
-      const res = await fetch(`${API_BASE}/wishlist.php?user_id=${user.id}`)
+      const res = await fetch(`${API_BASE}/wishlist.php`, { headers: authHeaders() })
       const json = await res.json()
       if (json.status === "success") setWishlistItems(json.data)
     } catch (e) { console.error(e) }
@@ -180,7 +181,7 @@ export default function Header() {
       return
     }
     try {
-      const res = await fetch(`${API_BASE}/cart.php?user_id=${user.id}`)
+      const res = await fetch(`${API_BASE}/cart.php`, { headers: authHeaders() })
       const json = await res.json()
       if (json.status === "success") setCartItems(json.data)
     } catch (e) { console.error(e) }
@@ -199,7 +200,7 @@ export default function Header() {
         window.dispatchEvent(new Event("guest-wishlist-updated"))
         return
       }
-      const res = await fetch(`${API_BASE}/wishlist.php?product_id=${id}&user_id=${user.id}`, { method: "DELETE" })
+      const res = await fetch(`${API_BASE}/wishlist.php?product_id=${id}`, { method: "DELETE", headers: authHeaders() })
       const json = await res.json()
       if (json.status === "success") {
         await fetchWishlist()
@@ -221,7 +222,7 @@ export default function Header() {
         window.dispatchEvent(new Event("guest-cart-updated"))
         return
       }
-      const res = await fetch(`${API_BASE}/cart.php?product_id=${id}&user_id=${user.id}`, { method: "DELETE" })
+      const res = await fetch(`${API_BASE}/cart.php?product_id=${id}`, { method: "DELETE", headers: authHeaders() })
       const json = await res.json()
       if (json.status === "success") {
         await fetchCart()
@@ -248,8 +249,8 @@ export default function Header() {
       }
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_id: item.id, quantity: 1, user_id: user.id }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ product_id: item.id, quantity: 1 }),
       })
       const json = await res.json()
       if (json.status === "success") {
@@ -275,8 +276,8 @@ export default function Header() {
     try {
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_id: id, quantity: newQty, user_id: user.id }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ product_id: id, quantity: newQty }),
       })
       const json = await res.json()
       if (json.status === "success") {

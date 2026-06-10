@@ -15,6 +15,7 @@ import SignupModal from "@/components/auth/SignupModal";
 import DeliveryModal from "@/components/delivery/DeliveryModal";
 import CheckoutSuccessView from "@/components/delivery/CheckoutSuccessView";
 import { UserData, SavedAddress } from "@/components/types";
+import { authHeaders } from "@/lib/auth";
 // existing imports-க்கு கீழே add பண்ணு
 import {
   getGuestCart,
@@ -517,9 +518,8 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
       try {
         const response = await fetch(`${API_BASE}/save_address.php`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders() },
           body: JSON.stringify({
-            customerId: user?.id,
             name: address.name,
             phoneNumber: address.phoneNumber,
             email: address.email,
@@ -565,9 +565,8 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
 
       const response = await fetch(`${API_BASE}/create_order.php`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({
-          customerId: user?.id,
           items: cartItems,
           address: savedAddress,
           notes: orderNotes,
@@ -600,9 +599,8 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
     try {
       const response = await fetch(`${API_BASE}/clear_cart.php`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({
-          customerId: user?.id,
           orderId: orderId,
         }),
       });
@@ -632,7 +630,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
     try {
       await fetch(`${API_BASE}/cart.php`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ product_id: productId, quantity: newQuantity }),
       });
       window.dispatchEvent(new Event("cart-updated"));
@@ -649,7 +647,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
     setIsUpdating(productId);
 
     try {
-      await fetch(`${API_BASE}/cart.php?product_id=${productId}`, { method: "DELETE" });
+      await fetch(`${API_BASE}/cart.php?product_id=${productId}`, { method: "DELETE", headers: authHeaders() });
       window.dispatchEvent(new Event("cart-updated"));
       showToast('Item removed from cart', 'info');
     } catch (error) {
@@ -811,11 +809,10 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
     try {
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           product_id: product.id,
           quantity: quantity,
-          user_id: user?.id,
           status: 'active',
           last_added_at: new Date().toISOString()
         })
@@ -826,7 +823,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
       if (data.status === 'success') {
         showToast('Added to cart!', 'success');
 
-        const cartRes = await fetch(`${API_BASE}/cart.php?user_id=${user?.id}`);
+        const cartRes = await fetch(`${API_BASE}/cart.php`, { headers: authHeaders() });
         const cartData = await cartRes.json();
 
         if (cartData.status === 'success') {
@@ -871,11 +868,10 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
     try {
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           product_id: productId,
           quantity: quantity,
-          user_id: user?.id,
           last_added_at: new Date().toISOString()
         })
       });
@@ -898,8 +894,9 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
     }
     try {
       const userId = user.id;
-      const res = await fetch(`${API_BASE}/cart.php?product_id=${productId}&user_id=${userId}`, {
-        method: 'DELETE'
+      const res = await fetch(`${API_BASE}/cart.php?product_id=${productId}`, {
+        method: 'DELETE',
+        headers: authHeaders()
       });
 
       const data = await res.json();
