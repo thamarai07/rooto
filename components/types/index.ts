@@ -21,13 +21,21 @@ export interface SavedAddress {
     email: string
     phoneNumber: string
     flatNo: string
+    streetAddress?: string
+    area?: string
     landmark?: string
+    city?: string
+    state?: string
+    pincode?: string
+    country?: string
     fullAddress: string
     label: 'Home' | 'Work' | 'Other'
     coordinates: {
       lat: number
       lng: number
     }
+    isDefault?: boolean
+    phoneVerified?: boolean
     savedAt: string
   }
   

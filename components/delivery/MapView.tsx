@@ -7,7 +7,7 @@ interface UserData {
   id: any
   name: string
   email: string
-  phone: string
+  phone?: string
 }
 
 interface SavedAddress {

@@ -28,7 +28,13 @@ export interface SavedAddress {
     phoneNumber: string;
     email?: string;
     flatNo: string;
+    streetAddress?: string;
+    area?: string;
     landmark?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    country?: string;
     fullAddress: string;
     label: "home" | "work" | "other";
     coordinates?: {
@@ -36,6 +42,7 @@ export interface SavedAddress {
         lng: number;
     };
     isDefault: boolean;
+    phoneVerified?: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -48,12 +55,19 @@ interface APIAddress {
     phone: string;  // Different field name
     email?: string;
     flat_no: string;  // Different field name
+    street_address?: string;
+    area?: string;
     landmark?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    country?: string;
     full_address: string;  // Different field name
     label: string;  // Capitalized values
     latitude?: number;
     longitude?: number;
     is_default: number;  // 0 or 1, not boolean
+    phone_verified?: number;
     created_at: string;
     updated_at: string;
 }
@@ -85,30 +99,44 @@ const transformAPIAddress = (apiAddress: APIAddress): SavedAddress => {
         phoneNumber: apiAddress.phone,  // 🔥 Map phone -> phoneNumber
         email: apiAddress.email,
         flatNo: apiAddress.flat_no,  // 🔥 Map flat_no -> flatNo
+        streetAddress: apiAddress.street_address || '',
+        area: apiAddress.area || '',
         landmark: apiAddress.landmark,
+        city: apiAddress.city || '',
+        state: apiAddress.state || '',
+        pincode: apiAddress.pincode || '',
+        country: apiAddress.country || 'India',
         fullAddress: apiAddress.full_address,  // 🔥 Map full_address -> fullAddress
-        label: apiAddress.label.toLowerCase() as "home" | "work" | "other",  // 🔥 Convert to lowercase
+        label: (apiAddress.label || 'home').toLowerCase() as "home" | "work" | "other",  // 🔥 Convert to lowercase
         coordinates: apiAddress.latitude && apiAddress.longitude ? {
             lat: apiAddress.latitude,
             lng: apiAddress.longitude
         } : undefined,
         isDefault: apiAddress.is_default === 1,  // 🔥 Convert 0/1 to boolean
+        phoneVerified: apiAddress.phone_verified === 1,
         created_at: apiAddress.created_at,
         updated_at: apiAddress.updated_at
     };
 };
 
-// 🔥 Transform frontend data to API format (for updates)
+// 🔥 Transform frontend data to API format (camelCase contract; backend accepts it)
 const transformToAPIFormat = (address: Partial<SavedAddress>) => {
     return {
         name: address.name,
-        phone: address.phoneNumber,  // 🔥 Map back
+        phoneNumber: address.phoneNumber,
         email: address.email,
-        flat_no: address.flatNo,  // 🔥 Map back
+        flatNo: address.flatNo,
+        streetAddress: address.streetAddress,
+        area: address.area,
         landmark: address.landmark,
-        full_address: address.fullAddress,  // 🔥 Map back
+        city: address.city,
+        state: address.state,
+        pincode: address.pincode,
+        country: address.country || 'India',
         label: address.label ? address.label.charAt(0).toUpperCase() + address.label.slice(1) : 'Home',  // 🔥 Capitalize
-        is_default: address.isDefault ? 1 : 0  // 🔥 Convert boolean to number
+        coordinates: address.coordinates,
+        isDefault: address.isDefault ? 1 : 0,  // 🔥 Convert boolean to number
+        phoneVerified: address.phoneVerified ? 1 : 0
     };
 };
 
