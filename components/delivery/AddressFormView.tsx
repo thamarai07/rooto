@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { MapPin, Home, Briefcase, Star, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { UserData, AddressForm, SavedAddress } from '../types'
 import { authHeaders } from '@/lib/auth'
@@ -31,21 +31,31 @@ export default function AddressFormView({
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const errorRef = useRef<HTMLDivElement>(null)
+
+  // Show an error AND scroll it into view (the form is scrollable and the
+  // Save button sits below the fold, so the error at the top is easy to miss).
+  const showError = (msg: string) => {
+    setError(msg)
+    setTimeout(() => {
+      errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 50)
+  }
 
   const handleSave = async () => {
     // Validation
     if (!formData.flatNo.trim()) {
-      setError('Please enter flat/house number')
+      showError('Please enter flat/house number')
       return
     }
 
     if (!formData.name.trim() || !formData.phoneNumber.trim() || !formData.email.trim()) {
-      setError('Please fill all required fields')
+      showError('Please fill all required fields')
       return
     }
 
     if (!locationData.address || !locationData.coordinates) {
-      setError('Location data is missing. Please go back and select a location.')
+      showError('Location data is missing. Please go back and select a location.')
       return
     }
 
@@ -90,11 +100,11 @@ export default function AddressFormView({
         // Call parent onSave
         onSave(savedAddress)
       } else {
-        setError(result.message || 'Failed to save address')
+        showError(result.message || 'Failed to save address')
       }
     } catch (err) {
       console.error('Error saving address:', err)
-      setError('Network error. Please check your connection and try again.')
+      showError('Network error. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -129,7 +139,7 @@ export default function AddressFormView({
       <div className="p-4 space-y-4">
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-red-700 text-xs">
+          <div ref={errorRef} className="bg-red-50 border border-red-200 rounded-lg p-2 text-red-700 text-xs scroll-mt-4">
             ⚠️ {error}
           </div>
         )}
