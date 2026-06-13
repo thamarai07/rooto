@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Check, Edit2, Download, AlertCircle, Truck, Clock, Shield, X, ChevronDown, ChevronUp, Package, CreditCard, FileText, ArrowRight, BadgeCheck, Leaf } from 'lucide-react'
+import {
+  Edit2, Download, Truck, Clock, Shield, X, ChevronDown, ChevronUp,
+  ChevronLeft, ArrowRight, BadgeCheck, Tag, ReceiptText, Lock
+} from 'lucide-react'
 import OrderSummary from './OrderSummary'
 import AddressDisplay from './AddressDisplay'
-import PaymentMethodSelector, {PaymentMethod} from './PaymentMethodSelector'
+import PaymentMethodSelector, { PaymentMethod } from './PaymentMethodSelector'
 
 interface CartItem {
   cart_id: number
@@ -43,7 +46,7 @@ interface CheckoutSuccessViewProps {
   onPlaceOrder: (paymentMethod: PaymentMethod, orderData?: any) => void | Promise<void>
   onClose: () => void
   isSubmitting?: boolean
-  clearCart?: (orderId?: number) => Promise<void> 
+  clearCart?: (orderId?: number) => Promise<void>
 }
 
 export default function CheckoutSuccessView({
@@ -59,12 +62,10 @@ export default function CheckoutSuccessView({
   clearCart
 }: CheckoutSuccessViewProps) {
   const [expandedItems, setExpandedItems] = useState(false)
-  const [agreeToTerms, setAgreeToTerms] = useState(false)
   const [showPaymentSelector, setShowPaymentSelector] = useState(false)
-  const [showImportantInfo, setShowImportantInfo] = useState(true)
+  const [showInfo, setShowInfo] = useState(false)
   const [mounted, setMounted] = useState(false)
 
-  // Portal mounting
   useEffect(() => {
     setMounted(true)
     document.body.style.overflow = 'hidden'
@@ -77,20 +78,15 @@ export default function CheckoutSuccessView({
   const tax = subtotal * 0.08
   const shipping = subtotal > 500 ? 0 : 50
   const total = subtotal + tax + shipping
+  const totalQty = items.reduce((sum, item) => sum + item.quantity, 0)
 
   const handlePlaceOrderClick = () => {
-    if (!agreeToTerms) {
-      alert('Please agree to the terms and conditions')
-      return
-    }
     setShowPaymentSelector(true)
   }
 
   const handlePaymentMethodSelect = async (paymentMethod: PaymentMethod) => {
     setShowPaymentSelector(false)
-    
     const calculatedTotal = subtotal + tax + shipping
-    
     const orderData = {
       items,
       address,
@@ -101,13 +97,10 @@ export default function CheckoutSuccessView({
       paymentMethod,
       clearCart
     }
-    
     await onPlaceOrder(paymentMethod, orderData)
   }
 
-  const handleClosePaymentSelector = () => {
-    setShowPaymentSelector(false)
-  }
+  const handleClosePaymentSelector = () => setShowPaymentSelector(false)
 
   const downloadInvoice = () => {
     const invoiceText = `
@@ -154,131 +147,99 @@ Expected Delivery: 1-2 business days
 
   const modalContent = (
     <>
-      {/* CHECKOUT REVIEW MODAL */}
-      <div 
-        className="checkout-review-modal fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center"
+      <div
+        className="qc-review fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center"
         style={{ zIndex: 99999 }}
         onClick={onClose}
       >
-        <div 
-          className="bg-gray-50 w-full sm:max-w-3xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[95vh] sm:max-h-[90vh] flex flex-col rounded-t-2xl"
+        <div
+          className="bg-gray-50 w-full sm:max-w-md sm:rounded-3xl shadow-2xl overflow-hidden max-h-[94vh] sm:max-h-[90vh] flex flex-col rounded-t-3xl qc-sheet"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* CLEAN PROFESSIONAL HEADER */}
-          <div className="bg-white border-b border-gray-200 px-5 py-4 sm:px-6 sm:py-5 flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-green-600 flex items-center justify-center shadow-sm">
-                  <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Order Review</h2>
-                  <p className="text-sm text-gray-500">Verify details before placing order</p>
-                </div>
-              </div>
-              
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-gray-100 active:bg-gray-200 rounded-full transition-colors"
-                style={{ touchAction: 'manipulation' }}
-              >
-                <X className="w-5 h-5 sm:w-6 sm:h-6 text-gray-500" />
-              </button>
+          {/* HEADER */}
+          <div className="bg-white px-3 py-3 flex items-center gap-2 flex-shrink-0 border-b border-gray-100">
+            <button
+              onClick={onClose}
+              className="w-9 h-9 rounded-full hover:bg-gray-100 active:bg-gray-200 flex items-center justify-center transition-colors"
+              style={{ touchAction: 'manipulation' }}
+              aria-label="Back to cart"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-700" />
+            </button>
+            <div className="flex-1">
+              <h2 className="text-base font-bold text-gray-900 leading-tight">Review your order</h2>
+              <p className="text-xs text-gray-400">{items.length} item{items.length !== 1 && 's'} • {totalQty.toFixed(2)} kg</p>
             </div>
-
-            {/* Order Summary Bar */}
-            <div className="mt-4 flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
-              <div className="flex items-center gap-6">
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Items</p>
-                  <p className="text-lg font-bold text-gray-900">{items.length}</p>
-                </div>
-                <div className="h-8 w-px bg-gray-300"></div>
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Weight</p>
-                  <p className="text-lg font-bold text-gray-900">{items.reduce((sum, item) => sum + item.quantity, 0).toFixed(2)} kg</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Total</p>
-                <p className="text-2xl font-bold text-green-600">₹{total.toFixed(2)}</p>
-              </div>
-            </div>
+            <button
+              onClick={onClose}
+              className="w-9 h-9 rounded-full hover:bg-gray-100 active:bg-gray-200 flex items-center justify-center transition-colors"
+              style={{ touchAction: 'manipulation' }}
+              aria-label="Close"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
           </div>
 
           {/* SCROLLABLE CONTENT */}
-          <div 
-            className="flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 py-4 space-y-4"
+          <div
+            className="flex-1 overflow-y-auto overscroll-contain p-3 space-y-3"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            {/* TRUST INDICATORS - Minimal & Professional */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              <div className="bg-white rounded-xl p-3 border border-gray-200 text-center">
-                <Truck className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-                <p className="text-xs font-semibold text-gray-900">1-2 Day Delivery</p>
+            {/* DELIVERY ETA BANNER */}
+            <div className="flex items-center gap-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl px-4 py-3 shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                <Truck className="w-5 h-5" />
               </div>
-              <div className="bg-white rounded-xl p-3 border border-gray-200 text-center">
-                <Shield className="w-5 h-5 text-green-600 mx-auto mb-1" />
-                <p className="text-xs font-semibold text-gray-900">Secure Checkout</p>
-              </div>
-              <div className="bg-white rounded-xl p-3 border border-gray-200 text-center">
-                <Leaf className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
-                <p className="text-xs font-semibold text-gray-900">Farm Fresh</p>
+              <div className="leading-tight">
+                <p className="font-bold text-[15px]">Delivery in 1–2 days</p>
+                <p className="text-xs text-green-50/90">Standard delivery • 9 AM – 6 PM</p>
               </div>
             </div>
 
             {/* DELIVERY ADDRESS */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">1</span>
-                  Delivery Address
-                </h3>
-                <button
-                  onClick={onChangeAddress}
-                  className="text-sm font-medium text-green-600 hover:text-green-700 flex items-center gap-1 transition-colors"
-                  style={{ touchAction: 'manipulation' }}
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                  Change
-                </button>
-              </div>
-              <div className="p-4">
-                <AddressDisplay
-                  address={address}
-                  onChangeAddress={onChangeAddress}
-                  compact={true}
-                />
+            <div className="bg-white rounded-2xl p-3.5">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
+                  <BadgeCheck className="w-5 h-5 text-green-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[13px] font-bold text-gray-900">
+                      Delivering to <span className="text-green-700">{address.label}</span>
+                    </p>
+                    <button
+                      onClick={onChangeAddress}
+                      className="text-xs font-semibold text-green-600 hover:text-green-700 flex items-center gap-1 flex-shrink-0"
+                      style={{ touchAction: 'manipulation' }}
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      Change
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                    {address.name}, {address.flatNo}{address.landmark ? `, ${address.landmark}` : ''}, {address.fullAddress}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">{address.phoneNumber}</p>
+                </div>
               </div>
             </div>
 
             {/* ORDER ITEMS */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">2</span>
-                  Order Items
-                  <span className="text-xs font-normal text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">{items.length} items</span>
+            <div className="bg-white rounded-2xl overflow-hidden">
+              <button
+                onClick={() => setExpandedItems(!expandedItems)}
+                className="w-full flex items-center justify-between px-3.5 py-3"
+                style={{ touchAction: 'manipulation' }}
+              >
+                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                  <ReceiptText className="w-4 h-4 text-gray-400" />
+                  {items.length} item{items.length !== 1 && 's'} in cart
                 </h3>
-                <button
-                  onClick={() => setExpandedItems(!expandedItems)}
-                  className="text-sm font-medium text-gray-600 hover:text-gray-800 flex items-center gap-1 transition-colors"
-                  style={{ touchAction: 'manipulation' }}
-                >
-                  {expandedItems ? (
-                    <>
-                      <ChevronUp className="w-4 h-4" />
-                      <span className="hidden sm:inline">Collapse</span>
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="w-4 h-4" />
-                      <span className="hidden sm:inline">Expand</span>
-                    </>
-                  )}
-                </button>
-              </div>
-              <div className="p-4">
+                <span className="text-xs font-semibold text-green-600 flex items-center gap-1">
+                  {expandedItems ? <>Hide <ChevronUp className="w-4 h-4" /></> : <>View <ChevronDown className="w-4 h-4" /></>}
+                </span>
+              </button>
+              <div className="px-3.5 pb-3.5">
                 <OrderSummary
                   items={items}
                   isUpdating={isUpdating}
@@ -289,164 +250,124 @@ Expected Delivery: 1-2 business days
               </div>
             </div>
 
-            {/* PRICE BREAKDOWN */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">3</span>
-                  Price Summary
-                </h3>
+            {/* BILL DETAILS */}
+            <div className="bg-white rounded-2xl p-3.5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-gray-900">Bill details</h3>
+                <button
+                  onClick={downloadInvoice}
+                  className="text-xs font-medium text-gray-400 hover:text-gray-600 flex items-center gap-1"
+                  style={{ touchAction: 'manipulation' }}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Invoice
+                </button>
               </div>
-              <div className="p-4 space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Subtotal ({items.length} items)</span>
+
+              <div className="space-y-2.5">
+                <div className="flex justify-between text-[13px]">
+                  <span className="text-gray-500">Item total</span>
                   <span className="font-medium text-gray-900">₹{subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Tax (8% GST)</span>
+                <div className="flex justify-between text-[13px]">
+                  <span className="text-gray-500">Taxes &amp; charges (GST)</span>
                   <span className="font-medium text-gray-900">₹{tax.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Delivery Charge</span>
+                <div className="flex justify-between text-[13px]">
+                  <span className="text-gray-500 flex items-center gap-1.5">
+                    <Truck className="w-3.5 h-3.5 text-gray-400" /> Delivery fee
+                  </span>
                   {shipping === 0 ? (
-                    <span className="font-semibold text-green-600">FREE</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-gray-400 line-through">₹50.00</span>
+                      <span className="font-semibold text-green-600">FREE</span>
+                    </span>
                   ) : (
                     <span className="font-medium text-gray-900">₹{shipping.toFixed(2)}</span>
                   )}
                 </div>
-                {shipping === 0 && (
-                  <p className="text-xs text-green-600 bg-green-50 px-3 py-2 rounded-lg">
-                    You saved ₹50 on delivery! Free delivery on orders above ₹500.
-                  </p>
-                )}
-                <div className="pt-3 border-t border-gray-200">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-900">Total Amount</span>
-                    <span className="text-2xl font-bold text-gray-900">₹{total.toFixed(2)}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 text-right mt-1">Inclusive of all taxes</p>
+
+                <div className="border-t border-dashed border-gray-200 my-1" />
+
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-gray-900">To Pay</span>
+                  <span className="text-lg font-extrabold text-gray-900">₹{total.toFixed(2)}</span>
                 </div>
               </div>
-            </div>
 
-            {/* IMPORTANT INFORMATION */}
-            <div className="bg-amber-50 rounded-xl border border-amber-200 overflow-hidden">
-              <button
-                onClick={() => setShowImportantInfo(!showImportantInfo)}
-                className="w-full px-4 py-3 flex items-center justify-between"
-                style={{ touchAction: 'manipulation' }}
-              >
-                <h4 className="text-sm font-semibold text-amber-800 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  Important Information
-                </h4>
-                {showImportantInfo ? (
-                  <ChevronUp className="w-4 h-4 text-amber-600" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-amber-600" />
-                )}
-              </button>
-
-              {showImportantInfo && (
-                <div className="px-4 pb-4">
-                  <ul className="space-y-2 text-sm text-amber-900">
-                    <li className="flex items-start gap-2">
-                      <BadgeCheck className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                      <span>All products are hand-picked and quality checked</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                      <span>Delivery between 9 AM - 6 PM on your selected day</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Shield className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                      <span>100% refund guarantee if not satisfied</span>
-                    </li>
-                  </ul>
+              {shipping === 0 && (
+                <div className="mt-3 flex items-center gap-2 bg-green-50 text-green-700 rounded-xl px-3 py-2 text-xs font-medium">
+                  <Tag className="w-4 h-4" />
+                  You saved ₹50 on delivery!
                 </div>
               )}
             </div>
 
-            {/* TERMS & CONDITIONS */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <div className="relative flex-shrink-0 mt-0.5">
-                  <input
-                    type="checkbox"
-                    checked={agreeToTerms}
-                    onChange={(e) => setAgreeToTerms(e.target.checked)}
-                    className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
-                    style={{ touchAction: 'manipulation' }}
-                  />
-                </div>
-                <div className="text-sm">
-                  <span className="font-medium text-gray-900">I agree to the Terms & Conditions</span>
-                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                    By placing this order, I confirm the delivery address and products selected. I agree to receive order updates via SMS and email.
-                  </p>
-                </div>
-              </label>
+            {/* IMPORTANT INFO (collapsible, subtle) */}
+            <div className="bg-white rounded-2xl overflow-hidden">
+              <button
+                onClick={() => setShowInfo(!showInfo)}
+                className="w-full px-3.5 py-3 flex items-center justify-between"
+                style={{ touchAction: 'manipulation' }}
+              >
+                <h4 className="text-sm font-semibold text-gray-700">Delivery &amp; refund info</h4>
+                {showInfo ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+              </button>
+              {showInfo && (
+                <ul className="px-3.5 pb-3.5 space-y-2 text-xs text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <BadgeCheck className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span>All products are hand-picked and quality checked</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Clock className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span>Delivery between 9 AM – 6 PM on your selected day</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Shield className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span>100% refund guarantee if you're not satisfied</span>
+                  </li>
+                </ul>
+              )}
+            </div>
+
+            <div className="flex items-center justify-center gap-1.5 text-[11px] text-gray-400 pt-1">
+              <Lock className="w-3 h-3 text-green-500" />
+              100% secure payments
             </div>
           </div>
 
-          {/* STICKY FOOTER */}
-          <div className="bg-white border-t border-gray-200 px-4 sm:px-6 py-4 flex-shrink-0 space-y-3">
-            {/* Main CTA */}
-            <button
-              onClick={handlePlaceOrderClick}
-              disabled={!agreeToTerms || isSubmitting}
-              className="w-full py-4 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold text-base rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
-              style={{ touchAction: 'manipulation' }}
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Processing Order...</span>
-                </>
-              ) : (
-                <>
-                  <CreditCard className="w-5 h-5" />
-                  <span>Continue to Payment</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-
-            {/* Secondary Actions */}
-            <div className="flex items-center justify-between">
+          {/* STICKY BOTTOM BAR (quick-commerce style) */}
+          <div className="bg-white border-t border-gray-100 px-3 pt-3 pb-4 flex-shrink-0 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0 leading-tight">
+                <p className="text-[20px] font-extrabold text-gray-900">₹{total.toFixed(2)}</p>
+                <p className="text-[11px] text-gray-400 -mt-0.5">
+                  TO PAY{shipping === 0 && <span className="text-green-600 font-semibold"> • Saved ₹50</span>}
+                </p>
+              </div>
               <button
-                onClick={downloadInvoice}
-                className="text-sm font-medium text-gray-600 hover:text-gray-800 flex items-center gap-1.5 transition-colors"
+                onClick={handlePlaceOrderClick}
+                disabled={isSubmitting}
+                className="flex-1 py-3.5 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-gray-300 text-white font-bold text-[15px] rounded-2xl shadow-sm transition-colors flex items-center justify-center gap-2"
                 style={{ touchAction: 'manipulation' }}
               >
-                <Download className="w-4 h-4" />
-                Download Invoice
-              </button>
-              
-              <button
-                onClick={onClose}
-                className="text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
-                style={{ touchAction: 'manipulation' }}
-              >
-                Back to Cart
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Placing order…</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Place Order</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </div>
-
-            {/* Trust Footer */}
-            <div className="flex items-center justify-center gap-4 pt-2 border-t border-gray-100">
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <Shield className="w-3.5 h-3.5 text-green-600" />
-                <span>SSL Secured</span>
-              </div>
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <BadgeCheck className="w-3.5 h-3.5 text-green-600" />
-                <span>Verified Seller</span>
-              </div>
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <Truck className="w-3.5 h-3.5 text-green-600" />
-                <span>Fast Delivery</span>
-              </div>
-            </div>
+            <p className="text-[10px] text-center text-gray-400 mt-2">
+              By placing the order you agree to our Terms &amp; Conditions
+            </p>
           </div>
         </div>
       </div>
@@ -461,11 +382,17 @@ Expected Delivery: 1-2 business days
           />
         </div>
       )}
+
+      <style jsx>{`
+        @keyframes qcSheetUp {
+          from { transform: translateY(50px); opacity: 0.5; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .qc-sheet { animation: qcSheetUp 0.28s cubic-bezier(0.16, 1, 0.3, 1); }
+      `}</style>
     </>
   )
 
-  // Use Portal to render at document.body level
   if (!mounted) return null
-  
   return createPortal(modalContent, document.body)
 }
