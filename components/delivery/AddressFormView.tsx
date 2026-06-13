@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { MapPin, Home, Briefcase, Star, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { UserData, AddressForm, SavedAddress } from '../types'
+import { authHeaders } from '@/lib/auth'
 
 interface AddressFormViewProps {
   userData: UserData
@@ -70,6 +71,7 @@ export default function AddressFormView({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...authHeaders(),
         },
         body: JSON.stringify(addressData),
       })

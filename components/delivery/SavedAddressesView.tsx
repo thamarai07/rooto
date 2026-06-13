@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { MapPin, Home, Briefcase, Star, Plus, Trash2, Loader2, Phone, Mail, X, Shield, Clock, ChevronRight } from 'lucide-react'
 import { UserData } from '../types'
+import { authHeaders } from '@/lib/auth'
 
 interface SavedAddress {
   id: number
@@ -12,7 +13,13 @@ interface SavedAddress {
   phone: string
   email: string
   flat_no: string
+  street_address?: string
+  area?: string
   landmark: string
+  city?: string
+  state?: string
+  pincode?: string
+  country?: string
   full_address: string
   label: 'Home' | 'Work' | 'Other'
   latitude: number
@@ -61,7 +68,9 @@ export default function SavedAddressesView({
     setError('')
 
     try {
-      const response = await fetch(`${API_BASE}/get_addresses.php?customerId=${userData.id}`)
+      const response = await fetch(`${API_BASE}/get_addresses.php`, {
+        headers: authHeaders()
+      })
       const result = await response.json()
 
       if (result.success) {
@@ -93,10 +102,9 @@ export default function SavedAddressesView({
     try {
       const response = await fetch(`${API_BASE}/delete_address.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
-          addressId: addressId,
-          customerId: userData.id
+          addressId: addressId
         })
       })
 
@@ -125,7 +133,13 @@ export default function SavedAddressesView({
       phoneNumber: address.phone,
       email: address.email,
       flatNo: address.flat_no,
+      streetAddress: address.street_address || '',
+      area: address.area || '',
       landmark: address.landmark,
+      city: address.city || '',
+      state: address.state || '',
+      pincode: address.pincode || '',
+      country: address.country || 'India',
       fullAddress: address.full_address,
       label: address.label,
       coordinates: {
