@@ -3,7 +3,6 @@
 import { useState, useRef } from 'react'
 import { MapPin, Home, Briefcase, Star, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { UserData, AddressForm, SavedAddress } from '../types'
-import { authHeaders } from '@/lib/auth'
 
 interface AddressFormViewProps {
   userData: UserData
@@ -63,48 +62,19 @@ export default function AddressFormView({
     setError('')
 
     try {
-      const addressData = {
-        customerId: userData.id,
-        name: formData.name,
-        phoneNumber: formData.phoneNumber,
-        email: formData.email,
-        flatNo: formData.flatNo,
-        landmark: formData.landmark,
+      // Build the address and let the PARENT persist it (single source of truth).
+      // Previously this component ALSO POSTed to save_address.php and the parent's
+      // handleAddressComplete saved it again → duplicate rows. Now it saves once.
+      const savedAddress: SavedAddress = {
+        ...formData,
         fullAddress: locationData.address,
-        label: formData.label,
         coordinates: locationData.coordinates,
-        isDefault: false // Set to true if you want this as default
+        savedAt: new Date().toISOString()
       }
-
-      const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
-      const response = await fetch(`${API_BASE}/save_address.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders(),
-        },
-        body: JSON.stringify(addressData),
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        // Create SavedAddress object for parent component
-        const savedAddress: SavedAddress = {
-          ...formData,
-          fullAddress: locationData.address,
-          coordinates: locationData.coordinates,
-          savedAt: new Date().toISOString()
-        }
-
-        // Call parent onSave
-        onSave(savedAddress)
-      } else {
-        showError(result.message || 'Failed to save address')
-      }
+      onSave(savedAddress)
     } catch (err) {
-      console.error('Error saving address:', err)
-      showError('Network error. Please check your connection and try again.')
+      console.error('Error preparing address:', err)
+      showError('Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
