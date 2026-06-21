@@ -302,91 +302,61 @@ const ProductCard = memo(function ProductCard({
   priority?: boolean
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col h-full">
+    <div className="group bg-white rounded-2xl border border-gray-100 hover:shadow-md transition-shadow duration-200 flex flex-col h-full">
 
-      {/* IMAGE */}
-      <Link href={`/product/${encodeURIComponent(product.slug)}`}>
-        <div className="relative w-full aspect-square bg-gray-100 overflow-hidden">
-          <img
-            src={product.image}
-            alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading={priority ? "eager" : "lazy"}
-            decoding="async"
-            onError={(e) => {
-              e.currentTarget.src =
-                "https://placehold.co/300x300/e5e7eb/6b7280?text=No+Image"
-            }}
-          />
-
-          {/* CATEGORY BADGE */}
-          <div className="absolute top-2 left-2 bg-green-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full">
-            {product.category}
-          </div>
-
-          {/* WISHLIST */}
-          <button
-            onClick={(e) => {
-              e.preventDefault()
-              onWishlistToggle(product.id)
-            }}
-            className={`absolute bottom-2 right-2 p-2 rounded-full shadow-md transition-all duration-200 ${isWishlisted
-              ? "bg-red-500 text-white"
-              : "bg-white text-gray-700"
-              }`}
-          >
-            <Heart
-              className={`w-4 h-4 ${isWishlisted ? "fill-current" : ""}`}
+      {/* IMAGE + overlapping ADD */}
+      <div className="relative">
+        <Link href={`/product/${encodeURIComponent(product.slug)}`} className="block">
+          <div className="relative w-full aspect-square bg-gray-50 rounded-2xl overflow-hidden">
+            <img
+              src={product.image}
+              alt={product.name}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              loading={priority ? "eager" : "lazy"}
+              decoding="async"
+              onError={(e) => {
+                e.currentTarget.src =
+                  "https://placehold.co/300x300/e5e7eb/6b7280?text=No+Image"
+              }}
             />
-          </button>
-        </div>
-      </Link>
+            {product.stock === 0 && (
+              <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                <span className="text-[10px] font-bold text-gray-600 bg-white px-2 py-0.5 rounded-full shadow">Out of stock</span>
+              </div>
+            )}
+          </div>
+        </Link>
 
-      {/* CONTENT */}
-      <div className="flex flex-col flex-1 p-3">
+        {/* WISHLIST */}
+        <button
+          onClick={(e) => { e.preventDefault(); onWishlistToggle(product.id) }}
+          aria-label="Wishlist"
+          className="absolute top-1.5 right-1.5 p-1.5 rounded-full bg-white/90 backdrop-blur shadow-sm active:scale-90 transition"
+        >
+          <Heart className={`w-3.5 h-3.5 ${isWishlisted ? "fill-red-500 text-red-500" : "text-gray-500"}`} />
+        </button>
 
-        {/* TITLE */}
+        {/* ADD (Blinkit-style pill, overlaps image bottom) */}
+        <button
+          onClick={() => onAddToCart(product)}
+          disabled={isLoading || product.stock === 0}
+          aria-label="Add to cart"
+          className="absolute -bottom-3 right-2 flex items-center gap-0.5 bg-white border border-green-600 text-green-700 hover:bg-green-50 font-bold text-xs px-2.5 py-1.5 rounded-lg shadow-sm disabled:opacity-50 active:scale-95 transition"
+        >
+          {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Plus className="w-3.5 h-3.5" /> ADD</>}
+        </button>
+      </div>
+
+      {/* CONTENT — image · name · price */}
+      <div className="flex flex-col flex-1 px-2.5 pt-4 pb-2.5">
         <Link href={`/product/${encodeURIComponent(product.slug)}`}>
-          <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[2.5rem]">
+          <h3 className="text-[13px] font-semibold text-gray-800 leading-snug line-clamp-2 min-h-[2.4rem]">
             {product.name}
           </h3>
         </Link>
-
-        {/* DESCRIPTION (hidden on small) */}
-        <p className="hidden sm:block text-xs text-gray-500 mt-1 line-clamp-2 min-h-[2rem]">
-          {truncateWords(
-            product.description || "Fresh and organic product",
-            10
-          )}
-        </p>
-
-        {/* PUSH BOTTOM */}
-        <div className="mt-auto pt-3">
-
-          {/* PRICE + BUTTON */}
-          <div className="flex items-center justify-between gap-2">
-
-            <div className="flex flex-col leading-tight">
-              <span className="text-base font-bold text-green-600">
-                ₹{product.price_per_kg}
-              </span>
-              <span className="text-[10px] text-gray-500">per kg</span>
-            </div>
-
-            <button
-              onClick={() => onAddToCart(product)}
-              disabled={isLoading || product.stock === 0}
-              className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 disabled:opacity-50"
-            >
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <ShoppingCart className="w-4 h-4" />
-              )}
-              Add
-            </button>
-
-          </div>
+        <div className="mt-auto pt-1.5 flex items-baseline gap-1">
+          <span className="text-sm font-extrabold text-gray-900">₹{product.price_per_kg}</span>
+          <span className="text-[10px] text-gray-400 font-medium">/kg</span>
         </div>
       </div>
     </div>
@@ -867,14 +837,14 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
           <div className="h-10 bg-gray-200 rounded w-64 mb-3 animate-pulse" />
           <div className="h-6 bg-gray-200 rounded w-48 animate-pulse" />
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-4">
           {[...Array(12)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100">
-              <div className="h-48 bg-gray-200 animate-pulse" />
-              <div className="p-4 space-y-3">
-                <div className="h-4 bg-gray-200 rounded animate-pulse" />
+            <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-100">
+              <div className="w-full aspect-square bg-gray-200 animate-pulse" />
+              <div className="px-2.5 pt-4 pb-2.5 space-y-2">
+                <div className="h-3 bg-gray-200 rounded animate-pulse" />
                 <div className="h-3 bg-gray-200 rounded w-3/4 animate-pulse" />
-                <div className="h-7 bg-gray-200 rounded w-1/2 animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded w-1/3 animate-pulse mt-1" />
               </div>
             </div>
           ))}
@@ -1054,7 +1024,7 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-4">
                 {filteredProducts.map((product, index) => (
                   <ProductCard
                     key={product.id}
