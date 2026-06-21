@@ -23,6 +23,7 @@ import {
   removeFromGuestCart,
 } from "@/lib/guestStorage"
 import { authHeaders } from "@/lib/auth"
+import { useAuth } from "@/hooks/useAuth"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
@@ -463,15 +464,15 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
     }, 400)
   ).current
 
-  // ─── Auth init ───────────────────────────────────────────────────────────────
+  // ─── Auth: mirror the GLOBAL auth context so login state is never stale ───────
+  // Previously this read localStorage once on mount, so logging in elsewhere
+  // (e.g. the header) left this component thinking the user was still a guest —
+  // which made the cart drawer show Login/Signup to logged-in users.
+  const { user: authUser } = useAuth()
   useEffect(() => {
-    const savedUser = localStorage.getItem("auth_user")
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser)
-      setUser(parsed)
-      setIsLoggedIn(true)
-    }
-  }, [])
+    setUser(authUser ?? null)
+    setIsLoggedIn(!!authUser)
+  }, [authUser])
 
   // ─── Checkout trigger (from cart page) ───────────────────────────────────────
   const handleCheckoutClick = useCallback(() => {
