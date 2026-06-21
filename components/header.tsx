@@ -369,7 +369,19 @@ export default function Header() {
               ) : (
                 <div className="h-9 w-9 sm:h-10 sm:w-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">R</div>
               )}
-              <span className="font-bold text-lg sm:text-xl text-gray-900">{logoName}</span>
+              <span className="font-bold text-xl text-gray-900 hidden md:inline">{logoName}</span>
+            </Link>
+
+            {/* LOCATION (mobile, inline — replaces the brand text to save space) */}
+            <Link href="/addresses" className="flex md:hidden items-center gap-1 min-w-0 flex-1 active:opacity-70">
+              <MapPin className="w-4 h-4 text-green-600 flex-shrink-0" />
+              <span className="min-w-0 leading-tight">
+                <span className="block text-[10px] text-gray-500 leading-none">Deliver to</span>
+                <span className="flex items-center gap-0.5 text-[13px] font-semibold text-gray-900 leading-tight">
+                  <span className="truncate">{user?.name ? `${user.name}'s address` : "Select location"}</span>
+                  <ChevronDown className="w-3 h-3 flex-shrink-0 text-gray-500" />
+                </span>
+              </span>
             </Link>
 
             {/* LOCATION (desktop, inline) */}
@@ -387,7 +399,7 @@ export default function Header() {
               </span>
             </Link>
 
-            <div className="flex-1" />
+            <div className="hidden md:block flex-1" />
 
             {/* ── Desktop actions ── */}
             <div className="hidden md:flex items-center gap-1.5">
@@ -496,18 +508,6 @@ export default function Header() {
             </div>
           </div>
 
-          {/* ── Location strip (mobile, Blinkit/Zepto style) ── */}
-          <Link
-            href="/addresses"
-            className="md:hidden flex items-center gap-1.5 pb-2.5 -mt-1 text-sm active:opacity-70 transition"
-          >
-            <MapPin className="w-4 h-4 text-green-600 flex-shrink-0" />
-            <span className="text-gray-500">Deliver to</span>
-            <span className="font-semibold text-gray-900 truncate max-w-[160px]">
-              {user?.name ? `${user.name}'s address` : "Select location"}
-            </span>
-            <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />
-          </Link>
         </div>
       </header>
 
