@@ -144,67 +144,86 @@ function CartDrawer({
 
   if (!isOpen || !mounted) return null;
 
+  const itemCount = cartItems.length;
+  const progressPct = Math.min((subtotal / 500) * 100, 100);
+
   const drawerContent = (
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity z-[10001]"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity z-[10001]"
         onClick={onClose}
       />
 
-      {/* Drawer */}
+      {/* Drawer — full screen on mobile, side sheet on desktop */}
       <div
-        className="fixed right-0 top-0 h-full w-full sm:max-w-md bg-white shadow-2xl z-[10002] flex flex-col"
+        className="fixed right-0 top-0 h-full w-full sm:max-w-md bg-gray-50 shadow-2xl z-[10002] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-5 py-4 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-green-600 flex items-center justify-center">
-              <ShoppingCart className="w-5 h-5 text-white" />
-            </div>
+        <div className="bg-white px-4 py-3.5 flex items-center justify-between flex-shrink-0 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <button onClick={onClose} className="p-1.5 -ml-1.5 rounded-full hover:bg-gray-100 transition sm:hidden">
+              <ArrowLeft className="w-5 h-5 text-gray-700" />
+            </button>
             <div>
-              <h3 className="font-bold text-lg text-gray-900">Shopping Cart</h3>
-              <p className="text-sm text-gray-500">
-                {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'} • {totalWeight.toFixed(2)} kg
+              <h3 className="font-bold text-lg text-gray-900 leading-tight">My Cart</h3>
+              <p className="text-xs text-gray-500">
+                {itemCount} {itemCount === 1 ? 'item' : 'items'} · {totalWeight.toFixed(2)} kg
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 transition">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
-        {/* Cart Items */}
-        <div className="flex-1 overflow-y-auto bg-gray-50" style={{ WebkitOverflowScrolling: 'touch' }}>
-          {cartItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center p-8">
-              <div className="w-24 h-24 bg-gray-100 rounded-2xl flex items-center justify-center mb-6">
-                <ShoppingCart className="w-12 h-12 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Your cart is empty</h3>
-              <p className="text-gray-500 mb-6">Add some fresh products to get started</p>
-              <button
-                onClick={onClose}
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors flex items-center gap-2"
-              >
-                Continue Shopping
-                <ArrowRight className="w-4 h-4" />
-              </button>
+        {cartItems.length === 0 ? (
+          /* Empty state */
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+            <div className="w-24 h-24 bg-green-50 rounded-3xl flex items-center justify-center mb-6">
+              <ShoppingCart className="w-12 h-12 text-green-300" />
             </div>
-          ) : (
-            <div className="p-4 space-y-3">
-              {cartItems.map((item) => (
-                <div
-                  key={item.cart_id}
-                  data-product-id={item.id}
-                  className="bg-white rounded-xl border border-gray-200 p-4 transition-shadow hover:shadow-md"
-                >
-                  <div className="flex gap-3">
-                    {/* Product Image */}
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Your cart is empty</h3>
+            <p className="text-gray-500 mb-6">Add some fresh products to get started</p>
+            <button
+              onClick={onClose}
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors flex items-center gap-2"
+            >
+              Continue Shopping
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Free-delivery progress — pinned under header */}
+            <div className="bg-white px-4 py-2.5 flex-shrink-0 border-b border-gray-100">
+              {shipping === 0 ? (
+                <p className="flex items-center gap-2 text-sm font-medium text-green-700">
+                  <Truck className="w-4 h-4 flex-shrink-0" /> Yay! You've unlocked FREE delivery 🎉
+                </p>
+              ) : (
+                <>
+                  <p className="text-xs text-gray-600 mb-1.5">
+                    Add <span className="font-bold text-gray-900">₹{(500 - subtotal).toFixed(2)}</span> more for{' '}
+                    <span className="font-semibold text-green-600">FREE delivery</span>
+                  </p>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${progressPct}%` }} />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Items + bill (scrolls) */}
+            <div className="flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <div className="p-3 space-y-2">
+                {cartItems.map((item) => (
+                  <div
+                    key={item.cart_id}
+                    data-product-id={item.id}
+                    className="bg-white rounded-2xl p-3 flex gap-3 items-center"
+                  >
                     <Link
                       href={`/product/${encodeURIComponent(item.slug || item.name)}`}
                       onClick={onClose}
@@ -213,7 +232,7 @@ function CartDrawer({
                       <img
                         src={item.image}
                         alt={item.name}
-                        className="w-20 h-20 rounded-lg object-cover bg-gray-100"
+                        className="w-16 h-16 rounded-xl object-cover bg-gray-100"
                         onError={(e) => {
                           e.currentTarget.src = "https://placehold.co/80x80/f3f4f6/9ca3af?text=No+Image";
                         }}
@@ -221,167 +240,116 @@ function CartDrawer({
                     </Link>
 
                     <div className="flex-1 min-w-0">
-                      {/* Product Name */}
                       <Link
                         href={`/product/${encodeURIComponent(item.slug || item.name)}`}
                         onClick={onClose}
-                        className="font-medium text-gray-900 hover:text-green-600 line-clamp-2 text-sm transition-colors"
+                        className="font-medium text-gray-900 text-sm line-clamp-1"
                       >
                         {item.name}
                       </Link>
+                      <p className="text-xs text-gray-400 mt-0.5">₹{item.price.toFixed(2)} / kg</p>
+                      <p className="text-sm font-bold text-gray-900 mt-1">
+                        ₹{(item.subtotal || item.price * item.quantity).toFixed(2)}
+                      </p>
+                    </div>
 
-                      {/* Price */}
-                      <p className="text-sm text-gray-500 mt-1">₹{item.price.toFixed(2)} / kg</p>
-
-                      {/* Quantity & Actions */}
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center border border-gray-200 rounded-lg">
-                          <button
-                            onClick={() => onUpdateQuantity(item.id, Math.max(0.25, item.quantity - 0.25))}
-                            className="p-2 hover:bg-gray-50 transition-colors"
-                            disabled={deletingId === item.id}
-                          >
-                            <Minus className="w-4 h-4 text-gray-600" />
-                          </button>
-                          <span className="px-3 text-sm font-medium min-w-[60px] text-center">
-                            {item.quantity.toFixed(2)} kg
-                          </span>
-                          <button
-                            onClick={() => onUpdateQuantity(item.id, item.quantity + 0.25)}
-                            className="p-2 hover:bg-gray-50 transition-colors"
-                            disabled={deletingId === item.id}
-                          >
-                            <Plus className="w-4 h-4 text-gray-600" />
-                          </button>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <span className="font-semibold text-gray-900">
-                            ₹{(item.subtotal || item.price * item.quantity).toFixed(2)}
-                          </span>
-                          <button
-                            onClick={() => handleRemove(item.id)}
-                            disabled={deletingId === item.id}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            {deletingId === item.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
+                    {/* Right: remove + green stepper */}
+                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => handleRemove(item.id)}
+                        disabled={deletingId === item.id}
+                        className="p-1 text-gray-300 hover:text-red-500 transition"
+                        aria-label="Remove"
+                      >
+                        {deletingId === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      </button>
+                      <div className="flex items-center bg-green-600 rounded-lg text-white shadow-sm">
+                        <button
+                          onClick={() => onUpdateQuantity(item.id, Math.max(0.25, item.quantity - 0.25))}
+                          disabled={deletingId === item.id}
+                          className="w-8 h-8 flex items-center justify-center active:bg-green-700 rounded-l-lg"
+                          aria-label="Decrease"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="px-1 min-w-[52px] text-center text-xs font-semibold">{item.quantity.toFixed(2)} kg</span>
+                        <button
+                          onClick={() => onUpdateQuantity(item.id, item.quantity + 0.25)}
+                          disabled={deletingId === item.id}
+                          className="w-8 h-8 flex items-center justify-center active:bg-green-700 rounded-r-lg"
+                          aria-label="Increase"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
 
-              {/* Free Delivery Banner */}
-              {subtotal > 500 ? (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-3">
-                  <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Truck className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="text-sm">
-                    <p className="font-medium text-green-800">Free delivery unlocked!</p>
-                    <p className="text-green-600 text-xs">You saved ₹50 on delivery</p>
+                {/* Bill details */}
+                <div className="bg-white rounded-2xl p-4 !mt-3">
+                  <h4 className="text-sm font-bold text-gray-900 mb-3">Bill Details</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Item total</span>
+                      <span className="font-medium text-gray-900">₹{subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Tax (8%)</span>
+                      <span className="font-medium text-gray-900">₹{tax.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Delivery</span>
+                      <span className={shipping === 0 ? "text-green-600 font-semibold" : "font-medium text-gray-900"}>
+                        {shipping === 0 ? "FREE" : `₹${shipping.toFixed(2)}`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between pt-2.5 mt-1 border-t border-dashed border-gray-200">
+                      <span className="font-bold text-gray-900">To Pay</span>
+                      <span className="text-lg font-extrabold text-gray-900">₹{total.toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Sticky CTA — single dominant action */}
+            <div
+              className="bg-white border-t border-gray-100 p-3 flex-shrink-0"
+              style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+            >
+              {isLoggedIn ? (
+                <>
+                  <button
+                    onClick={() => { onClose(); onCheckoutClick(); }}
+                    className="w-full bg-green-600 hover:bg-green-700 active:bg-green-800 text-white py-3.5 px-5 rounded-2xl font-bold transition-colors flex items-center justify-between"
+                  >
+                    <span>Proceed to Checkout</span>
+                    <span className="flex items-center gap-1">₹{total.toFixed(2)} <ChevronRight className="w-5 h-5" /></span>
+                  </button>
+                  <Link href="/cart" onClick={onClose} className="block text-center text-sm text-gray-500 hover:text-gray-700 mt-2.5 transition">
+                    View full cart
+                  </Link>
+                </>
               ) : (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-                  <p className="text-sm text-amber-800">
-                    Add <span className="font-semibold">₹{(500 - subtotal).toFixed(2)}</span> more for free delivery
+                <>
+                  <button
+                    onClick={() => { onClose(); onLoginClick('login'); }}
+                    className="w-full bg-green-600 hover:bg-green-700 active:bg-green-800 text-white py-3.5 px-5 rounded-2xl font-bold transition-colors flex items-center justify-between"
+                  >
+                    <span className="flex items-center gap-2"><LogIn className="w-5 h-5" /> Login to Checkout</span>
+                    <span>₹{total.toFixed(2)}</span>
+                  </button>
+                  <p className="text-center text-sm text-gray-500 mt-2.5">
+                    New to Rooto?{' '}
+                    <button onClick={() => { onClose(); onLoginClick('signup'); }} className="text-green-600 font-semibold hover:underline">
+                      Create account
+                    </button>
                   </p>
-                  <div className="mt-2 h-1.5 bg-amber-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-amber-500 rounded-full transition-all"
-                      style={{ width: `${Math.min((subtotal / 500) * 100, 100)}%` }}
-                    />
-                  </div>
-                </div>
+                </>
               )}
             </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        {cartItems.length > 0 && (
-          <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0 space-y-4">
-            {/* Price Summary */}
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Subtotal</span>
-                <span className="font-medium">₹{subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Tax (8%)</span>
-                <span className="font-medium">₹{tax.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Delivery</span>
-                <span className={shipping === 0 ? "text-green-600 font-medium" : "font-medium"}>
-                  {shipping === 0 ? "FREE" : `₹${shipping}`}
-                </span>
-              </div>
-              <div className="flex justify-between pt-2 border-t border-gray-200">
-                <span className="font-semibold text-gray-900">Total</span>
-                <span className="text-xl font-bold text-gray-900">₹{total.toFixed(2)}</span>
-              </div>
-            </div>
-
-            {/* Actions */}
-            {isLoggedIn ? (
-              <div className="space-y-2">
-                <button
-                  onClick={() => {
-                    onClose();
-                    onCheckoutClick();
-                  }}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white py-3.5 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
-                >
-                  Checkout
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-                <Link href="/cart" onClick={onClose}>
-                  <button className="w-full border border-gray-300 hover:border-gray-400 text-gray-700 py-3 rounded-xl font-medium transition-colors">
-                    View Full Cart
-                  </button>
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-3">
-                  <User className="w-5 h-5 text-blue-600" />
-                  <div className="text-sm">
-                    <p className="font-medium text-blue-900">Login to checkout</p>
-                    <p className="text-blue-700 text-xs">Sign in to complete your purchase</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => {
-                      onClose();
-                      onLoginClick('login');
-                    }}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
-                  >
-                    <LogIn className="w-4 h-4" />
-                    Login
-                  </button>
-                  <button
-                    onClick={() => {
-                      onClose();
-                      onLoginClick('signup');
-                    }}
-                    className="w-full border-2 border-blue-600 text-blue-600 hover:bg-blue-50 py-3 rounded-xl font-semibold transition-colors"
-                  >
-                    Sign Up
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          </>
         )}
       </div>
     </>
