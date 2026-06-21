@@ -83,16 +83,29 @@ export default function SavedAddressesView({
     fetchAddresses()
   }, [userData.id])
 
-  // De-duplicate identical rows for display.
+  // De-duplicate rows for display.
   const uniqueAddresses = useMemo(() => {
-    const seen = new Map<string, SavedAddress>()
+    const keepBetter = (existing: SavedAddress | undefined, a: SavedAddress) =>
+      !existing || (a.is_default === 1 && existing.is_default !== 1)
+
+    // 1) Collapse rows that share the same primary key. The API can fan one
+    //    address into several same-`id` rows (e.g. a JOIN without DISTINCT),
+    //    which made the SAME address appear twice AND show as both-selected
+    //    (selectedId === id was true for every copy).
+    const byId = new Map<number, SavedAddress>()
     for (const a of addresses) {
-      const key = signature(a)
-      const existing = seen.get(key)
-      // Keep the default one if duplicates disagree on is_default.
-      if (!existing || (a.is_default === 1 && existing.is_default !== 1)) seen.set(key, a)
+      if (keepBetter(byId.get(a.id), a)) byId.set(a.id, a)
     }
-    return Array.from(seen.values())
+
+    // 2) Collapse content-identical rows saved under different ids
+    //    (legacy double-save left duplicates with distinct ids).
+    const bySig = new Map<string, SavedAddress>()
+    for (const a of byId.values()) {
+      const key = signature(a)
+      if (keepBetter(bySig.get(key), a)) bySig.set(key, a)
+    }
+
+    return Array.from(bySig.values())
   }, [addresses])
 
   const fetchAddresses = async () => {
@@ -133,7 +146,9 @@ export default function SavedAddressesView({
           fetch(`${API_BASE}/delete_address.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...authHeaders() },
-            body: JSON.stringify({ addressId: id }),
+            // Send both keys — the two call sites historically disagreed on the
+            // param name (`id` vs `addressId`); cover whichever the API reads.
+            body: JSON.stringify({ id, addressId: id }),
           }).then((r) => r.json()).catch(() => ({ success: false })),
         ),
       )
