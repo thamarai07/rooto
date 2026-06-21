@@ -45,6 +45,9 @@ export async function logout() {
   try {
     clearToken()
     localStorage.removeItem("auth_user")
+    // Must also clear the remember-me token, otherwise useRememberMe()
+    // auto-logs the user back in on the next page load.
+    localStorage.removeItem("remember_me_token")
     await fetch(`${API_BASE}/logout.php`, {
       method: 'POST',
       credentials: 'include',
@@ -52,6 +55,7 @@ export async function logout() {
   } catch {
     clearToken()
     localStorage.removeItem("auth_user")
+    localStorage.removeItem("remember_me_token")
   }
 }
 
