@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link"
-import { Heart, ShoppingCart, X, Loader2, Trash2, Plus, Minus, ShoppingBag, User, LogOut, Package, MapPin, Settings } from "lucide-react"
+import { Heart, ShoppingCart, X, Loader2, Trash2, Plus, Minus, ShoppingBag, User, LogOut, Package, MapPin, Settings, ChevronDown } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import LoginModal from "@/components/auth/LoginModal"
 import SignupModal from "@/components/auth/SignupModal"
@@ -358,116 +358,156 @@ export default function Header() {
   /* ---------- Render ---------- */
   return (
     <>
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          {/* LOGO */}
-          <Link href="/" className="flex items-center gap-2">
-            {logoUrl ? (
-              <img src={logoUrl} alt="Logo" className="h-10 w-10 rounded object-cover" />
-            ) : (
-              <div className="h-10 w-10 bg-green-600 rounded flex items-center justify-center text-white font-bold">R</div>
-            )}
-            <span className="font-semibold text-xl text-gray-900">{logoName}</span>
-          </Link>
+      <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4">
+          {/* ── Top row ── */}
+          <div className="flex items-center gap-2 sm:gap-4 h-14 sm:h-16">
+            {/* LOGO */}
+            <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg object-cover" />
+              ) : (
+                <div className="h-9 w-9 sm:h-10 sm:w-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">R</div>
+              )}
+              <span className="font-bold text-lg sm:text-xl text-gray-900">{logoName}</span>
+            </Link>
 
-          {/* Desktop icons */}
-          <div className="hidden md:flex items-center gap-3">
-            {/* Wishlist */}
-            <div className="relative z-[200]" ref={wishlistRef}>
-              <button onClick={toggleWishlist} className="relative p-2 hover:bg-gray-100 rounded-lg transition">
-                <Heart className="w-6 h-6 text-gray-700" />
+            {/* LOCATION (desktop, inline) */}
+            <Link
+              href="/addresses"
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition min-w-0 max-w-xs"
+            >
+              <MapPin className="w-5 h-5 text-green-600 flex-shrink-0" />
+              <span className="min-w-0 leading-tight">
+                <span className="block text-[11px] text-gray-500">Deliver to</span>
+                <span className="flex items-center gap-1 text-sm font-semibold text-gray-900 truncate">
+                  {user?.name ? `${user.name}'s address` : "Select your location"}
+                  <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 text-gray-500" />
+                </span>
+              </span>
+            </Link>
+
+            <div className="flex-1" />
+
+            {/* ── Desktop actions ── */}
+            <div className="hidden md:flex items-center gap-1.5">
+              {/* Wishlist */}
+              <div className="relative z-[200]" ref={wishlistRef}>
+                <button onClick={toggleWishlist} aria-label="Wishlist" className="relative p-2.5 hover:bg-gray-100 rounded-full transition">
+                  <Heart className="w-6 h-6 text-gray-700" />
+                  {displayWishlistCount > 0 && (
+                    <span className="absolute top-0.5 right-0.5 bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center font-bold">
+                      {displayWishlistCount}
+                    </span>
+                  )}
+                </button>
+                {showWishlist && (
+                  <WishlistDropdown
+                    items={wishlistItems}
+                    onDelete={deleteWishlist}
+                    onAddToCart={addToCartFromWishlist}
+                    deletingId={deletingId}
+                    addingToCart={addingToCart}
+                  />
+                )}
+              </div>
+
+              {/* Cart — green pill with live total */}
+              <div className="relative z-[200]" ref={cartRef}>
+                <button
+                  onClick={toggleCart}
+                  aria-label="Cart"
+                  className="relative flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white pl-3 pr-4 py-2.5 rounded-full font-semibold transition"
+                >
+                  <span className="relative">
+                    <ShoppingCart className="w-5 h-5" />
+                    {displayCartCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-white text-green-700 text-[10px] rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center font-bold">
+                        {displayCartCount}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-sm">{displayCartCount > 0 ? `₹${cartTotal.toFixed(0)}` : "Cart"}</span>
+                </button>
+                {showCart && (
+                  <CartDropdown
+                    items={cartItems}
+                    total={cartTotal}
+                    onDelete={deleteCart}
+                    onUpdateQty={updateCartQuantity}
+                    deletingId={deletingId}
+                    isLoggedIn={!!user}
+                    onLoginClick={() => { setShowCart(false); setAuthMode("login"); setShowAuth(true) }}
+                  />
+                )}
+              </div>
+
+              {/* Profile */}
+              <div className="relative z-[200]" ref={profileRef}>
+                {user ? (
+                  <>
+                    <button onClick={toggleProfile} aria-label="Profile" className="p-1 hover:bg-gray-100 rounded-full transition">
+                      <div className="w-9 h-9 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold">
+                        {user.name?.charAt(0).toUpperCase() || "U"}
+                      </div>
+                    </button>
+                    {showProfile && <ProfileDropdown user={user} onLogout={handleLogout} onClose={() => setShowProfile(false)} />}
+                  </>
+                ) : (
+                  <button
+                    onClick={() => { setAuthMode("login"); setShowAuth(true) }}
+                    className="px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-full font-medium transition"
+                  >
+                    Login
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* ── Mobile actions ── */}
+            <div className="flex md:hidden items-center gap-0.5">
+              <button onClick={toggleWishlist} aria-label="Wishlist" className="relative p-2.5 active:bg-gray-100 rounded-full transition">
+                <Heart className="w-[22px] h-[22px] text-gray-700" />
                 {displayWishlistCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                  <span className="absolute top-0.5 right-0.5 bg-red-500 text-white text-[10px] rounded-full min-w-[17px] h-[17px] px-1 flex items-center justify-center font-bold">
                     {displayWishlistCount}
                   </span>
                 )}
               </button>
-              {showWishlist && (
-                <WishlistDropdown
-                  items={wishlistItems}
-                  onDelete={deleteWishlist}
-                  onAddToCart={addToCartFromWishlist}
-                  deletingId={deletingId}
-                  addingToCart={addingToCart}
-                />
-              )}
-            </div>
-
-            {/* Cart */}
-            <div className="relative z-[200]" ref={cartRef}>
-              <button onClick={toggleCart} className="relative p-2 hover:bg-gray-100 rounded-lg transition">
-                <ShoppingCart className="w-6 h-6 text-gray-700" />
+              <button onClick={toggleCart} aria-label="Cart" className="relative p-2.5 active:bg-gray-100 rounded-full transition">
+                <ShoppingCart className="w-[22px] h-[22px] text-gray-700" />
                 {displayCartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                  <span className="absolute top-0.5 right-0.5 bg-green-600 text-white text-[10px] rounded-full min-w-[17px] h-[17px] px-1 flex items-center justify-center font-bold">
                     {displayCartCount}
                   </span>
                 )}
               </button>
-              {showCart && (
-                <CartDropdown
-                  items={cartItems}
-                  total={cartTotal}
-                  onDelete={deleteCart}
-                  onUpdateQty={updateCartQuantity}
-                  deletingId={deletingId}
-                  isLoggedIn={!!user}
-                  onLoginClick={() => { setShowCart(false); setAuthMode("login"); setShowAuth(true) }}
-                />
-              )}
-            </div>
-
-            {/* Profile */}
-            <div className="relative z-[200]" ref={profileRef}>
               {user ? (
-                <>
-                  <button onClick={toggleProfile} className="relative p-2 hover:bg-gray-100 rounded-lg transition flex items-center gap-2">
-                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold">
-                      {user.name?.charAt(0).toUpperCase() || "U"}
-                    </div>
-                  </button>
-                  {showProfile && <ProfileDropdown user={user} onLogout={handleLogout} onClose={() => setShowProfile(false)} />}
-                </>
+                <button onClick={toggleProfile} aria-label="Profile" className="p-1 active:bg-gray-100 rounded-full transition">
+                  <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    {user.name?.charAt(0).toUpperCase() || "U"}
+                  </div>
+                </button>
               ) : (
-                <button
-                  onClick={() => { setAuthMode("login"); setShowAuth(true) }}
-                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-medium transition"
-                >
-                  Login
+                <button onClick={() => { setAuthMode("login"); setShowAuth(true) }} aria-label="Login" className="p-2.5 active:bg-gray-100 rounded-full transition">
+                  <User className="w-[22px] h-[22px] text-gray-700" />
                 </button>
               )}
             </div>
           </div>
 
-          {/* Mobile icons */}
-          <div className="flex md:hidden items-center gap-3">
-            <button onClick={toggleWishlist} className="relative p-2">
-              <Heart className="w-6 h-6 text-gray-700" />
-              {displayWishlistCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                  {displayWishlistCount}
-                </span>
-              )}
-            </button>
-            <button onClick={toggleCart} className="relative p-2">
-              <ShoppingCart className="w-6 h-6 text-gray-700" />
-              {displayCartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                  {displayCartCount}
-                </span>
-              )}
-            </button>
-            {user ? (
-              <button onClick={toggleProfile} className="relative p-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold">
-                  {user.name?.charAt(0).toUpperCase() || "U"}
-                </div>
-              </button>
-            ) : (
-              <button onClick={() => { setAuthMode("login"); setShowAuth(true) }} className="p-2">
-                <User className="w-6 h-6 text-gray-700" />
-              </button>
-            )}
-          </div>
+          {/* ── Location strip (mobile, Blinkit/Zepto style) ── */}
+          <Link
+            href="/addresses"
+            className="md:hidden flex items-center gap-1.5 pb-2.5 -mt-1 text-sm active:opacity-70 transition"
+          >
+            <MapPin className="w-4 h-4 text-green-600 flex-shrink-0" />
+            <span className="text-gray-500">Deliver to</span>
+            <span className="font-semibold text-gray-900 truncate max-w-[160px]">
+              {user?.name ? `${user.name}'s address` : "Select location"}
+            </span>
+            <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />
+          </Link>
         </div>
       </header>
 
