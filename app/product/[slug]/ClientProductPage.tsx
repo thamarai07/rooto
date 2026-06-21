@@ -672,8 +672,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
     const fetchCart = async () => {
       if (!user?.id) return;
       try {
-        const userId = user.id;
-        const res = await fetch(`${API_BASE}/cart.php?user_id=${userId}`);
+        const res = await fetch(`${API_BASE}/cart.php`, { headers: authHeaders() });
         const data = await res.json();
 
         if (data.status === 'success') {
@@ -713,8 +712,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
         return
       }
       try {
-        const userId = user.id;
-        const res = await fetch(`${API_BASE}/cart.php?user_id=${userId}`);
+        const res = await fetch(`${API_BASE}/cart.php`, { headers: authHeaders() });
         const data = await res.json();
 
         if (data.status === 'success') {
