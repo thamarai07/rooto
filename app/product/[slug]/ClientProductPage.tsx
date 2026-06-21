@@ -15,7 +15,8 @@ import SignupModal from "@/components/auth/SignupModal";
 import DeliveryModal from "@/components/delivery/DeliveryModal";
 import CheckoutSuccessView from "@/components/delivery/CheckoutSuccessView";
 import { UserData, SavedAddress } from "@/components/types";
-import { authHeaders } from "@/lib/auth";
+import { authHeaders, getToken } from "@/lib/auth";
+import { useAuth } from "@/hooks/useAuth";
 // existing imports-க்கு கீழே add பண்ணு
 import {
   getGuestCart,
@@ -430,6 +431,15 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [isUpdating, setIsUpdating] = useState<number | null>(null);
 
+  // Mirror the global auth context so this page never thinks a logged-in user
+  // is a guest (which silently routed Add-to-Cart into the guest localStorage
+  // cart instead of the server cart).
+  const { user: authUser } = useAuth();
+  useEffect(() => {
+    setUser(authUser ?? null);
+    setIsLoggedIn(!!authUser);
+  }, [authUser]);
+
   const product = initialProduct;
 
   const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -784,8 +794,9 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
 
     setIsAddingToCart(true)
 
-    // ✅ Guest: localStorage
-    if (!isLoggedIn || !user) {
+    // ✅ Guest: localStorage. Decide from a FRESH token read (not React state)
+    // so a logged-in user is never misrouted to the guest cart on first click.
+    if (!getToken()) {
       addToGuestCart({
         id: product.id,
         name: product.name,
