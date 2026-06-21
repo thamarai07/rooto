@@ -815,7 +815,7 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
   const removeItemInCheckout = useCallback(async (productId: number) => {
     setCartItems(prev => prev.filter(item => Number(item.id) !== productId))
     try {
-      await fetch(`${API_BASE}/cart.php?product_id=${productId}`, { method: "DELETE" })
+      await fetch(`${API_BASE}/cart.php?product_id=${productId}`, { method: "DELETE", headers: authHeaders() })
       window.dispatchEvent(new Event("cart-updated"))
       showToast('Item removed from cart', 'info')
     } catch { /* silent */ }
@@ -831,7 +831,7 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
 
       const res = await fetch(`${API_BASE}/create_order.php`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ customerId: user?.id, items: cartItems, address: savedAddress, notes: orderNotes, total, paymentMethod }),
       })
       const result = await res.json()
