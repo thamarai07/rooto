@@ -1,14 +1,19 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef, memo } from "react"
+import dynamic from "next/dynamic"
 import { Heart, ShoppingCart, Star, Loader2, X, Plus, Minus, Trash2, User, LogIn, ArrowRight, Package } from "lucide-react"
 import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import LoginModal from "@/components/auth/LoginModal"
-import SignupModal from "@/components/auth/SignupModal"
-import DeliveryModal from "@/components/delivery/DeliveryModal"
-import CheckoutSuccessView from "@/components/delivery/CheckoutSuccessView"
 import { UserData, SavedAddress } from "@/components/types"
+
+// These only render after a user interaction (login / checkout), so keep them
+// OUT of the initial bundle — they were forcing the whole checkout/auth flow to
+// download before the product cards could even hydrate.
+const LoginModal = dynamic(() => import("@/components/auth/LoginModal"), { ssr: false })
+const SignupModal = dynamic(() => import("@/components/auth/SignupModal"), { ssr: false })
+const DeliveryModal = dynamic(() => import("@/components/delivery/DeliveryModal"), { ssr: false })
+const CheckoutSuccessView = dynamic(() => import("@/components/delivery/CheckoutSuccessView"), { ssr: false })
 import {
   getGuestCart,
   getGuestWishlist,
@@ -284,13 +289,15 @@ const ProductCard = memo(function ProductCard({
   isWishlisted,
   onWishlistToggle,
   onAddToCart,
-  isLoading
+  isLoading,
+  priority = false
 }: {
   product: Product
   isWishlisted: boolean
   onWishlistToggle: (id: number) => void
   onAddToCart: (product: Product) => void
   isLoading: boolean
+  priority?: boolean
 }) {
   return (
     <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col h-full">
@@ -302,7 +309,7 @@ const ProductCard = memo(function ProductCard({
             src={product.image}
             alt={product.name}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
             decoding="async"
             onError={(e) => {
               e.currentTarget.src =
@@ -392,12 +399,14 @@ const ProductCard = memo(function ProductCard({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function ProductGrid() {
-  const [products, setProducts] = useState<Product[]>([])
+export default function ProductGrid({ initialProducts = [] }: { initialProducts?: Product[] }) {
+  const hasInitialProducts = initialProducts.length > 0
+  const [products, setProducts] = useState<Product[]>(initialProducts)
   const [wishlistIds, setWishlistIds] = useState<Set<number>>(new Set())
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [isCartOpen, setIsCartOpen] = useState(false)
-  const [loading, setLoading] = useState(true)
+  // If the server already supplied products, skip the skeleton entirely.
+  const [loading, setLoading] = useState(!hasInitialProducts)
   const [actionLoading, setActionLoading] = useState<number | null>(null)
   const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'success' })
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -482,36 +491,37 @@ export default function ProductGrid() {
       const userId = getUserId()
       try {
         if (!userId) {
-          // Guest: only fetch products, read rest from localStorage
-          const res = await fetch(`${API_BASE}/get-product.php?limit=12`)
-          const data = await res.json()
-          if (data.status === 'success') setProducts(data.items)
+          // Guest: products already came from the server (unless that failed),
+          // so only fetch them as a fallback. Cart/wishlist come from localStorage.
+          if (!hasInitialProducts) {
+            const res = await fetch(`${API_BASE}/get-product.php?limit=12`)
+            const data = await res.json()
+            if (data.status === 'success') setProducts(data.items)
+          }
 
           setCartItems(getGuestCart().map(i => ({ ...i, cart_id: i.id })))
           setWishlistIds(new Set(getGuestWishlist().map(i => i.id)))
         } else {
-          // Logged-in: parallel fetch all 3
-          const [productsRes, wishlistRes, cartRes] = await Promise.all([
-            fetch(`${API_BASE}/get-product.php?limit=12`),
-            fetch(`${API_BASE}/wishlist.php`, { headers: authHeaders() }),
-            fetch(`${API_BASE}/cart.php`, { headers: authHeaders() })
-          ])
+          // Logged-in: always need wishlist + cart; only fetch products if the
+          // server didn't already provide them.
+          const productsPromise = hasInitialProducts
+            ? Promise.resolve(null)
+            : fetch(`${API_BASE}/get-product.php?limit=12`).then(r => r.json())
 
-          // Parse all in parallel
           const [productsData, wishlistData, cartData] = await Promise.all([
-            productsRes.json(),
-            wishlistRes.json(),
-            cartRes.json()
+            productsPromise,
+            fetch(`${API_BASE}/wishlist.php`, { headers: authHeaders() }).then(r => r.json()),
+            fetch(`${API_BASE}/cart.php`, { headers: authHeaders() }).then(r => r.json())
           ])
 
-          if (productsData.status === 'success') setProducts(productsData.items)
+          if (productsData && productsData.status === 'success') setProducts(productsData.items)
           if (wishlistData.status === 'success' && wishlistData.data)
             setWishlistIds(new Set(wishlistData.data.map((i: any) => Number(i.id))))
           if (cartData.status === 'success')
             setCartItems(cartData.data || cartData.items || [])
         }
       } catch {
-        showToast('Failed to load products', 'error')
+        if (!hasInitialProducts) showToast('Failed to load products', 'error')
       } finally {
         setLoading(false)
       }
@@ -1042,7 +1052,7 @@ export default function ProductGrid() {
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                {filteredProducts.map((product) => (
+                {filteredProducts.map((product, index) => (
                   <ProductCard
                     key={product.id}
                     product={product}
@@ -1050,6 +1060,7 @@ export default function ProductGrid() {
                     onWishlistToggle={handleWishlistToggle}
                     onAddToCart={handleAddToCart}
                     isLoading={actionLoading === product.id}
+                    priority={index < 6}
                   />
                 ))}
               </div>

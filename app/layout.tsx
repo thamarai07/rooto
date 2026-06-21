@@ -145,7 +145,20 @@ const localBusinessSchema = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head />
+      <head>
+        {/* Warm up the connection to the Hostinger API origin during HTML parse,
+            so the browser's cart/wishlist fetches (and any client fallback) don't
+            pay the cold DNS+TCP+TLS (~1.5s) penalty after hydration. */}
+        <link
+          rel="preconnect"
+          href="https://seashell-skunk-617240.hostingersite.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="dns-prefetch"
+          href="https://seashell-skunk-617240.hostingersite.com"
+        />
+      </head>
       <body className="font-sans antialiased" suppressHydrationWarning>
         {/* JSON-LD Structured Data — injected in <head> for Google */}
         <Script
