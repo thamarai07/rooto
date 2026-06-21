@@ -2,6 +2,7 @@
 
 import { Plus, Minus, Trash2, Loader2 } from 'lucide-react'
 import Image from 'next/image'
+import { cartTotals } from '@/lib/pricing'
 
 interface OrderItem {
   cart_id: number
@@ -30,10 +31,7 @@ export default function OrderSummary({
   onRemoveItem,
   compact = false
 }: OrderSummaryProps) {
-  const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0)
-  const tax = subtotal * 0.08
-  const shipping = subtotal > 500 ? 0 : 50
-  const total = subtotal + tax + shipping
+  const { subtotal, tax, shipping, total } = cartTotals(items)
 
   if (compact) {
     return (

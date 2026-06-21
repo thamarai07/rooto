@@ -24,6 +24,7 @@ import {
 } from "@/lib/guestStorage"
 import { authHeaders } from "@/lib/auth"
 import { useAuth } from "@/hooks/useAuth"
+import { cartTotals, unitPrice, lineSubtotal } from "@/lib/pricing"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
@@ -612,7 +613,7 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
       const product = products.find(p => p.id === productId)
       if (!product) return
       const result = toggleGuestWishlist({
-        id: product.id, name: product.name, price: product.price_per_kg,
+        id: product.id, name: product.name, price: unitPrice(product),
         image: product.image, category: product.category, slug: product.slug,
       })
       setWishlistIds(prev => {
@@ -680,7 +681,7 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
 
     if (!userId) {
       addToGuestCart({
-        id: product.id, name: product.name, price: product.price_per_kg,
+        id: product.id, name: product.name, price: unitPrice(product),
         image: product.image, category: product.category, stock: product.stock, slug: product.slug,
       })
       setCartItems(getGuestCart().map(i => ({ ...i, cart_id: i.id })))
@@ -726,7 +727,7 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
     // Optimistic UI update — feels instant
     setCartItems(prev => prev.map(item =>
       Number(item.id) === productId
-        ? { ...item, quantity, subtotal: quantity * item.price }
+        ? { ...item, quantity, subtotal: lineSubtotal(item.price, quantity) }
         : item
     ))
     debouncedUpdateQty(productId, quantity, userId)
@@ -800,7 +801,7 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
   const updateQuantityInCheckout = useCallback(async (productId: number, newQuantity: number) => {
     if (newQuantity <= 0) { handleRemoveFromCart(productId); return }
     setCartItems(prev => prev.map(item =>
-      Number(item.id) === productId ? { ...item, quantity: newQuantity, subtotal: newQuantity * item.price } : item
+      Number(item.id) === productId ? { ...item, quantity: newQuantity, subtotal: lineSubtotal(item.price, newQuantity) } : item
     ))
     try {
       await fetch(`${API_BASE}/cart.php`, {
@@ -824,10 +825,11 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
   const handlePlaceOrder = useCallback(async (paymentMethod: 'cod' | 'online' = 'cod', orderData?: any) => {
     setIsSubmittingOrder(true)
     try {
-      const subtotal = orderData?.subtotal ?? cartItems.reduce((s, i) => s + (i.subtotal || i.price * i.quantity), 0)
-      const tax = orderData?.tax ?? subtotal * 0.08
-      const shipping = orderData?.shipping ?? (subtotal > 500 ? 0 : 50)
-      const total = orderData?.total ?? (subtotal + tax + shipping)
+      const t = cartTotals(cartItems)
+      const subtotal = orderData?.subtotal ?? t.subtotal
+      const tax = orderData?.tax ?? t.tax
+      const shipping = orderData?.shipping ?? t.shipping
+      const total = orderData?.total ?? t.total
 
       const res = await fetch(`${API_BASE}/create_order.php`, {
         method: "POST",

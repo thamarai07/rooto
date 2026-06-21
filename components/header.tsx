@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation"
 import { useAuth } from '@/hooks/useAuth'
 import ForgotPasswordModal from "@/components/auth/ForgotPasswordModal"
 import { authHeaders } from "@/lib/auth"
+import { lineSubtotal } from "@/lib/pricing"
 
 interface WishlistItem {
   id: string
@@ -243,8 +244,8 @@ export default function Header() {
         const cart = readGuestCart()
         const exists = cart.find(c => c.id === item.id)
         const updated = exists
-          ? cart.map(c => c.id === item.id ? { ...c, quantity: c.quantity + 1, subtotal: (c.quantity + 1) * c.price } : c)
-          : [...cart, { id: item.id, name: item.name, price: item.price, image: item.image, quantity: 0.25, subtotal: item.price * 0.25 }]
+          ? cart.map(c => c.id === item.id ? { ...c, quantity: c.quantity + 0.25, subtotal: lineSubtotal(c.price, c.quantity + 0.25) } : c)
+          : [...cart, { id: item.id, name: item.name, price: item.price, image: item.image, quantity: 0.25, subtotal: lineSubtotal(item.price, 0.25) }]
         localStorage.setItem("guest_cart", JSON.stringify(updated))
         window.dispatchEvent(new Event("guest-cart-updated"))
         await deleteWishlist(item.id)
@@ -253,7 +254,7 @@ export default function Header() {
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ product_id: item.id, quantity: 1 }),
+        body: JSON.stringify({ product_id: item.id, quantity: 0.25 }),
       })
       const json = await res.json()
       if (json.status === "success") {
@@ -269,7 +270,7 @@ export default function Header() {
     if (!user?.id) {
       // Guest: update quantity in localStorage
       const updated = readGuestCart().map(i =>
-        i.id === id ? { ...i, quantity: newQty, subtotal: newQty * i.price } : i
+        i.id === id ? { ...i, quantity: newQty, subtotal: lineSubtotal(i.price, newQty) } : i
       )
       localStorage.setItem("guest_cart", JSON.stringify(updated))
       setCartItems(updated)

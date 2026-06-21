@@ -24,6 +24,7 @@ import { authHeaders } from "@/lib/auth"
 // Custom hooks
 import { useCartData } from "@/hooks/Usecartdata"
 import { useCheckout } from "@/hooks/Usecheckout"
+import { cartTotals } from "@/lib/pricing"
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
 const getUserId = (): number | null => {
@@ -134,11 +135,8 @@ export default function CartPage() {
     }
   };
 
-  // Calculations
-  const subtotal = cartItems.reduce((sum, item) => sum + item.subtotal, 0)
-  const tax = subtotal * 0.08
-  const shipping = subtotal > 500 ? 0 : 50
-  const total = subtotal + tax + shipping
+  // Calculations — shared formula (see lib/pricing.ts)
+  const { subtotal, tax, shipping, total } = cartTotals(cartItems)
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-green-50 to-white">

@@ -17,6 +17,7 @@ import CheckoutSuccessView from "@/components/delivery/CheckoutSuccessView";
 import { UserData, SavedAddress } from "@/components/types";
 import { authHeaders, getToken } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
+import { cartTotals, unitPrice, lineSubtotal } from "@/lib/pricing";
 // existing imports-க்கு கீழே add பண்ணு
 import {
   getGuestCart,
@@ -117,9 +118,7 @@ function CartDrawer({
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.subtotal || item.price * item.quantity), 0);
-  const shipping = subtotal > 500 ? 0 : 50;
-  const total = subtotal + shipping;
+  const { subtotal, tax, shipping, total } = cartTotals(cartItems);
   const totalWeight = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   useEffect(() => {
@@ -314,6 +313,10 @@ function CartDrawer({
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal</span>
                 <span className="font-medium">₹{subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Tax (8%)</span>
+                <span className="font-medium">₹{tax.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Delivery</span>
@@ -565,13 +568,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
   const handlePlaceOrder = async () => {
     setIsSubmittingOrder(true);
     try {
-      const subtotal = cartItems.reduce(
-        (sum, item) => sum + (item.subtotal || item.price * item.quantity),
-        0
-      );
-      const tax = subtotal * 0.08;
-      const shippingCharge = subtotal > 500 ? 0 : 50;
-      const totalAmount = subtotal + tax + shippingCharge;
+      const { subtotal, tax, shipping: shippingCharge, total: totalAmount } = cartTotals(cartItems);
 
       const response = await fetch(`${API_BASE}/create_order.php`, {
         method: "POST",
@@ -631,7 +628,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
       Number(item.id) === productId ? {
         ...item,
         quantity: newQuantity,
-        subtotal: newQuantity * item.price
+        subtotal: lineSubtotal(item.price, newQuantity)
       } : item
     );
     setCartItems(updatedItems);
@@ -798,7 +795,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
       addToGuestCart({
         id: product.id,
         name: product.name,
-        price: product.price_per_kg,
+        price: unitPrice(product),
         image: product.image,
         category: product.category,
         stock: product.stock,
@@ -923,7 +920,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
     const result = toggleGuestWishlist({
       id: product.id,
       name: product.name,
-      price: product.price_per_kg,
+      price: unitPrice(product),
       image: product.image,
       category: product.category,
       slug: product.slug,

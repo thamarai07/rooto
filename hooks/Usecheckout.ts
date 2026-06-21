@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { UserData, SavedAddress } from "@/components/types"
 import { authHeaders } from "@/lib/auth"
+import { cartTotals } from "@/lib/pricing"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
@@ -94,10 +95,11 @@ export function useCheckout() {
 
     try {
       if (paymentMethod === 'cod') {
-        const subtotal = orderData?.subtotal || cartItems.reduce((sum, item) => sum + (item.subtotal || item.price * item.quantity), 0)
-        const tax = orderData?.tax || subtotal * 0.08
-        const shippingCharge = orderData?.shipping || (subtotal > 500 ? 0 : 50)
-        const total = orderData?.total || (subtotal + tax + shippingCharge)
+        const t = cartTotals(cartItems)
+        const subtotal = orderData?.subtotal || t.subtotal
+        const tax = orderData?.tax || t.tax
+        const shippingCharge = orderData?.shipping || t.shipping
+        const total = orderData?.total || t.total
 
 
 

@@ -7,6 +7,7 @@ import {
   ChevronLeft, ArrowRight, BadgeCheck, Tag, ReceiptText, Lock
 } from 'lucide-react'
 import OrderSummary from './OrderSummary'
+import { cartTotals } from '@/lib/pricing'
 import AddressDisplay from './AddressDisplay'
 import PaymentMethodSelector, { PaymentMethod } from './PaymentMethodSelector'
 
@@ -74,10 +75,7 @@ export default function CheckoutSuccessView({
     }
   }, [])
 
-  const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0)
-  const tax = subtotal * 0.08
-  const shipping = subtotal > 500 ? 0 : 50
-  const total = subtotal + tax + shipping
+  const { subtotal, tax, shipping, total } = cartTotals(items)
   const totalQty = items.reduce((sum, item) => sum + item.quantity, 0)
 
   const handlePlaceOrderClick = () => {
