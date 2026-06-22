@@ -77,7 +77,7 @@ export default function Footer() {
             </span>
           </a>
           <a
-            href="mailto:tallk@rooto.in"
+            href="mailto:talk@rooto.in"
             className="flex items-center gap-3 bg-gray-800/60 hover:bg-gray-800 rounded-2xl p-4 transition"
           >
             <span className="w-11 h-11 rounded-full bg-green-500/15 flex items-center justify-center flex-shrink-0">
@@ -85,7 +85,7 @@ export default function Footer() {
             </span>
             <span className="min-w-0">
               <span className="block text-[11px] text-gray-400">Email us</span>
-              <span className="block text-white font-semibold truncate">tallk@rooto.in</span>
+              <span className="block text-white font-semibold truncate">talk@rooto.in</span>
             </span>
           </a>
         </div>

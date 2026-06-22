@@ -106,7 +106,7 @@ export default function PrivacyPage() {
               <h2 className="text-lg font-bold text-gray-900 mb-2">9. Contact us</h2>
               <p className="text-sm text-gray-600">
                 Questions about your privacy? Email{" "}
-                <a href="mailto:tallk@rooto.in" className="text-green-600 font-medium hover:underline">tallk@rooto.in</a>{" "}
+                <a href="mailto:talk@rooto.in" className="text-green-600 font-medium hover:underline">talk@rooto.in</a>{" "}
                 or call{" "}
                 <a href="tel:+919677028737" className="text-green-600 font-medium hover:underline">+91 96770 28737</a>.
               </p>

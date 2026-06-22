@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default function SupportPage() {
   const contacts = [
     { icon: Phone, label: "Call us", value: "+91 96770 28737", href: "tel:+919677028737" },
-    { icon: Mail, label: "Email us", value: "tallk@rooto.in", href: "mailto:tallk@rooto.in" },
+    { icon: Mail, label: "Email us", value: "talk@rooto.in", href: "mailto:talk@rooto.in" },
     { icon: Instagram, label: "Message on Instagram", value: "@rooto_in", href: "https://www.instagram.com/rooto_in/" },
   ]
   const quick = [

@@ -264,9 +264,10 @@ export default function ContactPage() {
               </div>
             </a>
 
-            {/* Email — Coming Soon */}
-            <div
-              className="contact-card relative overflow-hidden rounded-3xl bg-[#0c1a0c] group cursor-default"
+            {/* Email */}
+            <a
+              href="mailto:talk@rooto.in"
+              className="contact-card relative overflow-hidden rounded-3xl bg-[#0c1a0c] group cursor-pointer block"
               onMouseEnter={() => setHoveredCard(1)}
               onMouseLeave={() => setHoveredCard(null)}
             >
@@ -282,21 +283,21 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <div className="sans text-green-400/60 text-xs tracking-widest uppercase mb-2">Email Us</div>
-                  <h3 className="display text-white text-2xl font-light mb-2">hello@rooto.in</h3>
+                  <h3 className="display text-white text-2xl font-light mb-2">talk@rooto.in</h3>
                   <p className="sans text-gray-500 text-sm font-light">
-                    Drop us a message — we'll get back to you soon.
+                    Drop us a message — we'll get back to you within 24 hours.
                   </p>
-                  <div className="mt-4 inline-flex items-center gap-2 sans text-xs text-green-500/70 border border-green-500/20 px-3 py-1.5 rounded-full">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                    Updating soon
+                  <div className="mt-4 inline-flex items-center gap-2 sans text-xs text-green-400/80 border border-green-500/30 px-3 py-1.5 rounded-full group-hover:bg-green-500/10 transition-colors">
+                    Send an email →
                   </div>
                 </div>
               </div>
-            </div>
+            </a>
 
-            {/* Phone — Coming Soon */}
-            <div
-              className="contact-card relative overflow-hidden rounded-3xl bg-green-600 group cursor-default"
+            {/* Phone */}
+            <a
+              href="tel:+919677028737"
+              className="contact-card relative overflow-hidden rounded-3xl bg-green-600 group cursor-pointer block"
               onMouseEnter={() => setHoveredCard(2)}
               onMouseLeave={() => setHoveredCard(null)}
             >
@@ -311,18 +312,21 @@ export default function ContactPage() {
                   </svg>
                 </div>
                 <div>
-                  <div className="sans text-white/60 text-xs tracking-widest uppercase mb-2">Phone</div>
-                  <h3 className="display text-white text-2xl font-light mb-2">Coming Soon</h3>
+                  <div className="sans text-white/60 text-xs tracking-widest uppercase mb-2">Call Us</div>
+                  <h3 className="display text-white text-2xl font-light mb-2">+91 96770 28737</h3>
                   <p className="sans text-white/70 text-sm font-light">
-                    Our customer support line will be live shortly.
+                    Available 8 AM – 9 PM IST, all days. Tap to call.
                   </p>
                 </div>
               </div>
-            </div>
+            </a>
 
-            {/* WhatsApp — Coming Soon */}
-            <div
-              className="contact-card relative overflow-hidden rounded-3xl bg-[#f0f7f0] border border-green-100 group cursor-default"
+            {/* WhatsApp */}
+            <a
+              href="https://wa.me/919677028737"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="contact-card relative overflow-hidden rounded-3xl bg-[#f0f7f0] border border-green-100 group cursor-pointer block"
               onMouseEnter={() => setHoveredCard(3)}
               onMouseLeave={() => setHoveredCard(null)}
             >
@@ -334,13 +338,13 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <div className="sans text-green-600/60 text-xs tracking-widest uppercase mb-2">WhatsApp</div>
-                  <h3 className="display text-gray-900 text-2xl font-light mb-2">Coming Soon</h3>
+                  <h3 className="display text-gray-900 text-2xl font-light mb-2">Chat with us</h3>
                   <p className="sans text-gray-500 text-sm font-light">
-                    Chat support launching soon for instant help.
+                    Message us on WhatsApp at +91 96770 28737 for instant help.
                   </p>
                 </div>
               </div>
-            </div>
+            </a>
 
           </div>
         </div>
