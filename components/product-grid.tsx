@@ -37,6 +37,11 @@ const getUserId = (): number | null => {
   } catch { return null }
 }
 
+// The cart drawer auto-opens only on desktop. On mobile the in-card stepper is
+// enough — popping a drawer on every tap is jarring on small screens.
+const isDesktop = (): boolean =>
+  typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
+
 const truncateWords = (text: string, wordLimit = 10): string => {
   const words = text.split(' ')
   return words.length <= wordLimit ? text : words.slice(0, wordLimit).join(' ') + '...'
@@ -291,6 +296,8 @@ const ProductCard = memo(function ProductCard({
   isWishlisted,
   onWishlistToggle,
   onAddToCart,
+  onUpdateQuantity,
+  quantity,
   isLoading,
   priority = false
 }: {
@@ -298,6 +305,8 @@ const ProductCard = memo(function ProductCard({
   isWishlisted: boolean
   onWishlistToggle: (id: number) => void
   onAddToCart: (product: Product) => void
+  onUpdateQuantity: (id: number, qty: number) => void
+  quantity: number
   isLoading: boolean
   priority?: boolean
 }) {
@@ -336,15 +345,39 @@ const ProductCard = memo(function ProductCard({
           <Heart className={`w-3.5 h-3.5 ${isWishlisted ? "fill-red-500 text-red-500" : "text-gray-500"}`} />
         </button>
 
-        {/* ADD (Blinkit-style pill, overlaps image bottom) */}
-        <button
-          onClick={() => onAddToCart(product)}
-          disabled={isLoading || product.stock === 0}
-          aria-label="Add to cart"
-          className="absolute -bottom-3 right-2 flex items-center gap-0.5 bg-white border border-green-600 text-green-700 hover:bg-green-50 font-bold text-xs px-2.5 py-1.5 rounded-lg shadow-sm disabled:opacity-50 active:scale-95 transition"
-        >
-          {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Plus className="w-3.5 h-3.5" /> ADD</>}
-        </button>
+        {/* ADD → turns into a − qty + stepper once the item is in the cart */}
+        {quantity > 0 ? (
+          <div className="absolute -bottom-3 right-2 flex items-center bg-green-600 text-white rounded-lg shadow-md overflow-hidden">
+            <button
+              onClick={() => onUpdateQuantity(product.id, quantity - 0.25)}
+              aria-label="Decrease quantity"
+              className="w-7 h-8 grid place-items-center active:bg-green-700 transition"
+            >
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+            <span className="px-0.5 min-w-[34px] text-center leading-none">
+              <span className="block text-[11px] font-bold">{Number(quantity.toFixed(2))}</span>
+              <span className="block text-[8px] font-medium opacity-90 -mt-0.5">kg</span>
+            </span>
+            <button
+              onClick={() => onUpdateQuantity(product.id, quantity + 0.25)}
+              disabled={product.stock === 0}
+              aria-label="Increase quantity"
+              className="w-7 h-8 grid place-items-center active:bg-green-700 disabled:opacity-50 transition"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => onAddToCart(product)}
+            disabled={isLoading || product.stock === 0}
+            aria-label="Add to cart"
+            className="absolute -bottom-3 right-2 flex items-center gap-0.5 bg-white border border-green-600 text-green-700 hover:bg-green-50 font-bold text-xs px-2.5 py-1.5 rounded-lg shadow-sm disabled:opacity-50 active:scale-95 transition"
+          >
+            {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Plus className="w-3.5 h-3.5" /> ADD</>}
+          </button>
+        )}
       </div>
 
       {/* CONTENT — image · name · price */}
@@ -365,6 +398,7 @@ const ProductCard = memo(function ProductCard({
   (prev, next) =>
     prev.isWishlisted === next.isWishlisted &&
     prev.isLoading === next.isLoading &&
+    prev.quantity === next.quantity &&
     prev.product.id === next.product.id &&
     prev.product.stock === next.product.stock
 )
@@ -657,7 +691,7 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
       setCartItems(getGuestCart().map(i => ({ ...i, cart_id: i.id })))
       showToast('Added to cart!', 'success')
       window.dispatchEvent(new CustomEvent('guest-cart-updated', { detail: { highlightedProductId: product.id.toString() } }))
-      setIsCartOpen(true)
+      if (isDesktop()) setIsCartOpen(true)
       setActionLoading(null)
       return
     }
@@ -672,7 +706,7 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
       if (data.status === 'success') {
         showToast('Added to cart!', 'success')
         window.dispatchEvent(new CustomEvent('cart-updated', { detail: { highlightedProductId: product.id.toString() } }))
-        setIsCartOpen(true)
+        if (isDesktop()) setIsCartOpen(true)
       } else {
         showToast(data.message || 'Failed to add to cart', 'error')
       }
@@ -1032,6 +1066,8 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
                     isWishlisted={wishlistIds.has(product.id)}
                     onWishlistToggle={handleWishlistToggle}
                     onAddToCart={handleAddToCart}
+                    onUpdateQuantity={handleUpdateQuantity}
+                    quantity={cartItems.find(ci => Number(ci.id) === product.id)?.quantity || 0}
                     isLoading={actionLoading === product.id}
                     priority={index < 6}
                   />
