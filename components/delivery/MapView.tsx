@@ -100,7 +100,9 @@ export default function MapView({ userData, onProceed, onClose }: MapViewProps) 
       map.on('moveend', () => { setIsMoving(false); settleToCenter() })
 
       mapInstance.current = map
-      setTimeout(() => { map.invalidateSize(); locateMe(true) }, 250)
+      // Initialise coordinates from the default centre immediately, so Confirm
+      // works even if GPS is denied/slow; locateMe() then refines it.
+      setTimeout(() => { map.invalidateSize(); settleToCenter(); locateMe(true) }, 250)
     } catch {
       setErrorMessage('Failed to load map')
     }
@@ -178,9 +180,15 @@ export default function MapView({ userData, onProceed, onClose }: MapViewProps) 
   }
 
   const handleProceed = () => {
-    if (!coordinates) { setErrorMessage('Pick a location first'); return }
-    window.__selectedLocation = { address, coordinates, components }
-    onProceed(coordinates, address)
+    // Fall back to the live map centre if state hasn't caught up yet.
+    let coords = coordinates
+    if (!coords && mapInstance.current) {
+      const c = mapInstance.current.getCenter()
+      coords = { lat: c.lat, lng: c.lng }
+    }
+    if (!coords) { setErrorMessage('Pick a location on the map first'); return }
+    window.__selectedLocation = { address, coordinates: coords, components }
+    onProceed(coords, address)
   }
 
   return (
