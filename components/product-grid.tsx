@@ -773,6 +773,9 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
           body: JSON.stringify({
             name: address.name, phoneNumber: address.phoneNumber,
             email: address.email, flatNo: address.flatNo, landmark: address.landmark || '',
+            streetAddress: address.streetAddress || '', area: address.area || '',
+            city: address.city || '', state: address.state || '',
+            pincode: address.pincode || '', country: address.country || 'India',
             fullAddress: address.fullAddress, label: address.label,
             coordinates: address.coordinates, isDefault: false
           }),

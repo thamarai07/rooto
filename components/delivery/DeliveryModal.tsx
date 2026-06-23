@@ -33,13 +33,16 @@ export default function DeliveryModal({
 
   const handleMapProceed = (coords: { lat: number; lng: number }, address: string) => {
     setSelectedLocation({ coordinates: coords, address })
-    
-    // Set to window for AddressFormView
+
+    // Preserve the parsed address components MapView stored (area/city/pincode…)
+    // so AddressFormView can auto-fill them — don't clobber them here.
+    const prev = typeof window !== 'undefined' ? window.__selectedLocation : undefined
     window.__selectedLocation = {
-      address: address,
-      coordinates: coords
+      address,
+      coordinates: coords,
+      components: prev?.components || {},
     }
-    
+
     onViewChange('form')
   }
 

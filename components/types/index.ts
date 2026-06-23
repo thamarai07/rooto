@@ -57,6 +57,7 @@ export interface SavedAddress {
       __selectedLocation?: {
         coordinates: { lat: number; lng: number };
         address: string;
+        components?: Record<string, string>;
       };
     }
   }

@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useRef } from 'react'
-import { MapPin, Home, Briefcase, Star, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
-import { UserData, AddressForm, SavedAddress } from '../types'
+import { MapPin, Home, Briefcase, Star, ChevronLeft, ChevronRight, Loader2, Pencil } from 'lucide-react'
+import { UserData, SavedAddress } from '../types'
 
 interface AddressFormViewProps {
   userData: UserData
@@ -11,255 +11,208 @@ interface AddressFormViewProps {
   selectedLocation?: { coordinates: { lat: number; lng: number }; address: string } | null
 }
 
-export default function AddressFormView({
-  userData,
-  onSave,
-  onBack,
-  selectedLocation
-}: AddressFormViewProps) {
-  const locationData: any = selectedLocation || (window as any).__selectedLocation || {}
+interface FormState {
+  name: string
+  email: string
+  phoneNumber: string
+  flatNo: string
+  building: string
+  floor: string
+  landmark: string
+  street: string
+  area: string
+  city: string
+  state: string
+  pincode: string
+  label: 'Home' | 'Work' | 'Other'
+}
 
-  const [formData, setFormData] = useState<AddressForm>({
+export default function AddressFormView({ userData, onSave, onBack, selectedLocation }: AddressFormViewProps) {
+  const win = typeof window !== 'undefined' ? (window as any).__selectedLocation : null
+  const locationData: any = selectedLocation || win || {}
+  const comp: Record<string, string> = win?.components || {}
+
+  const [formData, setFormData] = useState<FormState>({
     name: userData.name || '',
     email: userData.email || '',
     phoneNumber: userData.phone || '',
     flatNo: '',
+    building: '',
+    floor: '',
     landmark: '',
-    label: 'Home'
+    // Auto-filled from the map's reverse-geocode
+    street: comp.road || comp.pedestrian || comp.residential || '',
+    area: comp.neighbourhood || comp.suburb || comp.quarter || comp.village || '',
+    city: comp.city || comp.town || comp.municipality || comp.county || comp.state_district || '',
+    state: comp.state || '',
+    pincode: comp.postcode || '',
+    label: 'Home',
   })
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const errorRef = useRef<HTMLDivElement>(null)
+  const set = (k: keyof FormState, v: string) => setFormData(p => ({ ...p, [k]: v }))
 
-  // Show an error AND scroll it into view (the form is scrollable and the
-  // Save button sits below the fold, so the error at the top is easy to miss).
   const showError = (msg: string) => {
     setError(msg)
-    setTimeout(() => {
-      errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 50)
+    setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50)
   }
 
   const handleSave = async () => {
-    // Validation
-    if (!formData.flatNo.trim()) {
-      showError('Please enter flat/house number')
-      return
-    }
-
-    if (!formData.name.trim() || !formData.phoneNumber.trim() || !formData.email.trim()) {
-      showError('Please fill all required fields')
-      return
-    }
-
-    if (!locationData.address || !locationData.coordinates) {
-      showError('Location data is missing. Please go back and select a location.')
-      return
-    }
+    if (!formData.flatNo.trim()) return showError('Please enter your house / flat number')
+    if (!formData.name.trim() || !formData.phoneNumber.trim()) return showError('Please add a name and phone number for delivery')
+    if (!locationData.coordinates) return showError('Location is missing — please go back and pick it on the map')
 
     setLoading(true)
     setError('')
-
     try {
-      // Build the address and let the PARENT persist it (single source of truth).
-      // Previously this component ALSO POSTed to save_address.php and the parent's
-      // handleAddressComplete saved it again → duplicate rows. Now it saves once.
+      const streetAddress = [formData.building, formData.floor ? `Floor ${formData.floor}` : '', formData.street]
+        .map(s => s.trim()).filter(Boolean).join(', ')
+
+      const parts = [formData.flatNo, streetAddress, formData.area, formData.city, formData.state, formData.pincode]
+        .map(s => s.trim()).filter(Boolean)
+      let fullAddress = parts.join(', ')
+      if (formData.landmark.trim()) fullAddress += ` (Near ${formData.landmark.trim()})`
+      if (!fullAddress) fullAddress = locationData.address || ''
+
       const savedAddress: SavedAddress = {
-        ...formData,
-        fullAddress: locationData.address,
+        name: formData.name,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        flatNo: formData.flatNo,
+        streetAddress,
+        area: formData.area,
+        city: formData.city,
+        state: formData.state,
+        pincode: formData.pincode,
+        country: 'India',
+        landmark: formData.landmark,
+        fullAddress,
+        label: formData.label,
         coordinates: locationData.coordinates,
-        savedAt: new Date().toISOString()
+        savedAt: new Date().toISOString(),
       }
       onSave(savedAddress)
-    } catch (err) {
-      console.error('Error preparing address:', err)
+    } catch {
       showError('Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
-  const labelIcons = {
-    Home: <Home className="w-7 h-7" />,
-    Work: <Briefcase className="w-7 h-7" />,
-    Other: <Star className="w-7 h-7" />
-  }
+  const labelIcons = { Home: <Home className="w-5 h-5" />, Work: <Briefcase className="w-5 h-5" />, Other: <Star className="w-5 h-5" /> }
+  const field = "peer w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition text-sm disabled:opacity-50"
+  const lbl = "absolute left-3 -top-2 px-1 bg-white text-[11px] font-medium text-gray-500"
 
   return (
-    <div className="bg-white rounded-xl shadow-xl overflow-hidden max-h-[80vh] overflow-y-auto max-w-md mx-auto">
+    <div className="bg-white sm:rounded-2xl shadow-xl overflow-hidden max-h-[90vh] sm:max-h-[85vh] overflow-y-auto w-full sm:max-w-md mx-auto">
       {/* Header */}
-      <div className="bg-gradient-to-br from-green-500 via-green-600 to-emerald-600 p-4 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/10"></div>
-        <div className="relative flex items-center gap-2">
-          <button
-            onClick={onBack}
-            disabled={loading}
-            className="p-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-lg transition-all duration-200 disabled:opacity-50"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <div>
-            <h2 className="text-xl font-bold">Complete Address</h2>
-            <p className="text-white/90 mt-0.5 text-sm">For accurate delivery</p>
-          </div>
+      <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 text-white flex items-center gap-2 sticky top-0 z-10">
+        <button onClick={onBack} disabled={loading} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition disabled:opacity-50">
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <div>
+          <h2 className="text-lg font-bold leading-tight">Add address details</h2>
+          <p className="text-white/90 text-xs">A few details for accurate delivery</p>
         </div>
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Error Message */}
         {error && (
-          <div ref={errorRef} className="bg-red-50 border border-red-200 rounded-lg p-2 text-red-700 text-xs scroll-mt-4">
-            ⚠️ {error}
-          </div>
+          <div ref={errorRef} className="bg-red-50 border border-red-200 rounded-lg p-2.5 text-red-700 text-xs scroll-mt-4">⚠️ {error}</div>
         )}
 
-        {/* Selected Location Card */}
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-3 flex gap-2 shadow-sm">
-          <div className="bg-green-500/20 p-2 rounded-lg">
-            <MapPin className="w-4 h-4 text-green-600" />
+        {/* Detected location (from the map) */}
+        <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-start gap-2">
+          <MapPin className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-bold text-green-700">Pinned location</p>
+            <p className="text-xs text-gray-600 leading-snug line-clamp-2">{locationData.address || 'Selected on map'}</p>
           </div>
-          <div className="flex-1">
-            <p className="text-xs font-semibold text-gray-700">Delivery Location</p>
-            <p className="text-gray-600 mt-0.5 text-xs leading-snug">
-              {locationData.address || 'No address selected'}
-            </p>
+          <button onClick={onBack} disabled={loading} className="flex items-center gap-1 text-[11px] font-semibold text-green-700 hover:underline flex-shrink-0">
+            <Pencil className="w-3 h-3" /> Change
+          </button>
+        </div>
+
+        {/* House / building */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="relative">
+            <input className={field} placeholder="e.g. 12B" value={formData.flatNo} onChange={e => set('flatNo', e.target.value)} disabled={loading} />
+            <label className={lbl}>House / Flat no <span className="text-red-500">*</span></label>
+          </div>
+          <div className="relative">
+            <input className={field} placeholder="e.g. Floor 3" value={formData.floor} onChange={e => set('floor', e.target.value)} disabled={loading} />
+            <label className={lbl}>Floor (opt)</label>
+          </div>
+        </div>
+        <div className="relative">
+          <input className={field} placeholder="e.g. Green Residency, Tower A" value={formData.building} onChange={e => set('building', e.target.value)} disabled={loading} />
+          <label className={lbl}>Building / Apartment (opt)</label>
+        </div>
+        <div className="relative">
+          <input className={field} placeholder="e.g. Near City Park, opp. SBI" value={formData.landmark} onChange={e => set('landmark', e.target.value)} disabled={loading} />
+          <label className={lbl}>Landmark (opt)</label>
+        </div>
+
+        {/* Auto-filled area details (editable) */}
+        <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-3 space-y-3">
+          <p className="text-[11px] font-semibold text-gray-500">Auto-filled from your pin — edit if needed</p>
+          <div className="relative">
+            <input className={field + " bg-white"} placeholder="Area / Locality" value={formData.area} onChange={e => set('area', e.target.value)} disabled={loading} />
+            <label className={lbl}>Area / Locality</label>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="relative">
+              <input className={field + " bg-white"} placeholder="City" value={formData.city} onChange={e => set('city', e.target.value)} disabled={loading} />
+              <label className={lbl}>City</label>
+            </div>
+            <div className="relative">
+              <input className={field + " bg-white"} placeholder="Pincode" inputMode="numeric" value={formData.pincode} onChange={e => set('pincode', e.target.value)} disabled={loading} />
+              <label className={lbl}>Pincode</label>
+            </div>
+          </div>
+          <div className="relative">
+            <input className={field + " bg-white"} placeholder="State" value={formData.state} onChange={e => set('state', e.target.value)} disabled={loading} />
+            <label className={lbl}>State</label>
           </div>
         </div>
 
-        {/* Form Fields */}
+        {/* Receiver details */}
         <div className="space-y-3">
-          {/* Full Name */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Full Name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              disabled={loading}
-              className="peer w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all duration-200 text-sm disabled:opacity-50"
-            />
-            <label className="absolute left-4 -top-2 px-1 bg-white text-xs font-medium text-green-600 peer-focus:text-green-600 transition-all duration-200">
-              Name <span className="text-red-500">*</span>
-            </label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="relative">
+              <input className={field} placeholder="Name" value={formData.name} onChange={e => set('name', e.target.value)} disabled={loading} />
+              <label className={lbl}>Name <span className="text-red-500">*</span></label>
+            </div>
+            <div className="relative">
+              <input className={field} placeholder="Phone" inputMode="tel" value={formData.phoneNumber} onChange={e => set('phoneNumber', e.target.value)} disabled={loading} />
+              <label className={lbl}>Phone <span className="text-red-500">*</span></label>
+            </div>
           </div>
-
-          {/* Phone */}
           <div className="relative">
-            <input
-              type="tel"
-              placeholder="Phone Number"
-              value={formData.phoneNumber}
-              onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-              disabled={loading}
-              className="peer w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all duration-200 text-sm disabled:opacity-50"
-            />
-            <label className="absolute left-4 -top-2 px-1 bg-white text-xs font-medium text-green-600 peer-focus:text-green-600 transition-all duration-200">
-              Phone <span className="text-red-500">*</span>
-            </label>
-          </div>
-
-          {/* Email */}
-          <div className="relative">
-            <input
-              type="email"
-              placeholder="Email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              disabled={loading}
-              className="peer w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all duration-200 text-sm disabled:opacity-50"
-            />
-            <label className="absolute left-4 -top-2 px-1 bg-white text-xs font-medium text-green-600 peer-focus:text-green-600 transition-all duration-200">
-              Email <span className="text-red-500">*</span>
-            </label>
-          </div>
-
-          {/* Flat No */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="e.g. Flat 301, Building A"
-              value={formData.flatNo}
-              onChange={(e) => setFormData({ ...formData, flatNo: e.target.value })}
-              disabled={loading}
-              className="peer w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all duration-200 text-sm disabled:opacity-50"
-            />
-            <label className="absolute left-4 -top-2 px-1 bg-white text-xs font-medium text-green-600 peer-focus:text-green-600 transition-all duration-200">
-              Flat/House No <span className="text-red-500">*</span>
-            </label>
-          </div>
-
-          {/* Landmark */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="e.g. Near Park, Opposite Mall"
-              value={formData.landmark}
-              onChange={(e) => setFormData({ ...formData, landmark: e.target.value })}
-              disabled={loading}
-              className="peer w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all duration-200 text-sm disabled:opacity-50"
-            />
-            <label className="absolute left-4 -top-2 px-1 bg-white text-xs font-medium text-gray-500 peer-focus:text-green-600 transition-all duration-200">
-              Landmark (Opt)
-            </label>
+            <input className={field} placeholder="Email (optional)" value={formData.email} onChange={e => set('email', e.target.value)} disabled={loading} />
+            <label className={lbl}>Email (opt)</label>
           </div>
         </div>
 
-        {/* Address Label Selection */}
+        {/* Save as */}
         <div>
-          <p className="text-sm font-semibold text-gray-800 mb-2">
-            Save As <span className="text-red-500">*</span>
-          </p>
+          <p className="text-sm font-semibold text-gray-800 mb-2">Save as</p>
           <div className="grid grid-cols-3 gap-2">
-            {(['Home', 'Work', 'Other'] as const).map((label) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => setFormData({ ...formData, label })}
-                disabled={loading}
-                className={`relative p-3 rounded-lg border transition-all duration-300 group disabled:opacity-50 ${formData.label === label
-                  ? 'border-green-600 bg-green-50 shadow-md scale-105'
-                  : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
-                  }`}
-              >
-                <div className="flex flex-col items-center gap-1">
-                  <div
-                    className={`p-2 rounded-lg transition-colors ${formData.label === label
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'
-                      }`}
-                  >
-                    {labelIcons[label]}
-                  </div>
-                  <span
-                    className={`font-medium text-sm ${formData.label === label ? 'text-green-700' : 'text-gray-700'
-                      }`}
-                  >
-                    {label}
-                  </span>
-                </div>
+            {(['Home', 'Work', 'Other'] as const).map(label => (
+              <button key={label} type="button" onClick={() => set('label', label)} disabled={loading}
+                className={`p-3 rounded-xl border transition flex flex-col items-center gap-1 disabled:opacity-50 ${formData.label === label ? 'border-green-600 bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                <span className={`p-2 rounded-lg ${formData.label === label ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{labelIcons[label]}</span>
+                <span className={`text-xs font-medium ${formData.label === label ? 'text-green-700' : 'text-gray-700'}`}>{label}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Save Button */}
-        <button
-          onClick={handleSave}
-          disabled={loading}
-          className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold text-sm rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              Save & Continue
-              <ChevronRight className="w-4 h-4" />
-            </>
-          )}
+        <button onClick={handleSave} disabled={loading}
+          className="w-full py-3.5 bg-green-600 hover:bg-green-700 text-white font-bold text-sm rounded-2xl transition flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]">
+          {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : <>Save address <ChevronRight className="w-4 h-4" /></>}
         </button>
       </div>
     </div>
