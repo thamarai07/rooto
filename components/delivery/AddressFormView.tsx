@@ -40,12 +40,12 @@ export default function AddressFormView({ userData, onSave, onBack, selectedLoca
     building: '',
     floor: '',
     landmark: '',
-    // Auto-filled from the map's reverse-geocode
-    street: comp.road || comp.pedestrian || comp.residential || '',
-    area: comp.neighbourhood || comp.suburb || comp.quarter || comp.village || '',
-    city: comp.city || comp.town || comp.municipality || comp.county || comp.state_district || '',
+    // Auto-filled from the map's reverse-geocode (normalised by lib/googleMaps)
+    street: comp.street || '',
+    area: comp.area || '',
+    city: comp.city || '',
     state: comp.state || '',
-    pincode: comp.postcode || '',
+    pincode: comp.pincode || '',
     label: 'Home',
   })
 

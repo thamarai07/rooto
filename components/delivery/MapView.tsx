@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { MapPin, Navigation, X, Loader2, Search, Target, Layers, ChevronRight } from 'lucide-react'
+import { reverseGeocode as geoReverse, placePredictions, resolvePrediction, type PlacePrediction } from '@/lib/googleMaps'
 
 interface UserData {
   id: any
@@ -38,14 +39,13 @@ export default function MapView({ userData, onProceed, onClose }: MapViewProps) 
   const mapInstance = useRef<any>(null)
   const tileLayerRef = useRef<any>(null)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const geocodeAbort = useRef<AbortController | null>(null)
 
   const [address, setAddress] = useState<string>('')
   const [components, setComponents] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState<boolean>(false)
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
-  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searchResults, setSearchResults] = useState<PlacePrediction[]>([])
   const [isSearching, setIsSearching] = useState<boolean>(false)
   const [showSearchResults, setShowSearchResults] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string>('')
@@ -111,29 +111,19 @@ export default function MapView({ userData, onProceed, onClose }: MapViewProps) 
     if (!mapInstance.current) return
     const c = mapInstance.current.getCenter()
     setCoordinates({ lat: c.lat, lng: c.lng })
-    reverseGeocode(c.lat, c.lng)
+    updateAddress(c.lat, c.lng)
   }
 
-  const reverseGeocode = async (lat: number, lng: number) => {
+  const updateAddress = async (lat: number, lng: number) => {
     setLoading(true)
-    geocodeAbort.current?.abort()
-    const ctrl = new AbortController()
-    geocodeAbort.current = ctrl
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-        { signal: ctrl.signal }
-      )
-      const data = await res.json()
-      if (data?.display_name) {
-        setAddress(data.display_name)
-        setComponents(data.address || {})
-        setErrorMessage('')
-      } else {
-        setAddress('Address not found — drag the map a little')
-      }
-    } catch (err: any) {
-      if (err?.name !== 'AbortError') { setAddress('Could not get address'); setErrorMessage('Network error') }
+      const r = await geoReverse(lat, lng) // Google when keyed, else OpenStreetMap
+      setAddress(r.formatted || 'Address not found — drag the map a little')
+      setComponents(r.components as unknown as Record<string, string>)
+      setErrorMessage('')
+    } catch {
+      setAddress('Could not get address')
+      setErrorMessage('Network error')
     } finally {
       setLoading(false)
     }
@@ -172,20 +162,19 @@ export default function MapView({ userData, onProceed, onClose }: MapViewProps) 
     if (query.length < 3) { setSearchResults([]); setShowSearchResults(false); setIsSearching(false); return }
     setIsSearching(true)
     searchTimeoutRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=IN&limit=5`)
-        setSearchResults((await res.json()) || [])
-        setShowSearchResults(true)
-      } catch { setSearchResults([]) } finally { setIsSearching(false) }
-    }, 400)
+      const preds = await placePredictions(query) // Google when keyed, else OpenStreetMap
+      setSearchResults(preds)
+      setShowSearchResults(true)
+      setIsSearching(false)
+    }, 350)
   }
 
-  const selectSearchResult = (item: any) => {
-    const lat = parseFloat(item.lat), lng = parseFloat(item.lon)
-    setSearchQuery(item.display_name.split(',')[0])
+  const selectSearchResult = async (item: PlacePrediction) => {
+    setSearchQuery(item.primary)
     setShowSearchResults(false)
     setSearchResults([])
-    if (!isNaN(lat) && !isNaN(lng)) mapInstance.current?.setView([lat, lng], 17, { animate: true })
+    const r = await resolvePrediction(item)
+    if (r) mapInstance.current?.setView([r.coordinates.lat, r.coordinates.lng], 17, { animate: true })
   }
 
   const handleProceed = () => {
@@ -236,12 +225,12 @@ export default function MapView({ userData, onProceed, onClose }: MapViewProps) 
           {showSearchResults && (
             <div className="absolute left-3 right-3 top-[calc(100%-2px)] bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-[9999] max-h-56 overflow-y-auto">
               {searchResults.length > 0 ? (
-                searchResults.map((item, i) => (
-                  <button key={i} onClick={() => selectSearchResult(item)} className="w-full px-3 py-2.5 flex items-center gap-2 hover:bg-green-50 transition text-left border-b border-gray-50 last:border-0">
+                searchResults.map((item) => (
+                  <button key={item.id} onClick={() => selectSearchResult(item)} className="w-full px-3 py-2.5 flex items-center gap-2 hover:bg-green-50 transition text-left border-b border-gray-50 last:border-0">
                     <MapPin className="w-4 h-4 text-green-600 flex-shrink-0" />
                     <span className="flex-1 min-w-0">
-                      <span className="block text-xs font-medium text-gray-900 truncate">{item.display_name?.split(',')[0]}</span>
-                      <span className="block text-[11px] text-gray-500 truncate">{item.display_name}</span>
+                      <span className="block text-xs font-medium text-gray-900 truncate">{item.primary}</span>
+                      {item.secondary && <span className="block text-[11px] text-gray-500 truncate">{item.secondary}</span>}
                     </span>
                     <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
                   </button>

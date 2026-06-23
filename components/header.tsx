@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth'
 import ForgotPasswordModal from "@/components/auth/ForgotPasswordModal"
 import { authHeaders } from "@/lib/auth"
 import { lineSubtotal } from "@/lib/pricing"
+import LocationModal, { getDeliveryLocation, type DeliveryLocation } from "@/components/delivery/LocationModal"
 
 interface WishlistItem {
   id: string
@@ -82,6 +83,8 @@ export default function Header() {
 
   const [showAuth, setShowAuth] = useState(false)
   const [authMode, setAuthMode] = useState<"login" | "signup" | "forgot">("login")
+  const [showLocation, setShowLocation] = useState(false)
+  const [activeLoc, setActiveLoc] = useState<DeliveryLocation | null>(null)
 
   const wishlistRef = useRef<HTMLDivElement>(null)
   const cartRef = useRef<HTMLDivElement>(null)
@@ -130,6 +133,17 @@ export default function Header() {
 
   const displayWishlistCount = user ? wishlistCount : guestWishlistCount
   const displayCartCount = user ? cartCount : guestCartCount
+
+  /* ---------- Active delivery location (header chip) ---------- */
+  useEffect(() => {
+    const sync = () => setActiveLoc(getDeliveryLocation())
+    sync()
+    window.addEventListener("delivery-location-changed", sync)
+    return () => window.removeEventListener("delivery-location-changed", sync)
+  }, [])
+  const locLabel = activeLoc
+    ? (activeLoc.area || activeLoc.city || (activeLoc.formatted || "").split(",")[0] || "Selected location")
+    : (user?.name ? `${user.name}'s location` : "Select your location")
 
   /* ---------- Logged-in: count refresh ---------- */
   const refreshCounts = useCallback(async () => {
@@ -373,31 +387,31 @@ export default function Header() {
             </Link>
 
             {/* LOCATION (mobile, inline — replaces the brand text to save space) */}
-            <Link href="/addresses" className="flex md:hidden items-center gap-1 min-w-0 flex-1 active:opacity-70">
+            <button onClick={() => setShowLocation(true)} className="flex md:hidden items-center gap-1 min-w-0 flex-1 active:opacity-70 text-left">
               <MapPin className="w-4 h-4 text-green-600 flex-shrink-0" />
               <span className="min-w-0 leading-tight">
                 <span className="block text-[10px] text-gray-500 leading-none">Deliver to</span>
                 <span className="flex items-center gap-0.5 text-[13px] font-semibold text-gray-900 leading-tight">
-                  <span className="truncate">{user?.name ? `${user.name}'s address` : "Select location"}</span>
+                  <span className="truncate">{locLabel}</span>
                   <ChevronDown className="w-3 h-3 flex-shrink-0 text-gray-500" />
                 </span>
               </span>
-            </Link>
+            </button>
 
             {/* LOCATION (desktop, inline) */}
-            <Link
-              href="/addresses"
-              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition min-w-0 max-w-xs"
+            <button
+              onClick={() => setShowLocation(true)}
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition min-w-0 max-w-xs text-left"
             >
               <MapPin className="w-5 h-5 text-green-600 flex-shrink-0" />
               <span className="min-w-0 leading-tight">
                 <span className="block text-[11px] text-gray-500">Deliver to</span>
                 <span className="flex items-center gap-1 text-sm font-semibold text-gray-900 truncate">
-                  {user?.name ? `${user.name}'s address` : "Select your location"}
+                  <span className="truncate">{locLabel}</span>
                   <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 text-gray-500" />
                 </span>
               </span>
-            </Link>
+            </button>
 
             <div className="hidden md:block flex-1" />
 
@@ -540,6 +554,9 @@ export default function Header() {
           <MobileProfilePanel user={user} onClose={() => setShowProfile(false)} onLogout={handleLogout} />
         </div>
       )}
+
+      {/* Location selector */}
+      {showLocation && <LocationModal onClose={() => setShowLocation(false)} />}
 
       {/* Auth Modal */}
       <Dialog open={showAuth} onOpenChange={(open) => { setShowAuth(open); if (!open) setAuthMode("login") }}>
