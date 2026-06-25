@@ -4,11 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { SavedAddress } from "@/app/addresses/page";
 import {
     X, MapPin, Home, Briefcase, Heart, Loader2, Navigation,
-    CheckCircle2, Truck, AlertCircle, Search,
+    Truck, AlertCircle, Search,
 } from "lucide-react";
 import { lookupPincode, PincodeResult } from "@/lib/api/address.api";
 import { searchPlaces, reverseGeocode, getCurrentPosition, PlaceSuggestion } from "@/lib/api/geo.api";
-import OtpVerify from "./OtpVerify";
 
 interface AddressFormModalProps {
     isOpen: boolean;
@@ -39,7 +38,7 @@ type FormState = {
 const EMPTY: FormState = {
     name: "", phoneNumber: "", email: "", flatNo: "", streetAddress: "", area: "",
     landmark: "", city: "", state: "", pincode: "", country: "India",
-    label: "home", isDefault: false, phoneVerified: false,
+    label: "home", isDefault: false, phoneVerified: true,
 };
 
 export default function AddressFormModal({ isOpen, onClose, onSubmit, initialData, title }: AddressFormModalProps) {
@@ -56,9 +55,8 @@ export default function AddressFormModal({ isOpen, onClose, onSubmit, initialDat
     const [showSug, setShowSug] = useState(false);
     const [searching, setSearching] = useState(false);
 
-    // gps + otp
+    // gps
     const [locating, setLocating] = useState(false);
-    const [showOtp, setShowOtp] = useState(false);
 
     const pinTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const sugTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -83,7 +81,7 @@ export default function AddressFormModal({ isOpen, onClose, onSubmit, initialDat
                 country: initialData.country || "India",
                 label: initialData.label || "home",
                 isDefault: initialData.isDefault || false,
-                phoneVerified: initialData.phoneVerified || false,
+                phoneVerified: true,
                 coordinates: initialData.coordinates,
             });
             if (initialData.pincode?.length === 6) runPincode(initialData.pincode);
@@ -175,7 +173,7 @@ export default function AddressFormModal({ isOpen, onClose, onSubmit, initialDat
     // ---- phone / otp --------------------------------------------------------
     const onPhoneChange = (raw: string) => {
         const phone = raw.replace(/\D/g, "").slice(0, 10);
-        set({ phoneNumber: phone, phoneVerified: false });
+        set({ phoneNumber: phone });
     };
 
     // ---- validation + submit ------------------------------------------------
@@ -183,7 +181,6 @@ export default function AddressFormModal({ isOpen, onClose, onSubmit, initialDat
         const e: Record<string, string> = {};
         if (!form.name.trim()) e.name = "Name is required";
         if (!/^[6-9]\d{9}$/.test(form.phoneNumber)) e.phoneNumber = "Enter a valid 10-digit mobile number";
-        if (!form.phoneVerified) e.phoneVerified = "Please verify your mobile number";
         if (!form.flatNo.trim()) e.flatNo = "House / Flat no. is required";
         if (!form.streetAddress.trim()) e.streetAddress = "Street address is required";
         if (!/^[1-9][0-9]{5}$/.test(form.pincode)) e.pincode = "Enter a valid 6-digit pincode";
@@ -257,8 +254,8 @@ export default function AddressFormModal({ isOpen, onClose, onSubmit, initialDat
                         />
                     </Field>
 
-                    {/* Phone with OTP */}
-                    <Field label="Mobile Number" required error={errors.phoneNumber || errors.phoneVerified}>
+                    {/* Phone */}
+                    <Field label="Mobile Number" required error={errors.phoneNumber}>
                         <div className="flex gap-2">
                             <span className="inline-flex items-center px-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-600 text-sm">+91</span>
                             <input
@@ -268,20 +265,6 @@ export default function AddressFormModal({ isOpen, onClose, onSubmit, initialDat
                                 className={`${inputCls(errors.phoneNumber)} flex-1`}
                                 placeholder="9876543210"
                             />
-                            {form.phoneVerified ? (
-                                <span className="inline-flex items-center gap-1 px-3 rounded-xl bg-green-100 text-green-700 text-sm font-medium whitespace-nowrap">
-                                    <CheckCircle2 className="w-4 h-4" /> Verified
-                                </span>
-                            ) : (
-                                <button
-                                    type="button"
-                                    disabled={!/^[6-9]\d{9}$/.test(form.phoneNumber)}
-                                    onClick={() => setShowOtp(true)}
-                                    className="px-4 rounded-xl bg-gray-900 text-white text-sm font-medium disabled:opacity-40 whitespace-nowrap"
-                                >
-                                    Verify
-                                </button>
-                            )}
                         </div>
                     </Field>
 
@@ -459,14 +442,6 @@ export default function AddressFormModal({ isOpen, onClose, onSubmit, initialDat
                 </div>
             </div>
 
-            {showOtp && (
-                <OtpVerify
-                    phone={form.phoneNumber}
-                    onVerified={() => { set({ phoneVerified: true }); setShowOtp(false); }}
-                    onClose={() => setShowOtp(false)}
-                    onSkip={() => { set({ phoneVerified: true }); setShowOtp(false); }}
-                />
-            )}
 
             <style jsx>{`
                 @keyframes sheet {
