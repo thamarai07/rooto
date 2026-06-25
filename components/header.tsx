@@ -556,7 +556,13 @@ export default function Header() {
       )}
 
       {/* Location selector */}
-      {showLocation && <LocationModal onClose={() => setShowLocation(false)} />}
+      {showLocation && (
+        <LocationModal
+          onClose={() => setShowLocation(false)}
+          isLoggedIn={!!user}
+          onLoginRequired={() => { setShowLocation(false); setAuthMode("login"); setShowAuth(true) }}
+        />
+      )}
 
       {/* Auth Modal */}
       <Dialog open={showAuth} onOpenChange={(open) => { setShowAuth(open); if (!open) setAuthMode("login") }}>

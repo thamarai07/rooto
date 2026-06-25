@@ -29,7 +29,15 @@ function saveDeliveryLocation(loc: DeliveryLocation) {
   window.dispatchEvent(new Event("delivery-location-changed"))
 }
 
-export default function LocationModal({ onClose }: { onClose: () => void }) {
+export default function LocationModal({
+  onClose,
+  isLoggedIn,
+  onLoginRequired,
+}: {
+  onClose: () => void
+  isLoggedIn: boolean
+  onLoginRequired: () => void
+}) {
   const [mounted, setMounted] = useState(false)
   const [current, setCurrent] = useState<DeliveryLocation | null>(null)
   const [query, setQuery] = useState("")
@@ -159,10 +167,19 @@ export default function LocationModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {/* Manage detailed addresses */}
-          <Link href="/addresses" onClick={onClose} className="mt-3 flex items-center justify-center gap-1.5 text-sm font-semibold text-green-700 hover:underline py-2">
-            Manage saved addresses <ChevronRight className="w-4 h-4" />
-          </Link>
+          {/* Manage detailed addresses — only for logged-in users */}
+          {isLoggedIn ? (
+            <Link href="/addresses" onClick={onClose} className="mt-3 flex items-center justify-center gap-1.5 text-sm font-semibold text-green-700 hover:underline py-2">
+              Manage saved addresses <ChevronRight className="w-4 h-4" />
+            </Link>
+          ) : (
+            <button
+              onClick={onLoginRequired}
+              className="mt-3 w-full flex items-center justify-center gap-1.5 text-sm font-semibold text-green-700 bg-green-50 hover:bg-green-100 rounded-xl py-2.5 transition"
+            >
+              Log in to save your address <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>,
