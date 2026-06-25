@@ -15,6 +15,12 @@ const getUserId = (): number | null => {
     return user ? JSON.parse(user).id : null
   } catch { return null }
 }
+
+// The search/top-selling API hard-codes a localhost image base — rewrite it for live.
+const fixImg = (url?: string): string =>
+  (url || "").replace(/^https?:\/\/localhost(:\d+)?\/vfs_portal/i, "https://seashell-skunk-617240.hostingersite.com")
+
+const PLACEHOLDER = "https://placehold.co/300x300/fee2e2/ef4444?text=No+Image"
 interface WishlistItem {
   id: number
   name: string
@@ -62,7 +68,7 @@ function CelebrationPopup({ show, action, product }: any) {
               <span className="font-bold text-gray-800">{messages[action as keyof typeof messages]}</span>
             </div>
             <p className="text-sm text-gray-600 font-medium line-clamp-1">{product?.name}</p>
-            <p className="text-green-600 font-bold text-sm">₹{product?.price?.toFixed(2)}</p>
+            <p className="text-green-600 font-bold text-sm">₹{Number(product?.price || 0).toFixed(2)}</p>
           </div>
           <Check className="w-6 h-6 text-green-600 flex-shrink-0" />
         </div>
@@ -356,9 +362,10 @@ export default function WishlistPage() {
                       >
                         <div className="relative h-48 bg-gradient-to-br from-red-50 to-pink-50">
                           <img
-                            src={product.image}
+                            src={fixImg(product.image)}
                             alt={product.name}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            onError={(e) => { e.currentTarget.src = PLACEHOLDER }}
                           />
                           {product.total_sold && product.total_sold > 0 && (
                             <div className="absolute top-3 right-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
@@ -381,7 +388,7 @@ export default function WishlistPage() {
                           <div className="flex items-center justify-between mb-3">
                             <div>
                               <span className="text-2xl font-bold text-red-600">
-                                ₹{Number(product.price_per_kg.toFixed(2))}
+                                ₹{Number(product.price_per_kg || 0).toFixed(2)}
                               </span>
                               <span className="text-sm text-gray-500 ml-1">/kg</span>
                             </div>
@@ -432,9 +439,10 @@ export default function WishlistPage() {
                     <Link href={`/product-details/${encodeURIComponent(item.name)}`}>
                       <div className="relative h-56 bg-gradient-to-br from-red-50 to-pink-50">
                         <img
-                          src={item.image}
+                          src={fixImg(item.image)}
                           alt={item.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          onError={(e) => { e.currentTarget.src = PLACEHOLDER }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
@@ -462,9 +470,9 @@ export default function WishlistPage() {
                       )}
 
                       <div className="flex items-center justify-between mb-3">
-                        {item.price_per_kg && <div>
+                        {item.price_per_kg != null && <div>
                           <span className="text-2xl font-bold text-red-600">
-                            ₹{Number(item.price_per_kg.toFixed(2))}
+                            ₹{Number(item.price_per_kg || 0).toFixed(2)}
                           </span>
                           <span className="text-sm text-gray-500 ml-1">/kg</span>
                         </div>}
