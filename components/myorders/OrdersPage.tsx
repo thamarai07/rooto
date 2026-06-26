@@ -167,9 +167,10 @@ const getUserId = (): number | null => {
 // ORDER CARD COMPONENT
 // ============================================================================
 function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (order: Order) => void }) {
-    const statusConfig = STATUS_CONFIG[order.status];
+    const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
     const StatusIcon = statusConfig.icon;
-    const paymentConfig = PAYMENT_STATUS_CONFIG[order.payment_status];
+    const paymentConfig = PAYMENT_STATUS_CONFIG[order.payment_status] || PAYMENT_STATUS_CONFIG.pending;
+    const items = order.items || [];
 
     return (
         <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200">
@@ -204,7 +205,7 @@ function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (ord
 
             <div className="p-4">
                 <div className="space-y-3 mb-4">
-                    {order.items.slice(0, 2).map((item) => (
+                    {items.slice(0, 2).map((item) => (
                         <div key={item.id} className="flex gap-3 items-center">
                             <img
                                 src={item.product_image}
@@ -225,9 +226,9 @@ function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (ord
                             </p>
                         </div>
                     ))}
-                    {order.items.length > 2 && (
+                    {items.length > 2 && (
                         <p className="text-sm text-gray-500 text-center py-2 bg-gray-50 rounded-lg">
-                            +{order.items.length - 2} more items
+                            +{items.length - 2} more items
                         </p>
                     )}
                 </div>
@@ -269,7 +270,7 @@ function OrderDetailsModal({
     const [cancelReason, setCancelReason] = useState("");
     const [showCancelForm, setShowCancelForm] = useState(false);
 
-    const statusConfig = STATUS_CONFIG[order.status];
+    const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
     const StatusIcon = statusConfig.icon;
     const customerId = getUserId();
 
@@ -398,7 +399,7 @@ function OrderDetailsModal({
                     <div className="mb-6">
                         <h3 className="font-bold text-lg text-gray-900 mb-4">Order Items</h3>
                         <div className="space-y-3">
-                            {order.items.map((item) => (
+                            {(order.items || []).map((item) => (
                                 <div key={item.id} className="flex gap-4 p-4 bg-gray-50 rounded-lg">
                                     <img
                                         src={item.product_image}
@@ -429,17 +430,17 @@ function OrderDetailsModal({
                             <div className="flex items-start gap-3">
                                 <MapPin className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
                                 <div className="flex-1">
-                                    <p className="font-semibold text-gray-900">{order.address.name}</p>
-                                    <p className="text-gray-700 mt-1">{order.address.fullAddress}</p>
-                                    {order.address.landmark && (
+                                    <p className="font-semibold text-gray-900">{order.address?.name}</p>
+                                    <p className="text-gray-700 mt-1">{order.address?.fullAddress}</p>
+                                    {order.address?.landmark && (
                                         <p className="text-gray-600 text-sm mt-1">Landmark: {order.address.landmark}</p>
                                     )}
                                     <div className="flex flex-wrap gap-4 mt-3">
                                         <p className="text-sm text-gray-600 flex items-center gap-1">
                                             <Phone className="w-4 h-4" />
-                                            {order.address.phone}
+                                            {order.address?.phone}
                                         </p>
-                                        {order.address.email && (
+                                        {order.address?.email && (
                                             <p className="text-sm text-gray-600 flex items-center gap-1">
                                                 <Mail className="w-4 h-4" />
                                                 {order.address.email}
@@ -570,6 +571,8 @@ export default function OrdersPage() {
             }
 
             const params = new URLSearchParams({
+                customer_id: String(customerId),  // backend requires this explicitly
+                customerId: String(customerId),   // accept either param name
                 status: filterStatus,
                 search: searchQuery,
                 page: pagination.page.toString(),
@@ -582,12 +585,13 @@ export default function OrdersPage() {
             const data = await response.json();
 
             if (data.status === "success") {
-                setOrders(data.orders);
-                setFilteredOrders(data.orders);
+                const list: Order[] = data.orders || data.data || [];
+                setOrders(list);
+                setFilteredOrders(list);
                 setPagination({
-                    page: data.pagination.page,
-                    totalPages: data.pagination.totalPages,
-                    total: data.pagination.total
+                    page: data.pagination?.page || 1,
+                    totalPages: data.pagination?.totalPages || 1,
+                    total: data.pagination?.total,
                 });
             } else {
                 console.error("Error fetching orders:", data.message);
