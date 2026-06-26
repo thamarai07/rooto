@@ -147,14 +147,27 @@ const getRelativeTime = (dateString: string): string => {
     return formatDate(dateString);
 };
 
-// Get user ID from localStorage
+// Get the customer id. Prefer the id encoded in the JWT — it's the exact id
+// orders are created under — then fall back to the stored user object.
 const getUserId = (): number | null => {
-    if (typeof window !== 'undefined') {
+    try {
+        const token = getToken();
+        const part = token?.split(".")[1];
+        if (part) {
+            let b = part.replace(/-/g, "+").replace(/_/g, "/");
+            b += "===".slice((b.length + 3) % 4); // pad
+            const payload = JSON.parse(atob(b));
+            const id = payload.user_id ?? payload.id ?? payload.sub;
+            if (id) return Number(id);
+        }
+    } catch { /* ignore — fall back below */ }
+
+    if (typeof window !== "undefined") {
         const savedUser = localStorage.getItem("auth_user");
         if (savedUser) {
             try {
                 const user = JSON.parse(savedUser);
-                return user.id || null;
+                return user.id ? Number(user.id) : null;
             } catch (e) {
                 console.error("Error parsing user data:", e);
             }
