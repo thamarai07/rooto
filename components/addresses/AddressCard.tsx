@@ -20,7 +20,8 @@ export default function AddressCard({ address, onEdit, onDelete, onSetDefault }:
 
     // Prefer the structured fields; fall back to the legacy single line.
     const cityLine = [address.area, address.city, address.state, address.pincode]
-        .filter((p) => p && p.trim() !== "")
+        .map((p) => (p == null ? "" : String(p)).trim())
+        .filter((p) => p !== "")
         .join(", ");
 
     const hasStructured = !!(address.streetAddress || cityLine);

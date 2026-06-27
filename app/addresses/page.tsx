@@ -95,8 +95,8 @@ const transformAPIAddress = (apiAddress: APIAddress): SavedAddress => {
     return {
         id: apiAddress.id,
         customer_id: apiAddress.customer_id,
-        name: apiAddress.name,
-        phoneNumber: apiAddress.phone,  // 🔥 Map phone -> phoneNumber
+        name: apiAddress.name || '',
+        phoneNumber: apiAddress.phone || '',  // 🔥 Map phone -> phoneNumber
         email: apiAddress.email,
         flatNo: apiAddress.flat_no,  // 🔥 Map flat_no -> flatNo
         streetAddress: apiAddress.street_address || '',
@@ -106,7 +106,7 @@ const transformAPIAddress = (apiAddress: APIAddress): SavedAddress => {
         state: apiAddress.state || '',
         pincode: apiAddress.pincode || '',
         country: apiAddress.country || 'India',
-        fullAddress: apiAddress.full_address,  // 🔥 Map full_address -> fullAddress
+        fullAddress: apiAddress.full_address || '',  // 🔥 Map full_address -> fullAddress
         label: (apiAddress.label || 'home').toLowerCase() as "home" | "work" | "other",  // 🔥 Convert to lowercase
         coordinates: apiAddress.latitude && apiAddress.longitude ? {
             lat: apiAddress.latitude,
@@ -179,9 +179,9 @@ export default function AddressesPage() {
 
             console.log("📦 API Response:", data);
 
-            if (data.success) {
+            if (data.success || data.status === "success") {
                 // 🔥 Transform API data to frontend format
-                const transformedAddresses = (data.data || []).map((addr: APIAddress) =>
+                const transformedAddresses = (data.data || data.addresses || []).map((addr: APIAddress) =>
                     transformAPIAddress(addr)
                 );
 
@@ -231,7 +231,7 @@ export default function AddressesPage() {
 
             const data = await response.json();
 
-            if (data.success) {
+            if (data.success || data.status === "success") {
                 showToast('Address added successfully!', 'success');
                 setShowAddModal(false);
                 fetchAddresses();
@@ -261,7 +261,7 @@ export default function AddressesPage() {
 
             const data = await response.json();
 
-            if (data.success) {
+            if (data.success || data.status === "success") {
                 showToast('Address updated successfully!', 'success');
                 setShowEditModal(false);
                 setSelectedAddress(null);
@@ -291,7 +291,7 @@ export default function AddressesPage() {
 
             const data = await response.json();
 
-            if (data.success) {
+            if (data.success || data.status === "success") {
                 showToast('Address deleted successfully!', 'success');
                 setShowDeleteModal(false);
                 setSelectedAddress(null);
@@ -319,7 +319,7 @@ export default function AddressesPage() {
 
             const data = await response.json();
 
-            if (data.success) {
+            if (data.success || data.status === "success") {
                 showToast('Default address updated!', 'success');
                 fetchAddresses();
             } else {
@@ -331,11 +331,12 @@ export default function AddressesPage() {
         }
     };
 
-    // Filter addresses
+    // Filter addresses (null-safe)
+    const q = searchQuery.toLowerCase();
     const filteredAddresses = addresses.filter(addr =>
-        addr.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        addr.fullAddress.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        addr.label.toLowerCase().includes(searchQuery.toLowerCase())
+        (addr.name || "").toLowerCase().includes(q) ||
+        (addr.fullAddress || "").toLowerCase().includes(q) ||
+        (addr.label || "").toLowerCase().includes(q)
     );
 
     // 🔥 Debug: Log current state
