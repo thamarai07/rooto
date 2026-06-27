@@ -25,6 +25,7 @@ import {
 import { authHeaders } from "@/lib/auth"
 import { useAuth } from "@/hooks/useAuth"
 import { cartTotals, unitPrice, lineSubtotal } from "@/lib/pricing"
+import OutOfStockModal from "@/components/OutOfStockModal"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
@@ -479,11 +480,24 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
     setIsLoggedIn(!!authUser)
   }, [authUser])
 
+  // ─── Out-of-stock guard (block + re-check at checkout) ───────────────────────
+  const [showOOS, setShowOOS] = useState(false)
+  const outOfStockItems = cartItems.filter(i => Number(i.stock) <= 0)
+
   // ─── Checkout trigger (from cart page) ───────────────────────────────────────
   const handleCheckoutClick = useCallback(() => {
-    if (!user) { setShowAuth(true); setAuthMode("login") }
-    else { setShowDeliveryModal(true); setDeliveryView('saved') }
-  }, [user])
+    if (!user) { setShowAuth(true); setAuthMode("login"); return }
+    if (cartItems.some(i => Number(i.stock) <= 0)) { setShowOOS(true); return }
+    setShowDeliveryModal(true); setDeliveryView('saved')
+  }, [user, cartItems])
+
+  const handleRemoveOOSAndContinue = useCallback(async () => {
+    for (const it of cartItems.filter(i => Number(i.stock) <= 0)) {
+      await handleRemoveFromCart(Number(it.id))
+    }
+    setShowOOS(false)
+    setShowDeliveryModal(true); setDeliveryView('saved')
+  }, [cartItems]) // eslint-disable-line
 
   useEffect(() => {
     const handler = () => handleCheckoutClick()
@@ -946,6 +960,14 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
           )}
         </DialogContent>
       </Dialog>
+
+      {showOOS && (
+        <OutOfStockModal
+          items={outOfStockItems.map(i => ({ id: i.id, name: i.name, image: i.image }))}
+          onRemoveAndContinue={handleRemoveOOSAndContinue}
+          onClose={() => setShowOOS(false)}
+        />
+      )}
 
       {showDeliveryModal && user && (
         <DeliveryModal

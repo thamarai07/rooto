@@ -25,6 +25,7 @@ import { authHeaders } from "@/lib/auth"
 import { useCartData } from "@/hooks/Usecartdata"
 import { useCheckout } from "@/hooks/Usecheckout"
 import { cartTotals } from "@/lib/pricing"
+import OutOfStockModal from "@/components/OutOfStockModal"
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
 const getUserId = (): number | null => {
@@ -87,14 +88,34 @@ export default function CartPage() {
     return () => window.removeEventListener("celebrate-action", handleCelebration)
   }, [])
 
+  // Items in the cart that are now out of stock (block + re-check at checkout)
+  const outOfStockItems = cartItems.filter((i: any) => Number(i.stock) <= 0)
+  const [showOOS, setShowOOS] = useState(false)
+
+  const startCheckout = () => {
+    setShowDeliveryModal(true)
+    setDeliveryView('saved')
+  }
+
   const handleProceedToCheckout = () => {
     if (!user) {
       setShowAuth(true)
       setAuthMode("login")
-    } else {
-      setShowDeliveryModal(true)
-      setDeliveryView('saved')
+      return
     }
+    if (outOfStockItems.length > 0) {
+      setShowOOS(true)   // make the customer drop OOS items first
+      return
+    }
+    startCheckout()
+  }
+
+  const handleRemoveOOSAndContinue = async () => {
+    for (const it of outOfStockItems) {
+      await removeItem(Number(it.id))
+    }
+    setShowOOS(false)
+    startCheckout()
   }
 
   const clearCart = async (orderId?: number) => {
@@ -270,6 +291,15 @@ export default function CartPage() {
           onClose={() => setShowCheckoutSuccess(false)}
           isSubmitting={isSubmittingOrder}
           clearCart={clearCart}
+        />
+      )}
+
+      {/* Out-of-stock checkout guard */}
+      {showOOS && (
+        <OutOfStockModal
+          items={outOfStockItems.map((i: any) => ({ id: i.id, name: i.name, image: i.image }))}
+          onRemoveAndContinue={handleRemoveOOSAndContinue}
+          onClose={() => setShowOOS(false)}
         />
       )}
 

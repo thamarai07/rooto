@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function ShippingPage() {
   const cards = [
-    { icon: Clock, title: "Delivery Time", desc: "Orders are delivered within 1–2 business days across our serviceable areas." },
+    { icon: Clock, title: "Delivery Time", desc: "Orders are delivered within 1 hour across our serviceable areas." },
     { icon: IndianRupee, title: "Delivery Charges", desc: "FREE delivery on orders above ₹500. A flat ₹50 fee applies below ₹500." },
     { icon: MapPin, title: "Serviceable Areas", desc: "We currently deliver across select areas in India and are expanding fast." },
     { icon: MessageSquare, title: "Order Updates", desc: "You'll receive order status updates over SMS at every step." },

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 }
 
 const faqs = [
-  { q: "How long does delivery take?", a: "Most orders are delivered within 1–2 business days across our serviceable areas in India." },
+  { q: "How long does delivery take?", a: "Most orders are delivered within 1 hour across our serviceable areas in India." },
   { q: "Is there a delivery charge?", a: "Delivery is FREE on orders above ₹500. For orders below ₹500, a flat ₹50 delivery fee applies." },
   { q: "Do you offer Cash on Delivery (COD)?", a: "Yes! You can pay with cash at your doorstep when your order arrives." },
   { q: "Which areas do you deliver to?", a: "We currently deliver to selected areas across India and are expanding to new locations regularly." },

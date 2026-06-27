@@ -18,6 +18,7 @@ import { UserData, SavedAddress } from "@/components/types";
 import { authHeaders, getToken } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { cartTotals, unitPrice, lineSubtotal } from "@/lib/pricing";
+import OutOfStockModal from "@/components/OutOfStockModal";
 // existing imports-க்கு கீழே add பண்ணு
 import {
   getGuestCart,
@@ -401,6 +402,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
   const [orderNotes, setOrderNotes] = useState("");
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [isUpdating, setIsUpdating] = useState<number | null>(null);
+  const [showOOS, setShowOOS] = useState(false);
 
   // Mirror the global auth context so this page never thinks a logged-in user
   // is a guest (which silently routed Add-to-Cart into the guest localStorage
@@ -456,14 +458,28 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
     return () => window.removeEventListener("user-updated", handleUserUpdate);
   }, []);
 
+  const outOfStockItems = cartItems.filter((i) => Number(i.stock) <= 0);
   const handleCheckoutClick = () => {
     if (!user || !isLoggedIn) {
       setAuthMode("login");
       setShowAuth(true);
-    } else {
-      setShowDeliveryModal(true);
-      setDeliveryView('saved');
+      return;
     }
+    if (outOfStockItems.length > 0) {
+      setShowOOS(true);  // block + re-check before checkout
+      return;
+    }
+    setShowDeliveryModal(true);
+    setDeliveryView('saved');
+  };
+
+  const handleRemoveOOSAndContinue = async () => {
+    for (const it of outOfStockItems) {
+      await handleRemoveFromCart(Number(it.id));
+    }
+    setShowOOS(false);
+    setShowDeliveryModal(true);
+    setDeliveryView('saved');
   };
 
   const handleAuthSuccess = (userData: UserData) => {
@@ -947,6 +963,14 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
       </Dialog>
 
       {/* Delivery Modal */}
+      {showOOS && (
+        <OutOfStockModal
+          items={outOfStockItems.map((i) => ({ id: i.id, name: i.name, image: i.image }))}
+          onRemoveAndContinue={handleRemoveOOSAndContinue}
+          onClose={() => setShowOOS(false)}
+        />
+      )}
+
       {showDeliveryModal && user && (
         <DeliveryModal
           userData={user}

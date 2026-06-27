@@ -51,7 +51,7 @@ export default function OrderSuccessModal({
   const isCod = paymentMethod === "cod"
 
   const steps = [
-    { Icon: Truck, text: "Delivery in 1–2 business days" },
+    { Icon: Truck, text: "Delivery within 1 hour" },
     { Icon: Bell, text: "You'll get order updates via SMS" },
     { Icon: Package, text: isCod ? "Pay cash at your doorstep" : "Payment received — all set" },
   ]

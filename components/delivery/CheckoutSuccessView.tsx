@@ -131,7 +131,7 @@ TOTAL:             ₹${total.toFixed(2)}
 =====================================
 
 Order Date: ${new Date().toLocaleDateString('en-IN')}
-Expected Delivery: 1-2 business days
+Expected Delivery: within 1 hour
     `.trim()
 
     const blob = new Blob([invoiceText], { type: 'text/plain' })

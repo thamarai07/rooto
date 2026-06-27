@@ -71,7 +71,7 @@ export default function OrderSummarySidebar({
       <div className="mt-6 pt-6 border-t-2 border-gray-100 space-y-3 text-sm text-gray-600">
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-          Delivery in 1-2 business days
+          Delivery within 1 hour
         </div>
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>

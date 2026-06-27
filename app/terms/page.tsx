@@ -39,7 +39,7 @@ const sections = [
   {
     h: "5. Delivery",
     p: [
-      "We aim to deliver within 1–2 business days in our serviceable areas. Delivery times are estimates and may vary.",
+      "We aim to deliver within 1 hour in our serviceable areas. Delivery times are estimates and may vary.",
       "Please ensure someone is available to receive the order at the provided address.",
     ],
   },
