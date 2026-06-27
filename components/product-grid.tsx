@@ -43,6 +43,20 @@ const getUserId = (): number | null => {
 const isDesktop = (): boolean =>
   typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
 
+// The API returns numeric fields as strings ("0.25") — coerce so quantity math
+// (e.g. quantity + 0.25) adds instead of concatenating, and .toFixed() is safe.
+const normalizeCartItem = (i: any): CartItem => {
+  const price = Number(i.price) || 0
+  const quantity = Number(i.quantity) || 0
+  return {
+    ...i,
+    price,
+    quantity,
+    stock: Number(i.stock) || 0,
+    subtotal: i.subtotal != null ? Number(i.subtotal) || price * quantity : price * quantity,
+  }
+}
+
 const truncateWords = (text: string, wordLimit = 10): string => {
   const words = text.split(' ')
   return words.length <= wordLimit ? text : words.slice(0, wordLimit).join(' ') + '...'
@@ -311,6 +325,9 @@ const ProductCard = memo(function ProductCard({
   isLoading: boolean
   priority?: boolean
 }) {
+  // Coerce — the API can send quantity as a string ("0.25"), which would make
+  // `quantity + 0.25` concatenate instead of add. Always work with a number.
+  const qty = Number(quantity) || 0
   return (
     <div className="group bg-white rounded-2xl border border-gray-100 hover:shadow-md transition-shadow duration-200 flex flex-col h-full">
 
@@ -347,21 +364,21 @@ const ProductCard = memo(function ProductCard({
         </button>
 
         {/* ADD → turns into a − qty + stepper once the item is in the cart */}
-        {quantity > 0 ? (
+        {qty > 0 ? (
           <div className="absolute -bottom-3 right-2 flex items-center bg-green-600 text-white rounded-lg shadow-md overflow-hidden">
             <button
-              onClick={() => onUpdateQuantity(product.id, quantity - 0.25)}
+              onClick={() => onUpdateQuantity(product.id, qty - 0.25)}
               aria-label="Decrease quantity"
               className="w-7 h-8 grid place-items-center active:bg-green-700 transition"
             >
               <Minus className="w-3.5 h-3.5" />
             </button>
             <span className="px-0.5 min-w-[34px] text-center leading-none">
-              <span className="block text-[11px] font-bold">{Number(quantity.toFixed(2))}</span>
+              <span className="block text-[11px] font-bold">{Number(qty.toFixed(2))}</span>
               <span className="block text-[8px] font-medium opacity-90 -mt-0.5">kg</span>
             </span>
             <button
-              onClick={() => onUpdateQuantity(product.id, quantity + 0.25)}
+              onClick={() => onUpdateQuantity(product.id, qty + 0.25)}
               disabled={product.stock === 0}
               aria-label="Increase quantity"
               className="w-7 h-8 grid place-items-center active:bg-green-700 disabled:opacity-50 transition"
@@ -538,7 +555,7 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
           if (wishlistData.status === 'success' && wishlistData.data)
             setWishlistIds(new Set(wishlistData.data.map((i: any) => Number(i.id))))
           if (cartData.status === 'success')
-            setCartItems(cartData.data || cartData.items || [])
+            setCartItems((cartData.data || cartData.items || []).map(normalizeCartItem))
         }
       } catch {
         if (!hasInitialProducts) showToast('Failed to load products', 'error')
@@ -569,7 +586,7 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
         const data = await res.json()
         if (data.status !== 'success') return
 
-        const items: CartItem[] = data.data || data.items || []
+        const items: CartItem[] = (data.data || data.items || []).map(normalizeCartItem)
 
         // Sort: most recently added item first
         if (highlightedId) {
