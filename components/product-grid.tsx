@@ -328,6 +328,8 @@ const ProductCard = memo(function ProductCard({
   // Coerce — the API can send quantity as a string ("0.25"), which would make
   // `quantity + 0.25` concatenate instead of add. Always work with a number.
   const qty = Number(quantity) || 0
+  const stock = Number(product.stock) || 0
+  const atStockLimit = qty + 0.25 > stock // next +0.25 would exceed available stock
   return (
     <div className="group bg-white rounded-2xl border border-gray-100 hover:shadow-md transition-shadow duration-200 flex flex-col h-full">
 
@@ -346,7 +348,7 @@ const ProductCard = memo(function ProductCard({
                   "https://placehold.co/300x300/e5e7eb/6b7280?text=No+Image"
               }}
             />
-            {product.stock === 0 && (
+            {stock === 0 && (
               <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
                 <span className="text-[10px] font-bold text-gray-600 bg-white px-2 py-0.5 rounded-full shadow">Out of stock</span>
               </div>
@@ -379,9 +381,10 @@ const ProductCard = memo(function ProductCard({
             </span>
             <button
               onClick={() => onUpdateQuantity(product.id, qty + 0.25)}
-              disabled={product.stock === 0}
+              disabled={atStockLimit}
+              title={atStockLimit ? `Only ${stock} kg available` : undefined}
               aria-label="Increase quantity"
-              className="w-7 h-8 grid place-items-center active:bg-green-700 disabled:opacity-50 transition"
+              className="w-7 h-8 grid place-items-center active:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -389,7 +392,7 @@ const ProductCard = memo(function ProductCard({
         ) : (
           <button
             onClick={() => onAddToCart(product)}
-            disabled={isLoading || product.stock === 0}
+            disabled={isLoading || stock === 0}
             aria-label="Add to cart"
             className="absolute -bottom-3 right-2 flex items-center gap-0.5 bg-white border border-green-600 text-green-700 hover:bg-green-50 font-bold text-xs px-2.5 py-1.5 rounded-lg shadow-sm disabled:opacity-50 active:scale-95 transition"
           >
