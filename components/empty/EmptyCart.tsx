@@ -21,6 +21,11 @@ interface EmptyCartProps {
   onAddToCart: (product: Product) => void
 }
 
+// The search/top-selling API hard-codes a localhost image base — rewrite for live.
+const fixImg = (url?: string): string =>
+  (url || "").replace(/^https?:\/\/localhost(:\d+)?\/vfs_portal/i, "https://seashell-skunk-617240.hostingersite.com")
+const PLACEHOLDER = "https://placehold.co/300x300/e5e7eb/6b7280?text=No+Image"
+
 export default function EmptyCart({ demandProducts, onAddToCart }: EmptyCartProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -48,7 +53,7 @@ export default function EmptyCart({ demandProducts, onAddToCart }: EmptyCartProp
               {demandProducts.slice(0, 4).map(product => (
                 <div key={product.id} className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all border-2 border-gray-100 hover:border-green-300 overflow-hidden group">
                   <div className="relative h-48 bg-gradient-to-br from-green-50 to-emerald-50">
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                    <img src={fixImg(product.image)} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" onError={(e) => { e.currentTarget.src = PLACEHOLDER }} />
                     {product.total_sold && product.total_sold > 50 && (
                       <div className="absolute top-3 right-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
                         <Star className="w-3 h-3 fill-white" /> Hot
