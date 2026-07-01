@@ -489,6 +489,10 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
     []
   )
 
+  // When WE change a quantity, our optimistic value is authoritative — skip the
+  // one self-triggered re-fetch so a (possibly stale) server read can't revert it.
+  const skipSelfRefetch = useRef(false)
+
   // ─── Debounced quantity update (avoids API spam on rapid clicks) ──────────────
   const debouncedUpdateQty = useRef(
     debounce(async (productId: number, quantity: number, userId: number) => {
@@ -498,6 +502,7 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
           headers: { 'Content-Type': 'application/json', ...authHeaders() },
           body: JSON.stringify({ product_id: productId, quantity })
         })
+        skipSelfRefetch.current = true
         window.dispatchEvent(new Event('cart-updated'))
       } catch {
         // silent — optimistic update already applied
@@ -596,6 +601,9 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
         setCartItems(getGuestCart().map(i => ({ ...i, cart_id: i.id })))
         return
       }
+
+      // Our own +/- just saved — trust the optimistic value, don't re-fetch/clobber it.
+      if (skipSelfRefetch.current) { skipSelfRefetch.current = false; return }
 
       // Only hit the API if the drawer is open OR on the initial load
       // When drawer is closed, skip the fetch — data will refresh when it opens

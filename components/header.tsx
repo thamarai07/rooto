@@ -200,8 +200,16 @@ export default function Header() {
       const res = await fetch(`${API_BASE}/cart.php`, { headers: authHeaders() })
       const json = await res.json()
       if (json.status === "success") {
-        setCartItems(json.data || [])
-        setCartCount((json.data || []).length) // keep the badge in sync with the same fetch
+        // API sends numeric fields as strings — coerce so quantity math (+0.25) adds
+        // instead of concatenating (which corrupted the cart from the mobile stepper).
+        const items = (json.data || []).map((i: any) => ({
+          ...i,
+          quantity: Number(i.quantity) || 0,
+          price: Number(i.price) || 0,
+          subtotal: Number(i.subtotal) || (Number(i.price) || 0) * (Number(i.quantity) || 0),
+        }))
+        setCartItems(items)
+        setCartCount(items.length) // keep the badge in sync with the same fetch
       }
     } catch (e) { console.error(e) }
   }, [user?.id])
@@ -381,7 +389,7 @@ export default function Header() {
     setShowCart(false)
   }, [])
 
-  const cartTotal = cartItems.reduce((sum, item) => sum + (item.subtotal || item.price * item.quantity), 0)
+  const cartTotal = cartItems.reduce((sum, item) => sum + (Number(item.subtotal) || Number(item.price) * Number(item.quantity) || 0), 0)
 
   /* ---------- Render ---------- */
   return (
@@ -714,7 +722,7 @@ function WishlistDropdown({ items, onDelete, onAddToCart, deletingId, addingToCa
                     onError={(e) => { e.currentTarget.src = "https://placehold.co/56x56/e5e7eb/6b7280?text=No+Image" }} />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-800 text-sm line-clamp-1">{item.name}</p>
-                    <p className="text-base font-bold text-gray-900 mt-0.5">₹{item.price.toFixed(2)}</p>
+                    <p className="text-base font-bold text-gray-900 mt-0.5">₹{Number(item.price).toFixed(2)}</p>
                     <div className="flex gap-1.5 mt-2">
                       <button
                         onClick={() => onAddToCart(item)}
@@ -793,18 +801,18 @@ function CartDropdown({ items, total, onDelete, onUpdateQty, deletingId, isLogge
                         {deletingId === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
                       </button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">₹{item.price.toFixed(2)}/kg</p>
+                    <p className="text-xs text-gray-500 mt-0.5">₹{Number(item.price).toFixed(2)}/kg</p>
                     <div className="flex items-center justify-between mt-1.5">
                       <div className="flex items-center border border-gray-200 rounded-md overflow-hidden">
-                        <button onClick={() => onUpdateQty(item.id, item.quantity - 0.25)} className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition text-gray-600">
+                        <button onClick={() => onUpdateQty(item.id, Math.max(0.25, Number(item.quantity) - 0.25))} className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition text-gray-600">
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="w-12 text-center text-xs font-semibold text-gray-800 bg-gray-50">{item.quantity} kg</span>
-                        <button onClick={() => onUpdateQty(item.id, item.quantity + 0.25)} className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition text-gray-600">
+                        <span className="w-12 text-center text-xs font-semibold text-gray-800 bg-gray-50">{Number(item.quantity).toFixed(2)} kg</span>
+                        <button onClick={() => onUpdateQty(item.id, Number(item.quantity) + 0.25)} className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition text-gray-600">
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
-                      <span className="text-sm font-bold text-green-600">₹{(item.subtotal || item.price * item.quantity).toFixed(2)}</span>
+                      <span className="text-sm font-bold text-green-600">₹{(Number(item.subtotal) || Number(item.price) * Number(item.quantity)).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -876,7 +884,7 @@ function MobileWishlistPanel({ items, onClose, onDelete, onAddToCart, deletingId
                     onError={(e) => { e.currentTarget.src = "https://placehold.co/96x96/e5e7eb/6b7280?text=No+Image" }} />
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">{item.name}</p>
-                    <p className="text-xl font-semibold text-gray-900 mt-2">₹{item.price.toFixed(2)}</p>
+                    <p className="text-xl font-semibold text-gray-900 mt-2">₹{Number(item.price).toFixed(2)}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -931,15 +939,15 @@ function MobileCartPanel({ items, total, onClose, onDelete, onUpdateQty, deletin
                     onError={(e) => { e.currentTarget.src = "https://placehold.co/96x96/e5e7eb/6b7280?text=No+Image" }} />
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">{item.name}</p>
-                    <p className="text-sm text-gray-600 mt-1">₹{item.price.toFixed(2)} per kg</p>
-                    <p className="text-xl font-semibold text-gray-900 mt-2">₹{(item.subtotal || item.price * item.quantity).toFixed(2)}</p>
+                    <p className="text-sm text-gray-600 mt-1">₹{Number(item.price).toFixed(2)} per kg</p>
+                    <p className="text-xl font-semibold text-gray-900 mt-2">₹{(Number(item.subtotal) || Number(item.price) * Number(item.quantity)).toFixed(2)}</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <button onClick={() => onUpdateQty(item.id, item.quantity - 0.25)} className="p-2 bg-gray-100 rounded-lg"><Minus className="w-5 h-5" /></button>
-                    <span className="w-16 text-center font-medium text-lg">{item.quantity} kg</span>
-                    <button onClick={() => onUpdateQty(item.id, item.quantity + 0.25)} className="p-2 bg-gray-100 rounded-lg"><Plus className="w-5 h-5" /></button>
+                    <button onClick={() => onUpdateQty(item.id, Math.max(0.25, Number(item.quantity) - 0.25))} className="p-2 bg-gray-100 rounded-lg"><Minus className="w-5 h-5" /></button>
+                    <span className="w-16 text-center font-medium text-lg">{Number(item.quantity).toFixed(2)} kg</span>
+                    <button onClick={() => onUpdateQty(item.id, Number(item.quantity) + 0.25)} className="p-2 bg-gray-100 rounded-lg"><Plus className="w-5 h-5" /></button>
                   </div>
                   <button onClick={() => onDelete(item.id)} disabled={deletingId === item.id}
                     className="p-3 bg-red-50 text-red-600 rounded-lg disabled:opacity-50">
