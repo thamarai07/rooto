@@ -138,7 +138,7 @@ const CartDrawer = memo(function CartDrawer({
   onLoginClick: (mode: 'login' | 'signup') => void
 }) {
   const [deletingId, setDeletingId] = useState<number | null>(null)
-  const total = cartItems.reduce((sum, item) => sum + (item.subtotal || item.price * item.quantity), 0)
+  const total = cartItems.reduce((sum, item) => sum + (Number(item.subtotal) || Number(item.price) * Number(item.quantity) || 0), 0)
 
   const handleRemove = useCallback(async (id: number) => {
     setDeletingId(id)
@@ -184,7 +184,12 @@ const CartDrawer = memo(function CartDrawer({
             </div>
           ) : (
             <div className="p-3 space-y-2">
-              {cartItems.map((item) => (
+              {cartItems.map((item) => {
+                const q = Number(item.quantity) || 0
+                const price = Number(item.price) || 0
+                const stock = Number(item.stock) || 0
+                const atLimit = q + 0.25 > stock
+                return (
                 <div key={item.cart_id} data-product-id={item.id} className="bg-gray-50 rounded-xl p-3 hover:bg-gray-100/80 transition">
                   <div className="flex gap-3">
                     <Link href={`/product/${encodeURIComponent(item.slug || item.name)}`} onClick={onClose}>
@@ -215,35 +220,36 @@ const CartDrawer = memo(function CartDrawer({
                             : <Trash2 className="w-4 h-4" />}
                         </button>
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5">₹{item.price.toFixed(2)}/kg</p>
+                      <p className="text-xs text-gray-500 mt-0.5">₹{price.toFixed(2)}/kg</p>
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
                           <button
-                            onClick={() => onUpdateQuantity(item.id, Math.max(0.25, item.quantity - 0.25))}
+                            onClick={() => onUpdateQuantity(item.id, Math.max(0.25, q - 0.25))}
                             disabled={deletingId === item.id}
                             className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 transition text-gray-600"
                           >
                             <Minus className="w-3 h-3" />
                           </button>
                           <span className="w-14 text-center text-xs font-semibold text-gray-800 bg-gray-50 py-1">
-                            {item.quantity.toFixed(2)} kg
+                            {q.toFixed(2)} kg
                           </span>
                           <button
-                            onClick={() => onUpdateQuantity(item.id, item.quantity + 0.25)}
-                            disabled={deletingId === item.id}
-                            className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 transition text-gray-600"
+                            onClick={() => onUpdateQuantity(item.id, q + 0.25)}
+                            disabled={deletingId === item.id || atLimit}
+                            title={atLimit ? `Only ${stock} kg available` : undefined}
+                            className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600"
                           >
                             <Plus className="w-3 h-3" />
                           </button>
                         </div>
                         <span className="text-sm font-bold text-green-600">
-                          ₹{(item.subtotal || item.price * item.quantity).toFixed(2)}
+                          ₹{(Number(item.subtotal) || price * q).toFixed(2)}
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           )}
         </div>
