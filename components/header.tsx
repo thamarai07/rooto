@@ -169,13 +169,9 @@ export default function Header() {
   useEffect(() => { refreshCounts() }, [refreshCounts])
 
   useEffect(() => {
-    const onUpdate = () => refreshCounts()
-    window.addEventListener("wishlist-updated", onUpdate)
-    window.addEventListener("cart-updated", onUpdate)
-    return () => {
-      window.removeEventListener("wishlist-updated", onUpdate)
-      window.removeEventListener("cart-updated", onUpdate)
-    }
+    const onWishlist = () => refreshCounts()
+    window.addEventListener("wishlist-updated", onWishlist)
+    return () => window.removeEventListener("wishlist-updated", onWishlist)
   }, [refreshCounts])
 
   /* ---------- Logged-in: fetch full item lists ---------- */
@@ -195,15 +191,33 @@ export default function Header() {
   const fetchCart = useCallback(async () => {
     // ✅ Guest: read from localStorage, no API call needed
     if (!user?.id) {
-      setCartItems(readGuestCart())
+      const g = readGuestCart()
+      setCartItems(g)
+      setGuestCartCount(g.length)
       return
     }
     try {
       const res = await fetch(`${API_BASE}/cart.php`, { headers: authHeaders() })
       const json = await res.json()
-      if (json.status === "success") setCartItems(json.data)
+      if (json.status === "success") {
+        setCartItems(json.data || [])
+        setCartCount((json.data || []).length) // keep the badge in sync with the same fetch
+      }
     } catch (e) { console.error(e) }
   }, [user?.id])
+
+  // Keep the cart badge + popup items in sync with the card (and everywhere else)
+  // by refreshing the actual cart on every cart change — not just the count.
+  useEffect(() => {
+    const onCart = () => fetchCart()
+    const onWishlistItems = () => fetchWishlist()
+    window.addEventListener("cart-updated", onCart)
+    window.addEventListener("wishlist-updated", onWishlistItems)
+    return () => {
+      window.removeEventListener("cart-updated", onCart)
+      window.removeEventListener("wishlist-updated", onWishlistItems)
+    }
+  }, [fetchCart, fetchWishlist])
 
   /* ---------- Logged-in: mutations ---------- */
   const deleteWishlist = useCallback(async (id: string) => {

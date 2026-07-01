@@ -335,6 +335,7 @@ const ProductCard = memo(function ProductCard({
   // `quantity + 0.25` concatenate instead of add. Always work with a number.
   const qty = Number(quantity) || 0
   const stock = Number(product.stock) || 0
+  const unit = Number(product.price_per_kg) || 0
   const atStockLimit = qty + 0.25 > stock // next +0.25 would exceed available stock
   return (
     <div className="group bg-white rounded-2xl border border-gray-100 hover:shadow-md transition-shadow duration-200 flex flex-col h-full">
@@ -414,9 +415,17 @@ const ProductCard = memo(function ProductCard({
             {product.name}
           </h3>
         </Link>
-        <div className="mt-auto pt-1.5 flex items-baseline gap-1">
-          <span className="text-sm font-extrabold text-gray-900">₹{product.price_per_kg}</span>
-          <span className="text-[10px] text-gray-400 font-medium">/kg</span>
+        <div className="mt-auto pt-1.5">
+          <div className="flex items-baseline gap-1">
+            <span className="text-sm font-extrabold text-gray-900">₹{product.price_per_kg}</span>
+            <span className="text-[10px] text-gray-400 font-medium">/kg</span>
+          </div>
+          {qty > 0 && (
+            <div className="mt-1.5 flex items-center justify-between rounded-lg bg-green-50 px-2 py-1">
+              <span className="text-[10px] font-medium text-green-700">{Number(qty.toFixed(2))} kg</span>
+              <span className="text-[11px] font-extrabold text-green-700">₹{(unit * qty).toFixed(2)}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -731,7 +740,7 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
       setCartItems(getGuestCart().map(i => ({ ...i, cart_id: i.id })))
       showToast('Added to cart!', 'success')
       window.dispatchEvent(new CustomEvent('guest-cart-updated', { detail: { highlightedProductId: product.id.toString() } }))
-      if (isDesktop()) setIsCartOpen(true)
+      // Drawer intentionally NOT opened on add — users adjust qty from the card. (kept for future use)
       setActionLoading(null)
       return
     }
@@ -746,7 +755,7 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
       if (data.status === 'success') {
         showToast('Added to cart!', 'success')
         window.dispatchEvent(new CustomEvent('cart-updated', { detail: { highlightedProductId: product.id.toString() } }))
-        if (isDesktop()) setIsCartOpen(true)
+        // Drawer intentionally NOT opened on add — users adjust qty from the card. (kept for future use)
       } else {
         showToast(data.message || 'Failed to add to cart', 'error')
       }
