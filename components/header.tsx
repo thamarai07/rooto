@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth'
 import ForgotPasswordModal from "@/components/auth/ForgotPasswordModal"
 import { authHeaders } from "@/lib/auth"
 import { lineSubtotal } from "@/lib/pricing"
+import { addToGuestCart, updateGuestCartQty, removeFromGuestCart } from "@/lib/guestStorage"
 import LocationModal, { getDeliveryLocation, type DeliveryLocation } from "@/components/delivery/LocationModal"
 
 interface WishlistItem {
@@ -254,12 +255,11 @@ export default function Header() {
     setDeletingId(id)
     try {
       if (!user?.id) {
-        // Guest: remove from localStorage
-        const updated = readGuestCart().filter(i => i.id !== id)
-        localStorage.setItem("guest_cart", JSON.stringify(updated))
+        // Guest: remove via storage helper (numeric-id safe; broadcasts the event)
+        removeFromGuestCart(Number(id))
+        const updated = readGuestCart()
         setCartItems(updated)
         setGuestCartCount(updated.length)
-        window.dispatchEvent(new Event("guest-cart-updated"))
         return
       }
       const res = await fetch(`${API_BASE}/cart.php?product_id=${id}`, { method: "DELETE", headers: authHeaders() })
@@ -276,14 +276,16 @@ export default function Header() {
     setAddingToCart(item.id)
     try {
       if (!user?.id) {
-        // Guest: move from wishlist → cart in localStorage
-        const cart = readGuestCart()
-        const exists = cart.find(c => c.id === item.id)
-        const updated = exists
-          ? cart.map(c => c.id === item.id ? { ...c, quantity: c.quantity + 0.25, subtotal: lineSubtotal(c.price, c.quantity + 0.25) } : c)
-          : [...cart, { id: item.id, name: item.name, price: item.price, image: item.image, quantity: 0.25, subtotal: lineSubtotal(item.price, 0.25) }]
-        localStorage.setItem("guest_cart", JSON.stringify(updated))
-        window.dispatchEvent(new Event("guest-cart-updated"))
+        // Guest: move wishlist → cart via storage helper (numeric-id safe)
+        addToGuestCart({
+          id: Number(item.id),
+          name: item.name,
+          price: Number(item.price) || 0,
+          image: item.image,
+          category: item.category,
+          stock: Number((item as any).stock) || 99,
+          slug: (item as any).slug,
+        }, 0.25)
         await deleteWishlist(item.id)
         return
       }
@@ -304,13 +306,9 @@ export default function Header() {
   const updateCartQuantity = useCallback(async (id: string, newQty: number) => {
     if (newQty < 0.25) return
     if (!user?.id) {
-      // Guest: update quantity in localStorage
-      const updated = readGuestCart().map(i =>
-        i.id === id ? { ...i, quantity: newQty, subtotal: lineSubtotal(i.price, newQty) } : i
-      )
-      localStorage.setItem("guest_cart", JSON.stringify(updated))
-      setCartItems(updated)
-      window.dispatchEvent(new Event("guest-cart-updated"))
+      // Guest: update via storage helper (numeric-id safe; keeps ids intact)
+      updateGuestCartQty(Number(id), newQty)
+      setCartItems(readGuestCart())
       return
     }
     try {

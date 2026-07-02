@@ -33,29 +33,34 @@ export interface GuestCartItem {
     window.dispatchEvent(new Event("guest-cart-updated"))
   }
   
+  // Compare ids numerically — ids can arrive as strings ("6") or numbers (6)
+  // depending on which surface saved the cart; strict === would silently miss.
+  const sameId = (a: number | string, b: number | string) => Number(a) === Number(b)
+
   export const addToGuestCart = (product: Omit<GuestCartItem, "quantity" | "subtotal">, qty = 0.25) => {
     const cart = getGuestCart()
-    const existing = cart.find(i => i.id === product.id)
+    const existing = cart.find(i => sameId(i.id, product.id))
     if (existing) {
-      existing.quantity = parseFloat((existing.quantity + qty).toFixed(2))
+      existing.quantity = parseFloat((Number(existing.quantity) + qty).toFixed(2))
+      existing.price = Number(existing.price) || 0
       existing.subtotal = parseFloat((existing.quantity * existing.price).toFixed(2))
     } else {
-      cart.unshift({ ...product, cart_id: product.id, quantity: qty, subtotal: parseFloat((qty * product.price).toFixed(2)) })
+      cart.unshift({ ...product, id: Number(product.id), cart_id: Number(product.id), price: Number(product.price) || 0, quantity: qty, subtotal: parseFloat((qty * (Number(product.price) || 0)).toFixed(2)) })
     }
     saveGuestCart(cart)
   }
-  
-  export const updateGuestCartQty = (productId: number, quantity: number) => {
+
+  export const updateGuestCartQty = (productId: number | string, quantity: number) => {
     const cart = getGuestCart().map(i =>
-      i.id === productId
-        ? { ...i, quantity, subtotal: parseFloat((quantity * i.price).toFixed(2)) }
+      sameId(i.id, productId)
+        ? { ...i, id: Number(i.id), quantity, subtotal: parseFloat((quantity * (Number(i.price) || 0)).toFixed(2)) }
         : i
     )
     saveGuestCart(cart)
   }
-  
-  export const removeFromGuestCart = (productId: number) => {
-    saveGuestCart(getGuestCart().filter(i => i.id !== productId))
+
+  export const removeFromGuestCart = (productId: number | string) => {
+    saveGuestCart(getGuestCart().filter(i => !sameId(i.id, productId)))
   }
   
   export const clearGuestCart = () => {
