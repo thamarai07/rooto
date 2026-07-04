@@ -11,6 +11,7 @@ import { cartTotals } from '@/lib/pricing'
 import AddressDisplay from './AddressDisplay'
 import PaymentMethodSelector, { PaymentMethod } from './PaymentMethodSelector'
 
+
 interface CartItem {
   cart_id: number
   id: number
@@ -43,6 +44,9 @@ interface CheckoutSuccessViewProps {
   isUpdating?: number | null
   onQuantityChange: (productId: number, newQuantity: number) => void
   onRemoveItem: (productId: number) => void
+
+
+  
   onChangeAddress: () => void
   onPlaceOrder: (paymentMethod: PaymentMethod, orderData?: any) => void | Promise<void>
   onClose: () => void
