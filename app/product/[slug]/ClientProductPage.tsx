@@ -17,7 +17,7 @@ import CheckoutSuccessView from "@/components/delivery/CheckoutSuccessView";
 import { UserData, SavedAddress } from "@/components/types";
 import { authHeaders, getToken } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
-import { cartTotals, unitPrice, lineSubtotal } from "@/lib/pricing";
+import { cartTotals, unitPrice, lineSubtotal, round2 } from "@/lib/pricing";
 import OutOfStockModal from "@/components/OutOfStockModal";
 // existing imports-க்கு கீழே add பண்ணு
 import {
@@ -248,9 +248,9 @@ function CartDrawer({
                       >
                         {item.name}
                       </Link>
-                      <p className="text-xs text-gray-400 mt-0.5">₹{item.price.toFixed(2)} / kg</p>
+                      <p className="text-xs text-gray-400 mt-0.5">₹{Number(item.price).toFixed(2)} / kg</p>
                       <p className="text-sm font-bold text-gray-900 mt-1">
-                        ₹{(item.subtotal || item.price * item.quantity).toFixed(2)}
+                        ₹{(Number(item.subtotal) || Number(item.price) * Number(item.quantity)).toFixed(2)}
                       </p>
                     </div>
 
@@ -266,18 +266,19 @@ function CartDrawer({
                       </button>
                       <div className="flex items-center bg-green-600 rounded-lg text-white shadow-sm">
                         <button
-                          onClick={() => onUpdateQuantity(item.id, Math.max(0.25, item.quantity - 0.25))}
+                          onClick={() => onUpdateQuantity(item.id, Math.max(0.25, Number(item.quantity) - 0.25))}
                           disabled={deletingId === item.id}
                           className="w-8 h-8 flex items-center justify-center active:bg-green-700 rounded-l-lg"
                           aria-label="Decrease"
                         >
                           <Minus className="w-3.5 h-3.5" />
                         </button>
-                        <span className="px-1 min-w-[52px] text-center text-xs font-semibold">{item.quantity.toFixed(2)} kg</span>
+                        <span className="px-1 min-w-[52px] text-center text-xs font-semibold">{Number(item.quantity).toFixed(2)} kg</span>
                         <button
-                          onClick={() => onUpdateQuantity(item.id, item.quantity + 0.25)}
-                          disabled={deletingId === item.id}
-                          className="w-8 h-8 flex items-center justify-center active:bg-green-700 rounded-r-lg"
+                          onClick={() => onUpdateQuantity(item.id, Number(item.quantity) + 0.25)}
+                          disabled={deletingId === item.id || (Number(item.stock) > 0 && Number(item.quantity) + 0.25 > Number(item.stock))}
+                          title={Number(item.stock) > 0 && Number(item.quantity) + 0.25 > Number(item.stock) ? `Only ${Number(item.stock)} kg in stock` : undefined}
+                          className="w-8 h-8 flex items-center justify-center active:bg-green-700 rounded-r-lg disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label="Increase"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -383,7 +384,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
     );
   }
 
-  const [quantity, setQuantity] = useState(initialProduct.min_quantity || 0.25);
+  const [quantity, setQuantity] = useState(Number(initialProduct.min_quantity) || 0.25);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [notification, setNotification] = useState("");
   const [notificationType, setNotificationType] = useState<'success' | 'error' | 'info'>('success');
@@ -767,12 +768,50 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
   }, [product.id])
 
   const finalPrice = product.final_price || product.price_per_kg * (1 - product.discount_percent / 100);
-  const totalPrice = (finalPrice * quantity).toFixed(2);
   const step = product.unit === "kg" ? 0.25 : 1;
-  const isInStock = product.stock > 0;
+  const stock = Number(product.stock) || 0;
+  const isInStock = stock > 0;
+  const unit = unitPrice(product);
+  const minQ = Number(product.min_quantity) || step;
+  const maxQ = Number(product.max_quantity) || Infinity;
 
-  const increment = () => setQuantity(prev => Math.min(prev + step, product.max_quantity || Infinity));
-  const decrement = () => setQuantity(prev => Math.max(prev - step, product.min_quantity || 0));
+  // This product's live line in the cart — drives the in-cart stepper and keeps
+  // the page synced with the header, home card and drawer (all share cart events).
+  const cartLine = cartItems.find((i) => Number(i.id) === Number(product.id));
+  const cartQty = Number(cartLine?.quantity) || 0;
+  const inCart = cartQty > 0;
+  const displayQty = inCart ? cartQty : Number(quantity) || 0;
+  // Same rule as the home card: never let quantity pass available stock.
+  const atStockLimit = displayQty + step > stock + 1e-9;
+  const lineTotal = (unit * displayQty).toFixed(2);
+
+  // Optimistic cart write so the stepper feels instant; the cart-updated /
+  // guest-cart-updated refetch then confirms from the source of truth.
+  const applyCartQty = (newQty: number) => {
+    setCartItems((prev) =>
+      prev.map((i) =>
+        Number(i.id) === Number(product.id)
+          ? { ...i, quantity: newQty, subtotal: lineSubtotal(Number(i.price) || unit, newQty) }
+          : i
+      )
+    );
+    handleUpdateQuantity(Number(product.id), newQty);
+  };
+
+  const decrement = () => {
+    if (inCart) {
+      const next = round2(cartQty - step);
+      if (next < 0.25) handleRemoveFromCart(Number(product.id));
+      else applyCartQty(next);
+    } else {
+      setQuantity((prev) => Math.max(round2(Number(prev) - step), minQ));
+    }
+  };
+  const increment = () => {
+    if (atStockLimit) return; // never exceed available stock
+    if (inCart) applyCartQty(round2(cartQty + step));
+    else setQuantity((prev) => round2(Math.min(Number(prev) + step, maxQ, stock)));
+  };
 
   const addToCart = async () => {
     if (!isInStock || quantity < product.min_quantity) return
@@ -1081,35 +1120,50 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
                 )}
               </div>
 
-              {/* Quantity Selector */}
+              {/* Quantity Selector — when the item is already in the cart this
+                  controls the cart directly (synced with header / card / drawer);
+                  otherwise it picks how much to add. Either way it never passes stock. */}
               <div className="mb-6">
-                <label className="text-sm font-medium text-gray-700 mb-3 block">Quantity</label>
+                <label className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                  {inCart ? "In your cart" : "Quantity"}
+                  {inCart && (
+                    <span className="inline-flex items-center gap-1 text-green-600 text-xs font-semibold">
+                      <CheckCircle className="w-3.5 h-3.5" /> synced
+                    </span>
+                  )}
+                </label>
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden">
+                  <div className={`flex items-center border rounded-xl overflow-hidden ${inCart ? "border-green-500" : "border-gray-300"}`}>
                     <button
                       onClick={decrement}
-                      disabled={quantity <= product.min_quantity}
-                      className="p-3 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                      disabled={!inCart && displayQty <= minQ}
+                      className="p-3 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      aria-label="Decrease"
                     >
                       <Minus className="w-5 h-5 text-gray-600" />
                     </button>
                     <div className="px-6 py-3 min-w-[100px] text-center border-x border-gray-300">
-                      <span className="text-xl font-semibold">{quantity}</span>
+                      <span className="text-xl font-semibold">{step < 1 ? displayQty.toFixed(2) : displayQty}</span>
                       <span className="text-gray-500 ml-1">{product.unit}</span>
                     </div>
                     <button
                       onClick={increment}
-                      disabled={quantity >= (product.max_quantity || Infinity)}
-                      className="p-3 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                      disabled={atStockLimit}
+                      title={atStockLimit ? `Only ${stock} ${product.unit} in stock` : undefined}
+                      className="p-3 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      aria-label="Increase"
                     >
                       <Plus className="w-5 h-5 text-gray-600" />
                     </button>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-500">Total</p>
-                    <p className="text-2xl font-bold text-gray-900">₹{totalPrice}</p>
+                    <p className="text-sm text-gray-500">{inCart ? "Line total" : "Total"}</p>
+                    <p className="text-2xl font-bold text-gray-900">₹{lineTotal}</p>
                   </div>
                 </div>
+                {atStockLimit && (
+                  <p className="text-xs text-amber-600 mt-2 font-medium">Max available: {stock} {product.unit}</p>
+                )}
               </div>
 
               {/* Stock Status */}
@@ -1117,7 +1171,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
                 {isInStock ? (
                   <>
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-green-700 text-sm font-medium">In Stock • {product.stock} {product.unit} available</span>
+                    <span className="text-green-700 text-sm font-medium">In Stock • {stock} {product.unit} available</span>
                   </>
                 ) : (
                   <>
@@ -1129,18 +1183,28 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
 
               {/* Action Buttons */}
               <div className="flex gap-3 mb-8">
-                <button
-                  onClick={addToCart}
-                  disabled={!isInStock || isAddingToCart}
-                  className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white py-4 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
-                >
-                  {isAddingToCart ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <ShoppingCart className="w-5 h-5" />
-                  )}
-                  {isAddingToCart ? "Adding..." : isInStock ? "Add to Cart" : "Out of Stock"}
-                </button>
+                {inCart ? (
+                  <button
+                    onClick={() => setIsCartOpen(true)}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                  >
+                    <ShoppingBag className="w-5 h-5" />
+                    Go to Cart · ₹{lineTotal}
+                  </button>
+                ) : (
+                  <button
+                    onClick={addToCart}
+                    disabled={!isInStock || isAddingToCart}
+                    className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white py-4 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isAddingToCart ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <ShoppingCart className="w-5 h-5" />
+                    )}
+                    {isAddingToCart ? "Adding..." : isInStock ? "Add to Cart" : "Out of Stock"}
+                  </button>
+                )}
                 <button
                   onClick={toggleWishlist}
                   className={`w-14 h-14 rounded-xl border-2 transition-colors flex items-center justify-center ${isWishlisted
