@@ -29,6 +29,7 @@ interface CartItem {
   image: string
   quantity: number
   subtotal?: number
+  stock?: number
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
@@ -59,6 +60,7 @@ function readGuestCart(): CartItem[] {
       image: i.image,
       quantity: i.quantity ?? 0.25,
       subtotal: i.subtotal ?? i.price * (i.quantity ?? 0.25),
+      stock: Number(i.stock) || 0,
     }))
   } catch { return [] }
 }
@@ -208,6 +210,7 @@ export default function Header() {
           quantity: Number(i.quantity) || 0,
           price: Number(i.price) || 0,
           subtotal: Number(i.subtotal) || (Number(i.price) || 0) * (Number(i.quantity) || 0),
+          stock: Number(i.stock) || 0,
         }))
         setCartItems(items)
         setCartCount(items.length) // keep the badge in sync with the same fetch
@@ -806,7 +809,11 @@ function CartDropdown({ items, total, onDelete, onUpdateQty, deletingId, isLogge
                           <Minus className="w-3 h-3" />
                         </button>
                         <span className="w-12 text-center text-xs font-semibold text-gray-800 bg-gray-50">{Number(item.quantity).toFixed(2)} kg</span>
-                        <button onClick={() => onUpdateQty(item.id, Number(item.quantity) + 0.25)} className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition text-gray-600">
+                        <button
+                          onClick={() => onUpdateQty(item.id, Number(item.quantity) + 0.25)}
+                          disabled={Number(item.stock) > 0 && Number(item.quantity) + 0.25 > Number(item.stock)}
+                          title={Number(item.stock) > 0 && Number(item.quantity) + 0.25 > Number(item.stock) ? `Only ${Number(item.stock)} kg in stock` : undefined}
+                          className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed">
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
@@ -945,7 +952,11 @@ function MobileCartPanel({ items, total, onClose, onDelete, onUpdateQty, deletin
                   <div className="flex items-center gap-3">
                     <button onClick={() => onUpdateQty(item.id, Math.max(0.25, Number(item.quantity) - 0.25))} className="p-2 bg-gray-100 rounded-lg"><Minus className="w-5 h-5" /></button>
                     <span className="w-16 text-center font-medium text-lg">{Number(item.quantity).toFixed(2)} kg</span>
-                    <button onClick={() => onUpdateQty(item.id, Number(item.quantity) + 0.25)} className="p-2 bg-gray-100 rounded-lg"><Plus className="w-5 h-5" /></button>
+                    <button
+                      onClick={() => onUpdateQty(item.id, Number(item.quantity) + 0.25)}
+                      disabled={Number(item.stock) > 0 && Number(item.quantity) + 0.25 > Number(item.stock)}
+                      title={Number(item.stock) > 0 && Number(item.quantity) + 0.25 > Number(item.stock) ? `Only ${Number(item.stock)} kg in stock` : undefined}
+                      className="p-2 bg-gray-100 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"><Plus className="w-5 h-5" /></button>
                   </div>
                   <button onClick={() => onDelete(item.id)} disabled={deletingId === item.id}
                     className="p-3 bg-red-50 text-red-600 rounded-lg disabled:opacity-50">
