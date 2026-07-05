@@ -33,6 +33,20 @@ interface CartItem {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
+const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || `${API_BASE.replace("/api", "")}/assets/images/uploads`
+const IMG_PLACEHOLDER = "https://placehold.co/96x96/e5e7eb/6b7280?text=No+Image"
+
+// Product images live under IMAGE_BASE. Cart/wishlist items (especially guest
+// items in localStorage) may store `image` as a bare filename, a stale localhost
+// URL, or an old wrong-path URL — so always rebuild from the CURRENT IMAGE_BASE
+// using just the filename. Keeps every popup thumbnail correct however it was saved.
+function resolveImg(image?: string): string {
+  const raw = String(image || "").trim()
+  if (!raw) return IMG_PLACEHOLDER
+  if (raw.startsWith("data:")) return raw
+  const file = (raw.split("/").pop() || "").split("?")[0]
+  return file ? `${IMAGE_BASE}/${file}` : IMG_PLACEHOLDER
+}
 
 // ─── Guest storage helpers (read-only, mirrors guestStorage.ts shape) ─────────
 function readGuestWishlist(): WishlistItem[] {
@@ -719,7 +733,7 @@ function WishlistDropdown({ items, onDelete, onAddToCart, deletingId, addingToCa
             {items.map((item) => (
               <div key={item.id} className="p-3 border-b border-gray-50 hover:bg-gray-50/50 transition">
                 <div className="flex gap-3">
-                  <img src={item.image} alt={item.name} className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-gray-100"
+                  <img src={resolveImg(item.image)} alt={item.name} className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-gray-100"
                     onError={(e) => { e.currentTarget.src = "https://placehold.co/56x56/e5e7eb/6b7280?text=No+Image" }} />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-800 text-sm line-clamp-1">{item.name}</p>
@@ -789,7 +803,7 @@ function CartDropdown({ items, total, onDelete, onUpdateQty, deletingId, isLogge
             {items.map((item) => (
               <div key={item.id} className="p-3 border-b border-gray-50 hover:bg-gray-50/50 transition">
                 <div className="flex gap-2.5">
-                  <img src={item.image} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-gray-100"
+                  <img src={resolveImg(item.image)} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-gray-100"
                     onError={(e) => { e.currentTarget.src = "https://placehold.co/48x48/e5e7eb/6b7280?text=No+Image" }} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
@@ -885,7 +899,7 @@ function MobileWishlistPanel({ items, onClose, onDelete, onAddToCart, deletingId
             {items.map((item) => (
               <div key={item.id} className="border border-gray-200 rounded-lg p-3">
                 <div className="flex gap-3 mb-3">
-                  <img src={item.image} alt={item.name} className="w-24 h-24 rounded object-cover flex-shrink-0"
+                  <img src={resolveImg(item.image)} alt={item.name} className="w-24 h-24 rounded object-cover flex-shrink-0"
                     onError={(e) => { e.currentTarget.src = "https://placehold.co/96x96/e5e7eb/6b7280?text=No+Image" }} />
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">{item.name}</p>
@@ -940,7 +954,7 @@ function MobileCartPanel({ items, total, onClose, onDelete, onUpdateQty, deletin
             {items.map((item) => (
               <div key={item.id} className="border border-gray-200 rounded-lg p-3">
                 <div className="flex gap-3 mb-3">
-                  <img src={item.image} alt={item.name} className="w-24 h-24 rounded object-cover flex-shrink-0"
+                  <img src={resolveImg(item.image)} alt={item.name} className="w-24 h-24 rounded object-cover flex-shrink-0"
                     onError={(e) => { e.currentTarget.src = "https://placehold.co/96x96/e5e7eb/6b7280?text=No+Image" }} />
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">{item.name}</p>

@@ -33,6 +33,17 @@ import {
 const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || `${process.env.NEXT_PUBLIC_API_BASE?.replace('/api', '') || 'https://seashell-skunk-617240.hostingersite.com/vfs-admin'}/assets/images/uploads`;
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api";
 
+// Rebuild any cart/wishlist thumbnail from the current IMAGE_BASE using just the
+// filename — guest items can store a bare filename, a stale localhost URL, or an
+// old wrong-path URL. Keeps drawer thumbnails correct however they were saved.
+function resolveImg(image?: string): string {
+  const raw = String(image || "").trim();
+  if (!raw) return "https://placehold.co/80x80/f3f4f6/9ca3af?text=No+Image";
+  if (raw.startsWith("data:")) return raw;
+  const file = (raw.split("/").pop() || "").split("?")[0];
+  return file ? `${IMAGE_BASE}/${file}` : "https://placehold.co/80x80/f3f4f6/9ca3af?text=No+Image";
+}
+
 interface Product {
   id: number;
   name: string;
@@ -231,7 +242,7 @@ function CartDrawer({
                       className="flex-shrink-0"
                     >
                       <img
-                        src={item.image}
+                        src={resolveImg(item.image)}
                         alt={item.name}
                         className="w-16 h-16 rounded-xl object-cover bg-gray-100"
                         onError={(e) => {
