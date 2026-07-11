@@ -555,6 +555,22 @@ function OrderDetailsModal({
 }
 
 // ============================================================================
+// ⚠️ TEMP DEBUG PANEL — remove once My Orders is confirmed working
+// ============================================================================
+function OrdersDebugPanel({ debug }: { debug: any }) {
+    if (!debug) return null;
+    return (
+        <div className="mb-6 bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4">
+            <p className="font-bold text-yellow-900 mb-2">🐛 Orders Debug — screenshot this &amp; send to the developer</p>
+            <pre className="whitespace-pre-wrap break-all text-xs text-yellow-900 font-mono bg-yellow-100 rounded-lg p-3">{JSON.stringify(debug, null, 2)}</pre>
+            <p className="text-xs text-yellow-800 mt-2">
+                Tip: compare <b>tokenUserId</b> / <b>customerIdQueried</b> with the account that placed the order.
+            </p>
+        </div>
+    );
+}
+
+// ============================================================================
 // MAIN ORDERS PAGE COMPONENT
 // ============================================================================
 export default function OrdersPage() {
@@ -565,6 +581,7 @@ export default function OrdersPage() {
     const [filterStatus, setFilterStatus] = useState<string>("all");
     const [searchQuery, setSearchQuery] = useState("");
     const [pagination, setPagination] = useState<Pagination>({ page: 1, totalPages: 1 });
+    const [debug, setDebug] = useState<any>(null); // ⚠️ TEMP debug panel
 
     // 🔥 SUCCESS MODAL STATE (moved to parent)
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -576,9 +593,36 @@ export default function OrdersPage() {
 
     const fetchOrders = async () => {
         setIsLoading(true);
+        const dbg: any = { step: "start" };
         try {
+            // ── Capture auth state ──
+            let authUser: any = null;
+            try { authUser = JSON.parse(localStorage.getItem("auth_user") || "null"); } catch {}
+            const token = getToken();
+
+            // Decode the JWT payload (what user_id the token actually carries)
+            let tokenPayload: any = null;
+            try {
+                const part = token?.split(".")[1];
+                if (part) {
+                    let b = part.replace(/-/g, "+").replace(/_/g, "/");
+                    b += "===".slice((b.length + 3) % 4);
+                    tokenPayload = JSON.parse(atob(b));
+                }
+            } catch {}
+
             const customerId = getUserId();
+
+            dbg.authUser = authUser ? { id: authUser.id, name: authUser.name, email: authUser.email, phone: authUser.phone } : null;
+            dbg.tokenPresent = !!token;
+            dbg.tokenUserId = tokenPayload?.user_id ?? null;
+            dbg.tokenExpired = tokenPayload?.exp ? (Date.now() / 1000 > tokenPayload.exp) : null;
+            dbg.customerIdQueried = customerId;
+
             if (!customerId) {
+                dbg.step = "no-customer-id";
+                dbg.error = "getUserId() returned null — no token & no auth_user. You are not logged in on this page.";
+                setDebug(dbg);
                 setIsLoading(false);
                 return;
             }
@@ -592,10 +636,22 @@ export default function OrdersPage() {
                 limit: "20"
             });
 
-            const response = await fetch(`${API_BASE}/get_orderssite.php?${params}`, {
-                headers: authHeaders()
-            });
-            const data = await response.json();
+            const url = `${API_BASE}/get_orderssite.php?${params}`;
+            dbg.url = url;
+            dbg.step = "fetching";
+
+            const response = await fetch(url, { headers: authHeaders() });
+            dbg.httpStatus = response.status;
+
+            const raw = await response.text();
+            let data: any;
+            try { data = JSON.parse(raw); } catch { dbg.rawResponse = raw.slice(0, 300); throw new Error("Response was not JSON"); }
+
+            dbg.apiStatus = data.status;
+            dbg.apiMessage = data.message;
+            dbg.ordersReturned = (data.orders || data.data || []).length;
+            dbg.paginationTotal = data.pagination?.total;
+            dbg.step = "done";
 
             if (data.status === "success") {
                 const list: Order[] = data.orders || data.data || [];
@@ -607,11 +663,15 @@ export default function OrdersPage() {
                     total: data.pagination?.total,
                 });
             } else {
+                dbg.error = "API did not return success. message: " + (data.message || "(none)");
                 console.error("Error fetching orders:", data.message);
             }
-        } catch (error) {
+        } catch (error: any) {
+            dbg.step = "threw";
+            dbg.error = "Fetch failed: " + (error?.message || String(error));
             console.error("Error fetching orders:", error);
         } finally {
+            setDebug(dbg);
             setIsLoading(false);
         }
     };
@@ -642,6 +702,7 @@ export default function OrdersPage() {
         return (
             <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 p-4 md:p-8">
                 <div className="max-w-7xl mx-auto">
+                    <OrdersDebugPanel debug={debug} />
                     <div className="mb-8">
                         <h1 className="text-4xl font-bold text-gray-900">My Orders</h1>
                     </div>
@@ -663,6 +724,7 @@ export default function OrdersPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 p-4 md:p-8">
             <div className="max-w-7xl mx-auto">
+                <OrdersDebugPanel debug={debug} />
                 <div className="mb-8">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div>
