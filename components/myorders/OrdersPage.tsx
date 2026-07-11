@@ -640,7 +640,12 @@ export default function OrdersPage() {
             dbg.url = url;
             dbg.step = "fetching";
 
-            const response = await fetch(url, { headers: authHeaders() });
+            // NOTE: get_orderssite.php authorizes by the customer_id query param, NOT
+            // the JWT — and its CORS Allow-Headers omits "Authorization". Sending an
+            // Authorization header here triggers a CORS preflight the endpoint rejects,
+            // which surfaced as "Failed to fetch" + an empty orders list. So we send a
+            // plain GET (no auth header) — a simple request that needs no preflight.
+            const response = await fetch(url);
             dbg.httpStatus = response.status;
 
             const raw = await response.text();
