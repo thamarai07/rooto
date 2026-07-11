@@ -11,8 +11,18 @@ export function useRememberMe() {
   const { user, setUser } = useAuth();
 
   useEffect(() => {
-    // Only attempt if not already logged in
+    // Only attempt if not already logged in.
     if (user) return;
+
+    // Guard against the mount-timing race: on first render the auth context
+    // hasn't hydrated yet, so `user` is still null even when a JWT is already
+    // stored. Without this direct localStorage check, remember-me would silently
+    // auto-login the *remembered* account and overwrite the session the user is
+    // actually on — e.g. placing an order as one account, then getting switched
+    // back to another so the order never appears in "My Orders".
+    try {
+      if (localStorage.getItem("auth_token") || localStorage.getItem("auth_user")) return;
+    } catch { /* ignore storage errors */ }
 
     const storedToken = localStorage.getItem(REMEMBER_ME_KEY);
     if (!storedToken) return;
