@@ -7,8 +7,17 @@ import { Button } from "@/components/ui/button"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { authHeaders } from "@/lib/auth"
+import {
+  getGuestWishlist,
+  saveGuestWishlist,
+  toggleGuestWishlist,
+  addToGuestCart,
+} from "@/lib/guestStorage"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
+const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || `${API_BASE.replace("/api", "")}/assets/images/uploads`
+const PLACEHOLDER = "https://placehold.co/300x300/fee2e2/ef4444?text=No+Image"
+
 const getUserId = (): number | null => {
   try {
     const user = localStorage.getItem("auth_user")
@@ -16,19 +25,29 @@ const getUserId = (): number | null => {
   } catch { return null }
 }
 
-// The search/top-selling API hard-codes a localhost image base — rewrite it for live.
-const fixImg = (url?: string): string =>
-  (url || "").replace(/^https?:\/\/localhost(:\d+)?\/vfs_portal/i, "https://seashell-skunk-617240.hostingersite.com")
+function resolveImg(image?: string): string {
+  const raw = String(image || "").trim()
+  if (!raw) return PLACEHOLDER
+  if (raw.startsWith("data:") || raw.startsWith("http://") || raw.startsWith("https://")) {
+    if (raw.includes("localhost")) {
+      return raw.replace(/^https?:\/\/localhost(:\d+)?\/vfs_portal/i, "https://seashell-skunk-617240.hostingersite.com")
+    }
+    return raw
+  }
+  const file = (raw.split("/").pop() || "").split("?")[0]
+  return file ? `${IMAGE_BASE}/${file}` : PLACEHOLDER
+}
 
-const PLACEHOLDER = "https://placehold.co/300x300/fee2e2/ef4444?text=No+Image"
 interface WishlistItem {
   id: number
   name: string
-  price_per_kg: number
+  price: number
+  price_per_kg?: number
   image: string
   category?: string
-  stock: number
+  stock?: number
   description?: string
+  slug?: string
 }
 
 interface Product {
@@ -41,6 +60,7 @@ interface Product {
   stock: number
   description?: string
   total_sold?: number
+  slug?: string
 }
 
 // Celebration Popup Component
@@ -59,7 +79,7 @@ function CelebrationPopup({ show, action, product }: any) {
       <div className="bg-white rounded-2xl shadow-2xl border-2 border-green-200 p-4 min-w-[320px] max-w-[400px]">
         <div className="flex items-start gap-4">
           <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 ring-2 ring-green-300">
-            <img src={product?.image} alt={product?.name} className="w-full h-full object-cover" />
+            <img src={resolveImg(product?.image)} alt={product?.name} className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -68,7 +88,7 @@ function CelebrationPopup({ show, action, product }: any) {
               <span className="font-bold text-gray-800">{messages[action as keyof typeof messages]}</span>
             </div>
             <p className="text-sm text-gray-600 font-medium line-clamp-1">{product?.name}</p>
-            <p className="text-green-600 font-bold text-sm">₹{Number(product?.price || 0).toFixed(2)}</p>
+            <p className="text-green-600 font-bold text-sm">₹{Number(product?.price_per_kg ?? product?.price ?? 0).toFixed(2)}</p>
           </div>
           <Check className="w-6 h-6 text-green-600 flex-shrink-0" />
         </div>
@@ -102,21 +122,41 @@ export default function WishlistPage() {
   const [isUpdating, setIsUpdating] = useState<number | null>(null)
   const [celebration, setCelebration] = useState({ show: false, action: "", product: null })
 
-  // Fetch wishlist items from API
+  // Fetch wishlist items (handles guest from localStorage and logged-in from API)
   const fetchWishlist = async () => {
     try {
       const userId = getUserId()
-      if (!userId) return
+      if (!userId) {
+        // Guest mode - read from localStorage
+        const guestItems: WishlistItem[] = getGuestWishlist().map((i: any) => ({
+          id: Number(i.id),
+          name: i.name,
+          price: Number(i.price) || 0,
+          price_per_kg: Number(i.price_per_kg ?? i.price) || 0,
+          image: i.image,
+          category: i.category,
+          stock: Number(i.stock) || 50,
+          slug: i.slug,
+        }))
+        setWishlistItems(guestItems)
+        return
+      }
+
+      // Logged-in user - fetch from API
       const response = await fetch(`${API_BASE}/wishlist.php`, {
         headers: authHeaders()
       })
       const data = await response.json()
 
       if (data.status === "success") {
-        setWishlistItems(data.data)
-
-        // Trigger wishlist update event for header
-        window.dispatchEvent(new Event("wishlist-updated"))
+        const items: WishlistItem[] = (data.data || []).map((i: any) => ({
+          ...i,
+          id: Number(i.id),
+          price: Number(i.price) || 0,
+          price_per_kg: Number(i.price_per_kg ?? i.price) || 0,
+          stock: Number(i.stock) || 0,
+        }))
+        setWishlistItems(items)
       }
     } catch (error) {
       console.error("Error fetching wishlist:", error)
@@ -159,21 +199,46 @@ export default function WishlistPage() {
 
     window.addEventListener("celebrate-action", handleCelebration)
     window.addEventListener("wishlist-updated", handleWishlistUpdate)
+    window.addEventListener("guest-wishlist-updated", handleWishlistUpdate)
 
     return () => {
       window.removeEventListener("celebrate-action", handleCelebration)
       window.removeEventListener("wishlist-updated", handleWishlistUpdate)
+      window.removeEventListener("guest-wishlist-updated", handleWishlistUpdate)
     }
   }, [])
 
   // Remove item from wishlist
   const removeFromWishlist = async (productId: number) => {
-    const itemToRemove = wishlistItems.find(item => item.id === productId)
-    const updatedItems = wishlistItems.filter(item => item.id !== productId)
+    const itemToRemove = wishlistItems.find(item => Number(item.id) === Number(productId))
+    const updatedItems = wishlistItems.filter(item => Number(item.id) !== Number(productId))
     setWishlistItems(updatedItems)
     setIsUpdating(productId)
 
     try {
+      const userId = getUserId()
+      if (!userId) {
+        // Guest mode: remove from localStorage
+        const filtered = getGuestWishlist().filter(i => Number(i.id) !== Number(productId))
+        saveGuestWishlist(filtered)
+
+        if (itemToRemove) {
+          window.dispatchEvent(new CustomEvent("celebrate-action", {
+            detail: {
+              action: "wishlist-remove",
+              product: {
+                id: itemToRemove.id,
+                name: itemToRemove.name,
+                price: itemToRemove.price_per_kg ?? itemToRemove.price,
+                image: itemToRemove.image
+              }
+            }
+          }))
+        }
+        return
+      }
+
+      // Logged-in mode
       const response = await fetch(
         `${API_BASE}/wishlist.php?product_id=${productId}`,
         { method: "DELETE", headers: authHeaders() }
@@ -187,13 +252,15 @@ export default function WishlistPage() {
             detail: {
               action: "wishlist-remove",
               product: {
+                id: itemToRemove.id,
                 name: itemToRemove.name,
-                price: itemToRemove.price_per_kg,
+                price: itemToRemove.price_per_kg ?? itemToRemove.price,
                 image: itemToRemove.image
               }
             }
           }))
         }
+        window.dispatchEvent(new Event("wishlist-updated"))
         await fetchWishlist()
       } else {
         await fetchWishlist()
@@ -209,8 +276,37 @@ export default function WishlistPage() {
   // Add to cart from wishlist
   const addToCart = async (item: WishlistItem) => {
     setIsUpdating(item.id)
+    const price = item.price_per_kg ?? item.price ?? 0
 
     try {
+      const userId = getUserId()
+      if (!userId) {
+        // Guest mode - add to guest cart
+        addToGuestCart({
+          id: item.id,
+          name: item.name,
+          price: price,
+          image: item.image,
+          category: item.category,
+          stock: Number(item.stock) || 50,
+          slug: item.slug
+        }, 0.25)
+
+        window.dispatchEvent(new CustomEvent("celebrate-action", {
+          detail: {
+            action: "cart-add",
+            product: {
+              id: item.id,
+              name: item.name,
+              price: price,
+              image: item.image
+            }
+          }
+        }))
+        return
+      }
+
+      // Logged-in mode
       const response = await fetch(`${API_BASE}/cart.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -220,19 +316,18 @@ export default function WishlistPage() {
       const data = await response.json()
 
       if (data.status === "success") {
+        window.dispatchEvent(new Event("cart-updated"))
         window.dispatchEvent(new CustomEvent("celebrate-action", {
           detail: {
             action: "cart-add",
             product: {
+              id: item.id,
               name: item.name,
-              price: item.price_per_kg,
+              price: price,
               image: item.image
             }
           }
         }))
-
-        // Optionally remove from wishlist after adding to cart
-        // await removeFromWishlist(item.id)
       }
     } catch (error) {
       console.error("Error adding to cart:", error)
@@ -250,7 +345,34 @@ export default function WishlistPage() {
 
   // Add product to wishlist from demand products
   const addToWishlist = async (product: Product) => {
+    const price = product.price_per_kg ?? product.price ?? 0
+
     try {
+      const userId = getUserId()
+      if (!userId) {
+        toggleGuestWishlist({
+          id: product.id,
+          name: product.name,
+          price: price,
+          image: product.image,
+          category: product.category,
+          slug: product.slug || product.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+        })
+        await fetchWishlist()
+        window.dispatchEvent(new CustomEvent("celebrate-action", {
+          detail: {
+            action: "wishlist-add",
+            product: {
+              id: product.id,
+              name: product.name,
+              price: price,
+              image: product.image
+            }
+          }
+        }))
+        return
+      }
+
       const response = await fetch(`${API_BASE}/wishlist.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -260,14 +382,16 @@ export default function WishlistPage() {
       const data = await response.json()
 
       if (data.status === "success" || data.status === "info") {
+        window.dispatchEvent(new Event("wishlist-updated"))
         await fetchWishlist()
 
         window.dispatchEvent(new CustomEvent("celebrate-action", {
           detail: {
             action: "wishlist-add",
             product: {
+              id: product.id,
               name: product.name,
-              price: product.price_per_kg,
+              price: price,
               image: product.image
             }
           }
@@ -362,7 +486,7 @@ export default function WishlistPage() {
                       >
                         <div className="relative h-48 bg-gradient-to-br from-red-50 to-pink-50">
                           <img
-                            src={fixImg(product.image)}
+                            src={resolveImg(product.image)}
                             alt={product.name}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                             onError={(e) => { e.currentTarget.src = PLACEHOLDER }}
@@ -388,7 +512,7 @@ export default function WishlistPage() {
                           <div className="flex items-center justify-between mb-3">
                             <div>
                               <span className="text-2xl font-bold text-red-600">
-                                ₹{Number(product.price_per_kg || 0).toFixed(2)}
+                                ₹{Number(product.price_per_kg ?? product.price ?? 0).toFixed(2)}
                               </span>
                               <span className="text-sm text-gray-500 ml-1">/kg</span>
                             </div>
@@ -430,16 +554,16 @@ export default function WishlistPage() {
                     </button>
 
                     {/* Low Stock Badge */}
-                    {item.stock < 20 && (
+                    {item.stock != null && item.stock > 0 && item.stock < 20 && (
                       <div className="absolute top-3 left-3 z-10 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                         Low Stock
                       </div>
                     )}
 
-                    <Link href={`/product-details/${encodeURIComponent(item.name)}`}>
+                    <Link href={`/product/${encodeURIComponent(item.slug || item.name)}`}>
                       <div className="relative h-56 bg-gradient-to-br from-red-50 to-pink-50">
                         <img
-                          src={fixImg(item.image)}
+                          src={resolveImg(item.image)}
                           alt={item.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                           onError={(e) => { e.currentTarget.src = PLACEHOLDER }}
@@ -457,7 +581,7 @@ export default function WishlistPage() {
                         )}
                       </div>
 
-                      <Link href={`/product-details/${encodeURIComponent(item.name)}`}>
+                      <Link href={`/product/${encodeURIComponent(item.slug || item.name)}`}>
                         <h3 className="font-bold text-lg text-gray-800 mb-2 group-hover:text-red-600 transition line-clamp-2 min-h-[3.5rem]">
                           {item.name}
                         </h3>
@@ -470,20 +594,20 @@ export default function WishlistPage() {
                       )}
 
                       <div className="flex items-center justify-between mb-3">
-                        {item.price_per_kg != null && <div>
+                        <div>
                           <span className="text-2xl font-bold text-red-600">
-                            ₹{Number(item.price_per_kg || 0).toFixed(2)}
+                            ₹{Number(item.price_per_kg ?? item.price ?? 0).toFixed(2)}
                           </span>
                           <span className="text-sm text-gray-500 ml-1">/kg</span>
-                        </div>}
+                        </div>
                         <span className="text-sm text-gray-500">
-                          {item.stock} kg available
+                          {item.stock != null && item.stock > 0 ? `${item.stock} kg available` : 'In Stock'}
                         </span>
                       </div>
 
                       <Button
                         onClick={() => addToCart(item)}
-                        disabled={isUpdating === item.id || item.stock === 0}
+                        disabled={isUpdating === item.id || (item.stock != null && item.stock <= 0)}
                         className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50"
                       >
                         {isUpdating === item.id ? (
@@ -521,4 +645,4 @@ export default function WishlistPage() {
       `}</style>
     </div>
   )
-}
+}
