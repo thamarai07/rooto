@@ -2,6 +2,7 @@ import Header from "@/components/header";
 import Banner from "@/components/banner";
 import ProductGrid from "@/components/product-grid";
 import Footer from "@/components/footer";
+import MainBanner from "@/components/MainBanner";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE ||
@@ -34,6 +35,7 @@ export default async function Home() {
         <Banner />
       </div>
       <main className="flex-1">
+        <MainBanner/>
         <ProductGrid initialProducts={initialProducts} />
       </main>
       <Footer />
