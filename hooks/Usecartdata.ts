@@ -23,6 +23,8 @@ interface CartItem {
   quantity: number
   subtotal: number
   slug?: string
+  unit?: string
+  unit_label?: string
 }
 
 interface Product {

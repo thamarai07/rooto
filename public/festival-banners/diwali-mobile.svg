@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1150" viewBox="0 0 1000 1150" font-family="'Segoe UI', system-ui, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b0a45"/>
+      <stop offset="0.55" stop-color="#6b1230"/>
+      <stop offset="1" stop-color="#8a1c1c"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffd97a" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#ffd97a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe9a8"/>
+      <stop offset="0.55" stop-color="#f4c04c"/>
+      <stop offset="1" stop-color="#c9821f"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1000" height="1150" fill="url(#bg)"/>
+  <g opacity="0.55">
+    <ellipse cx="500" cy="180" rx="440" ry="320" fill="url(#glow)"/>
+    <ellipse cx="500" cy="980" rx="460" ry="300" fill="url(#glow)"/>
+  </g>
+
+  <g fill="#ffd97a">
+    <circle cx="120" cy="120" r="4"/><circle cx="880" cy="90" r="3.5"/><circle cx="200" cy="300" r="3"/>
+    <circle cx="820" cy="330" r="3.5"/><circle cx="140" cy="620" r="3.5"/><circle cx="870" cy="640" r="3"/>
+    <circle cx="250" cy="880" r="3.5"/><circle cx="760" cy="900" r="3"/>
+  </g>
+
+  <g stroke="#f4c04c" stroke-width="3" fill="none" opacity="0.6" stroke-linecap="round">
+    <path d="M90 70 v46 M67 93 h46 M75 78 l30 30 M105 78 l-30 30"/>
+    <path d="M915 1085 v-46 M892 1062 h46 M900 1047 l30 30 M930 1047 l-30 30"/>
+  </g>
+
+  <text x="500" y="230" fill="#ffd97a" font-size="42" letter-spacing="10" font-weight="600" text-anchor="middle">HAPPY DIWALI</text>
+  <text x="500" y="380" fill="#fff7e6" font-size="120" font-weight="800" text-anchor="middle">Diwali</text>
+  <text x="500" y="510" fill="#fff7e6" font-size="120" font-weight="800" text-anchor="middle">Special</text>
+
+  <g transform="translate(500 640)">
+    <rect x="-260" y="-70" width="520" height="130" rx="24" fill="#f4c04c" opacity="0.16"/>
+    <text x="0" y="18" fill="#f4c04c" font-size="92" font-weight="800" text-anchor="middle">Flat 20% OFF</text>
+  </g>
+
+  <text x="500" y="740" fill="#ffe9c7" font-size="34" font-weight="400" text-anchor="middle">on fresh fruits &amp; pooja essentials</text>
+
+  <g transform="translate(340 800)">
+    <rect x="0" y="0" width="320" height="86" rx="43" fill="url(#gold)"/>
+    <text x="160" y="56" fill="#5a1020" font-size="34" font-weight="700" text-anchor="middle">Shop Now</text>
+  </g>
+
+  <g transform="translate(500 930)">
+    <ellipse cx="0" cy="150" rx="150" ry="26" fill="#000" opacity="0.25"/>
+    <path d="M-110 110 q110 78 220 0 q-16 52 -110 52 q-94 0 -110 -52z" fill="url(#gold)"/>
+    <rect x="-18" y="44" width="36" height="66" rx="8" fill="#f4c04c"/>
+    <ellipse cx="0" cy="34" rx="34" ry="48" fill="#ff8a3c"/>
+    <ellipse cx="0" cy="18" rx="19" ry="32" fill="#ffd97a"/>
+  </g>
+
+  <rect x="4" y="4" width="992" height="1142" fill="none" stroke="#f4c04c" stroke-width="8" opacity="0.5"/>
+</svg>

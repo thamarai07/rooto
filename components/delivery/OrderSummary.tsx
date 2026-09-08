@@ -14,7 +14,16 @@ interface OrderItem {
   stock: number
   quantity: number
   subtotal: number
+  unit?: string
+  unit_label?: string
 }
+
+// Piece items step by 1; everything else keeps the 0.25 kg step.
+const uStep = (i: { unit?: string }) => (i.unit === "piece" ? 1 : 0.25)
+const uLabel = (i: { unit?: string; unit_label?: string }) =>
+  i.unit_label || (i.unit === "piece" ? "Piece" : "kg")
+const uQty = (q: number, i: { unit?: string }) =>
+  i.unit === "piece" ? String(Math.round(q)) : q
 
 interface OrderSummaryProps {
   items: OrderItem[]
@@ -44,7 +53,7 @@ export default function OrderSummary({
             <div key={item.cart_id} className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-800 line-clamp-1">{item.name}</p>
-                <p className="text-sm text-gray-600">{item.quantity} kg × ₹{item.price.toFixed(2)}</p>
+                <p className="text-sm text-gray-600">{uQty(item.quantity, item)} {uLabel(item)} × ₹{item.price.toFixed(2)}</p>
               </div>
               <p className="font-bold text-green-600 whitespace-nowrap">₹{item.subtotal.toFixed(2)}</p>
             </div>
@@ -97,7 +106,7 @@ export default function OrderSummary({
               <div className="flex-1 min-w-0">
                 <h4 className="font-bold text-gray-800 mb-1">{item.name}</h4>
                 {item.category && <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">{item.category}</span>}
-                <p className="text-green-600 font-semibold text-sm mt-2">₹{item.price.toFixed(2)}/kg</p>
+                <p className="text-green-600 font-semibold text-sm mt-2">₹{item.price.toFixed(2)}/{uLabel(item)}</p>
               </div>
 
               {/* Quantity & Delete */}
@@ -113,15 +122,15 @@ export default function OrderSummary({
                 {/* Quantity Controls */}
                 <div className="flex items-center border-2 border-gray-300 rounded-lg">
                   <button
-                    onClick={() => onQuantityChange(item.id, item.quantity - 0.25)}
-                    disabled={isUpdating === item.id || item.quantity <= 0.25}
+                    onClick={() => onQuantityChange(item.id, item.quantity - uStep(item))}
+                    disabled={isUpdating === item.id || item.quantity <= uStep(item)}
                     className="p-1 hover:bg-gray-200 disabled:opacity-50"
                   >
                     <Minus className="w-3 h-3" />
                   </button>
-                  <span className="px-2 py-1 text-sm font-bold">{item.quantity} kg</span>
+                  <span className="px-2 py-1 text-sm font-bold">{uQty(item.quantity, item)} {uLabel(item)}</span>
                   <button
-                    onClick={() => onQuantityChange(item.id, item.quantity + 0.25)}
+                    onClick={() => onQuantityChange(item.id, item.quantity + uStep(item))}
                     disabled={isUpdating === item.id || item.quantity >= item.stock}
                     className="p-1 hover:bg-gray-200 disabled:opacity-50"
                   >
@@ -134,7 +143,7 @@ export default function OrderSummary({
             </div>
 
             {item.stock < 5 && (
-              <p className="text-xs text-orange-600 mt-3 font-bold">⚠️ Only {item.stock} kg left!</p>
+              <p className="text-xs text-orange-600 mt-3 font-bold">⚠️ Only {item.stock} {uLabel(item)} left!</p>
             )}
           </div>
         ))}

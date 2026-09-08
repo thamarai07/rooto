@@ -28,7 +28,9 @@ export default function LoginModal({ onSuccess, onSwitchToSignup, onForgotPasswo
         fetch(`${API_BASE}/cart.php`, {
           method: "POST",
           headers: { "Content-Type": "application/json", ...hdrs },
-          body: JSON.stringify({ product_id: item.id, quantity: item.quantity }),
+          // `unit` is optional/ignored by older API builds — carries the KG/Piece
+          // choice through the guest→account cart merge.
+          body: JSON.stringify({ product_id: item.id, quantity: item.quantity, unit: (item as any).unit }),
         })
       ),
       ...guestWishlist.map((item) =>

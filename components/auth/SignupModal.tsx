@@ -54,6 +54,7 @@ export default function SignupModal({ onSuccess, onSwitchToLogin }: any) {
           body: JSON.stringify({
             product_id: item.id,
             quantity: item.quantity,
+            unit: (item as any).unit, // carries KG/Piece choice; ignored by older API
             // user_id omitted — backend reads from JWT
           }),
         })

@@ -30,7 +30,16 @@ interface CartItem {
   quantity: number
   subtotal?: number
   stock?: number
+  unit?: string
+  unit_label?: string
 }
+
+// Selling-unit helpers — piece items step by 1, everything else keeps the 0.25 kg step.
+const itemStep = (i: { unit?: string }) => (i.unit === "piece" ? 1 : 0.25)
+const itemUnitLabel = (i: { unit?: string; unit_label?: string }) =>
+  i.unit_label || (i.unit === "piece" ? "Piece" : "kg")
+const fmtUnitQty = (q: number, i: { unit?: string }) =>
+  i.unit === "piece" ? String(Math.round(q)) : Number(q).toFixed(2)
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 const IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_BASE || `${API_BASE.replace("/api", "")}/assets/images/uploads`
@@ -75,6 +84,8 @@ function readGuestCart(): CartItem[] {
       quantity: i.quantity ?? 0.25,
       subtotal: i.subtotal ?? i.price * (i.quantity ?? 0.25),
       stock: Number(i.stock) || 0,
+      unit: i.unit || "kg",
+      unit_label: i.unit === "piece" ? "Piece" : "kg",
     }))
   } catch { return [] }
 }
@@ -816,17 +827,17 @@ function CartDropdown({ items, total, onDelete, onUpdateQty, deletingId, isLogge
                         {deletingId === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
                       </button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">₹{Number(item.price).toFixed(2)}/kg</p>
+                    <p className="text-xs text-gray-500 mt-0.5">₹{Number(item.price).toFixed(2)}/{itemUnitLabel(item)}</p>
                     <div className="flex items-center justify-between mt-1.5">
                       <div className="flex items-center border border-gray-200 rounded-md overflow-hidden">
-                        <button onClick={() => onUpdateQty(item.id, Math.max(0.25, Number(item.quantity) - 0.25))} className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition text-gray-600">
+                        <button onClick={() => onUpdateQty(item.id, Math.max(itemStep(item), Number(item.quantity) - itemStep(item)))} className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition text-gray-600">
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="w-12 text-center text-xs font-semibold text-gray-800 bg-gray-50">{Number(item.quantity).toFixed(2)} kg</span>
+                        <span className="w-12 text-center text-xs font-semibold text-gray-800 bg-gray-50">{fmtUnitQty(Number(item.quantity), item)} {itemUnitLabel(item)}</span>
                         <button
-                          onClick={() => onUpdateQty(item.id, Number(item.quantity) + 0.25)}
-                          disabled={Number(item.stock) > 0 && Number(item.quantity) + 0.25 > Number(item.stock)}
-                          title={Number(item.stock) > 0 && Number(item.quantity) + 0.25 > Number(item.stock) ? `Only ${Number(item.stock)} kg in stock` : undefined}
+                          onClick={() => onUpdateQty(item.id, Number(item.quantity) + itemStep(item))}
+                          disabled={Number(item.stock) > 0 && Number(item.quantity) + itemStep(item) > Number(item.stock)}
+                          title={Number(item.stock) > 0 && Number(item.quantity) + itemStep(item) > Number(item.stock) ? `Only ${Number(item.stock)} ${itemUnitLabel(item)} in stock` : undefined}
                           className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed">
                           <Plus className="w-3 h-3" />
                         </button>
@@ -958,18 +969,18 @@ function MobileCartPanel({ items, total, onClose, onDelete, onUpdateQty, deletin
                     onError={(e) => { e.currentTarget.src = "https://placehold.co/96x96/e5e7eb/6b7280?text=No+Image" }} />
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">{item.name}</p>
-                    <p className="text-sm text-gray-600 mt-1">₹{Number(item.price).toFixed(2)} per kg</p>
+                    <p className="text-sm text-gray-600 mt-1">₹{Number(item.price).toFixed(2)} per {itemUnitLabel(item)}</p>
                     <p className="text-xl font-semibold text-gray-900 mt-2">₹{(Number(item.subtotal) || Number(item.price) * Number(item.quantity)).toFixed(2)}</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <button onClick={() => onUpdateQty(item.id, Math.max(0.25, Number(item.quantity) - 0.25))} className="p-2 bg-gray-100 rounded-lg"><Minus className="w-5 h-5" /></button>
-                    <span className="w-16 text-center font-medium text-lg">{Number(item.quantity).toFixed(2)} kg</span>
+                    <button onClick={() => onUpdateQty(item.id, Math.max(itemStep(item), Number(item.quantity) - itemStep(item)))} className="p-2 bg-gray-100 rounded-lg"><Minus className="w-5 h-5" /></button>
+                    <span className="w-16 text-center font-medium text-lg">{fmtUnitQty(Number(item.quantity), item)} {itemUnitLabel(item)}</span>
                     <button
-                      onClick={() => onUpdateQty(item.id, Number(item.quantity) + 0.25)}
-                      disabled={Number(item.stock) > 0 && Number(item.quantity) + 0.25 > Number(item.stock)}
-                      title={Number(item.stock) > 0 && Number(item.quantity) + 0.25 > Number(item.stock) ? `Only ${Number(item.stock)} kg in stock` : undefined}
+                      onClick={() => onUpdateQty(item.id, Number(item.quantity) + itemStep(item))}
+                      disabled={Number(item.stock) > 0 && Number(item.quantity) + itemStep(item) > Number(item.stock)}
+                      title={Number(item.stock) > 0 && Number(item.quantity) + itemStep(item) > Number(item.stock) ? `Only ${Number(item.stock)} ${itemUnitLabel(item)} in stock` : undefined}
                       className="p-2 bg-gray-100 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"><Plus className="w-5 h-5" /></button>
                   </div>
                   <button onClick={() => onDelete(item.id)} disabled={deletingId === item.id}

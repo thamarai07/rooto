@@ -14,6 +14,10 @@ import { authHeaders, getToken } from "@/lib/auth";
 // ============================================================================
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api";
 
+// Unit label for an order line — piece => "Piece", everything else / missing => "kg".
+const orderUnitLabel = (u?: string | null) =>
+    (u || "").toLowerCase() === "piece" ? "Piece" : "kg";
+
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
@@ -35,6 +39,7 @@ interface OrderItem {
     quantity: number;
     price: number;
     subtotal: number;
+    unit?: string | null;
 }
 
 interface Order {
@@ -231,7 +236,7 @@ function OrderCard({ order, onViewDetails }: { order: Order; onViewDetails: (ord
                             <div className="flex-1 min-w-0">
                                 <p className="font-medium text-gray-900 truncate">{item.product_name}</p>
                                 <p className="text-sm text-gray-600">
-                                    Qty: {item.quantity} × ₹{parseFloat(item.price.toString()).toFixed(2)}
+                                    Qty: {item.quantity} {orderUnitLabel(item.unit)} × ₹{parseFloat(item.price.toString()).toFixed(2)}
                                 </p>
                             </div>
                             <p className="font-semibold text-gray-900">
@@ -425,7 +430,7 @@ function OrderDetailsModal({
                                     <div className="flex-1">
                                         <h4 className="font-semibold text-gray-900">{item.product_name}</h4>
                                         <p className="text-sm text-gray-600 mt-1">
-                                            Quantity: {item.quantity} × ₹{parseFloat(item.price.toString()).toFixed(2)}
+                                            Quantity: {item.quantity} {orderUnitLabel(item.unit)} × ₹{parseFloat(item.price.toString()).toFixed(2)}
                                         </p>
                                     </div>
                                     <div className="text-right">

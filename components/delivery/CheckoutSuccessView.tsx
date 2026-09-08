@@ -22,7 +22,14 @@ interface CartItem {
   stock: number
   quantity: number
   subtotal: number
+  unit?: string
+  unit_label?: string
 }
+
+const cvLabel = (i: { unit?: string; unit_label?: string }) =>
+  i.unit_label || (i.unit === "piece" ? "Piece" : "kg")
+const cvQty = (q: number, i: { unit?: string }) =>
+  i.unit === "piece" ? String(Math.round(q)) : q
 
 interface SavedAddress {
   id?: number
@@ -122,7 +129,7 @@ Email: ${address.email}
 ITEMS ORDERED:
 =====================================
 ${items.map(item => `${item.name}
-  ${item.quantity} kg × ₹${item.price.toFixed(2)} = ₹${item.subtotal.toFixed(2)}`).join('\n\n')}
+  ${cvQty(item.quantity, item)} ${cvLabel(item)} × ₹${item.price.toFixed(2)} = ₹${item.subtotal.toFixed(2)}`).join('\n\n')}
 
 =====================================
 PRICING BREAKDOWN:
@@ -170,7 +177,7 @@ Expected Delivery: within 1 hour
             </button>
             <div className="flex-1">
               <h2 className="text-base font-bold text-gray-900 leading-tight">Review your order</h2>
-              <p className="text-xs text-gray-400">{items.length} item{items.length !== 1 && 's'} • {totalQty.toFixed(2)} kg</p>
+              <p className="text-xs text-gray-400">{items.length} item{items.length !== 1 && 's'}{items.every(i => i.unit !== 'piece') ? ` • ${totalQty.toFixed(2)} kg` : ''}</p>
             </div>
             <button
               onClick={onClose}

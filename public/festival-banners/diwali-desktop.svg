@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="480" viewBox="0 0 1920 480" font-family="'Segoe UI', system-ui, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b0a45"/>
+      <stop offset="0.5" stop-color="#6b1230"/>
+      <stop offset="1" stop-color="#8a1c1c"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffd97a" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#ffd97a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe9a8"/>
+      <stop offset="0.55" stop-color="#f4c04c"/>
+      <stop offset="1" stop-color="#c9821f"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="480" fill="url(#bg)"/>
+
+  <g opacity="0.5">
+    <ellipse cx="300" cy="120" rx="380" ry="260" fill="url(#glow)"/>
+    <ellipse cx="1650" cy="380" rx="420" ry="300" fill="url(#glow)"/>
+  </g>
+
+  <g fill="#ffd97a">
+    <circle cx="140" cy="70" r="3"/><circle cx="420" cy="45" r="2.5"/><circle cx="700" cy="90" r="3"/>
+    <circle cx="980" cy="40" r="2.5"/><circle cx="1240" cy="80" r="3"/><circle cx="1520" cy="50" r="2.5"/>
+    <circle cx="1780" cy="95" r="3"/><circle cx="260" cy="430" r="2.5"/><circle cx="560" cy="450" r="3"/>
+    <circle cx="1120" cy="440" r="2.5"/><circle cx="1660" cy="450" r="3"/>
+  </g>
+
+  <g stroke="#f4c04c" stroke-width="2" fill="none" opacity="0.55" stroke-linecap="round">
+    <path d="M60 0 v40 M40 20 h40 M48 8 l24 24 M72 8 l-24 24"/>
+    <path d="M1860 480 v-40 M1840 460 h40 M1848 448 l24 24 M1872 448 l-24 24"/>
+  </g>
+
+  <g transform="translate(1450 250)">
+    <g>
+      <ellipse cx="60" cy="150" rx="70" ry="16" fill="#000" opacity="0.25"/>
+      <path d="M10 120 q50 40 100 0 q-8 26 -50 26 q-42 0 -50 -26z" fill="url(#gold)"/>
+      <rect x="52" y="86" width="16" height="34" rx="4" fill="#f4c04c"/>
+      <ellipse cx="60" cy="82" rx="16" ry="22" fill="#ff8a3c"/>
+      <ellipse cx="60" cy="74" rx="9" ry="15" fill="#ffd97a"/>
+    </g>
+    <g transform="translate(150 40)">
+      <ellipse cx="45" cy="112" rx="52" ry="12" fill="#000" opacity="0.22"/>
+      <path d="M8 90 q37 30 74 0 q-6 20 -37 20 q-31 0 -37 -20z" fill="url(#gold)"/>
+      <rect x="39" y="64" width="12" height="26" rx="3" fill="#f4c04c"/>
+      <ellipse cx="45" cy="60" rx="12" ry="17" fill="#ff8a3c"/>
+      <ellipse cx="45" cy="54" rx="7" ry="11" fill="#ffd97a"/>
+    </g>
+  </g>
+
+  <text x="150" y="150" fill="#ffd97a" font-size="30" letter-spacing="8" font-weight="600">HAPPY DIWALI</text>
+  <text x="147" y="270" fill="#fff7e6" font-size="104" font-weight="800" letter-spacing="1">Diwali Special</text>
+  <text x="150" y="345" fill="#f4c04c" font-size="58" font-weight="800">Flat 20% OFF</text>
+  <text x="152" y="392" fill="#ffe9c7" font-size="24" font-weight="400">on fresh fruits &amp; pooja essentials</text>
+
+  <g transform="translate(150 420)">
+    <rect x="0" y="0" width="230" height="56" rx="28" fill="url(#gold)"/>
+    <text x="115" y="37" fill="#5a1020" font-size="22" font-weight="700" text-anchor="middle">Shop Now</text>
+  </g>
+
+  <rect x="3" y="3" width="1914" height="474" fill="none" stroke="#f4c04c" stroke-width="6" opacity="0.5"/>
+</svg>

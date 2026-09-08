@@ -54,6 +54,9 @@ const normalizeCartItem = (i: any): CartItem => {
     quantity,
     stock: Number(i.stock) || 0,
     subtotal: i.subtotal != null ? Number(i.subtotal) || price * quantity : price * quantity,
+    // Additive: cart.php now returns unit/unit_label; older payloads => kg.
+    unit: i.unit || 'kg',
+    unit_label: i.unit_label || (i.unit === 'piece' ? 'Piece' : 'kg'),
   }
 }
 
@@ -98,6 +101,8 @@ interface CartItem {
   quantity: number
   subtotal: number
   slug?: string
+  unit?: string
+  unit_label?: string
 }
 
 interface ToastState {
@@ -188,7 +193,11 @@ const CartDrawer = memo(function CartDrawer({
                 const q = Number(item.quantity) || 0
                 const price = Number(item.price) || 0
                 const stock = Number(item.stock) || 0
-                const atLimit = q + 0.25 > stock
+                // Piece items step by 1; everything else keeps the 0.25 kg step.
+                const isPiece = item.unit === 'piece'
+                const step = isPiece ? 1 : 0.25
+                const unitLabel = item.unit_label || 'kg'
+                const atLimit = q + step > stock
                 return (
                 <div key={item.cart_id} data-product-id={item.id} className="bg-gray-50 rounded-xl p-3 hover:bg-gray-100/80 transition">
                   <div className="flex gap-3">
@@ -220,23 +229,23 @@ const CartDrawer = memo(function CartDrawer({
                             : <Trash2 className="w-4 h-4" />}
                         </button>
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5">₹{price.toFixed(2)}/kg</p>
+                      <p className="text-xs text-gray-500 mt-0.5">₹{price.toFixed(2)}/{unitLabel}</p>
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
                           <button
-                            onClick={() => onUpdateQuantity(item.id, Math.max(0.25, q - 0.25))}
+                            onClick={() => onUpdateQuantity(item.id, Math.max(step, q - step))}
                             disabled={deletingId === item.id}
                             className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 transition text-gray-600"
                           >
                             <Minus className="w-3 h-3" />
                           </button>
                           <span className="w-14 text-center text-xs font-semibold text-gray-800 bg-gray-50 py-1">
-                            {q.toFixed(2)} kg
+                            {isPiece ? Math.round(q) : q.toFixed(2)} {unitLabel}
                           </span>
                           <button
-                            onClick={() => onUpdateQuantity(item.id, q + 0.25)}
+                            onClick={() => onUpdateQuantity(item.id, q + step)}
                             disabled={deletingId === item.id || atLimit}
-                            title={atLimit ? `Only ${stock} kg available` : undefined}
+                            title={atLimit ? `Only ${stock} ${unitLabel} available` : undefined}
                             className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition text-gray-600"
                           >
                             <Plus className="w-3 h-3" />
