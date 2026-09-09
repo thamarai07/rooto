@@ -563,7 +563,8 @@ function OrderDetailsModal({
 // ⚠️ TEMP DEBUG PANEL — remove once My Orders is confirmed working
 // ============================================================================
 function OrdersDebugPanel({ debug }: { debug: any }) {
-    if (!debug) return null;
+    // Dev-only diagnostics — never shown to real users in the deployed build.
+    if (!debug || process.env.NODE_ENV === "production") return null;
     return (
         <div className="mb-6 bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4">
             <p className="font-bold text-yellow-900 mb-2">🐛 Orders Debug — screenshot this &amp; send to the developer</p>

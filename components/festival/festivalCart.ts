@@ -27,6 +27,9 @@ export interface CartLine {
 
 export const getUserId = (): number | null => {
   try {
+    // No token => broken/guest session. Return null so we use the guest cart
+    // instead of hitting authed endpoints that would 401.
+    if (!localStorage.getItem("auth_token")) return null
     const u = localStorage.getItem("auth_user")
     return u ? JSON.parse(u).id : null
   } catch {

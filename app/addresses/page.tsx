@@ -77,6 +77,8 @@ interface APIAddress {
 // ============================================================================
 const getUserId = (): number | null => {
     if (typeof window !== 'undefined') {
+        // No token => broken/guest session; treat as logged out.
+        if (!localStorage.getItem("auth_token")) return null;
         const savedUser = localStorage.getItem("auth_user");
         if (savedUser) {
             try {

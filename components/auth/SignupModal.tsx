@@ -90,20 +90,27 @@ export default function SignupModal({ onSuccess, onSwitchToLogin }: any) {
       const data = await res.json();
 
       if (data.status === "success") {
-        // Register doesn't return a token — auto-login to get one
+        // Register doesn't return a token — auto-login to get one.
         const loginRes = await fetch(`${API_BASE}/login.php`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ login: formData.email, password: formData.password }),
         });
         const loginData = await loginRes.json();
-        if (loginData.token) {
-          saveToken(loginData.token);
-        }
 
-        setUser(data.user);
-        await mergeGuestData();
-        onSuccess?.(data.user);
+        // Only mark the user as logged in once we actually hold a token.
+        // Setting auth_user without auth_token leaves a broken session that
+        // makes every authed API call fail with "Authentication required".
+        if (loginData?.token) {
+          saveToken(loginData.token);
+          setUser(loginData.user || data.user);
+          await mergeGuestData();
+          onSuccess?.(loginData.user || data.user);
+        } else {
+          // Account created, but auto-login failed — send them to the login form.
+          setError("Account created! Please log in to continue.");
+          onSwitchToLogin?.();
+        }
       } else {
         setError(data.message || "Signup failed");
       }

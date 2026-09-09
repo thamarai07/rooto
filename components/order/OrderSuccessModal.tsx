@@ -58,7 +58,7 @@ export default function OrderSuccessModal({
 
   return (
     <div
-      className="osm-fade fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="osm-fade fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-4 bg-black/60 backdrop-blur-sm"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -79,18 +79,20 @@ export default function OrderSuccessModal({
       )}
 
       <div
-        className="osm-pop relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
+        className="osm-pop relative flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close */}
         <button
           onClick={onClose}
           aria-label="Close"
-          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur transition hover:bg-white/30"
+          className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur transition hover:bg-white/30"
         >
           <X className="h-5 w-5" />
         </button>
 
+        {/* Scrollable region — so the card never gets clipped on short screens */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
         {/* Header */}
         <div className="relative overflow-hidden bg-gradient-to-br from-green-500 via-green-600 to-emerald-600 px-8 pb-10 pt-9 text-center text-white">
           {/* decorative glow */}
@@ -173,6 +175,7 @@ export default function OrderSuccessModal({
           >
             View My Orders
           </Link>
+        </div>
         </div>
       </div>
 

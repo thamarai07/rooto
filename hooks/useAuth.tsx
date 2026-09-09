@@ -29,11 +29,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Load user from localStorage on mount
+    // Load user from localStorage on mount.
     try {
       const savedUser = localStorage.getItem("auth_user")
-      if (savedUser) {
+      const savedToken = localStorage.getItem("auth_token")
+
+      if (savedUser && savedToken) {
         setUserState(JSON.parse(savedUser))
+      } else if (savedUser && !savedToken) {
+        // Half-cleared / desynced session: the app would show us as logged in
+        // but every authed API call would 401 with "Authentication required".
+        // Reset to a clean guest state so add-to-cart etc. still work.
+        localStorage.removeItem("auth_user")
       }
     } catch {
       localStorage.removeItem("auth_user")

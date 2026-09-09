@@ -436,21 +436,29 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
   // Load user from localStorage
   useEffect(() => {
     const savedUser = localStorage.getItem("auth_user");
-    if (savedUser) {
+    const savedToken = localStorage.getItem("auth_token");
+    if (savedUser && savedToken) {
       try {
         const parsedUser = JSON.parse(savedUser);
         setUser(parsedUser);
         setIsLoggedIn(true);
       } catch (e) {
         localStorage.removeItem("auth_user");
+        localStorage.removeItem("auth_token");
         setUser(null);
         setIsLoggedIn(false);
       }
+    } else if (savedUser && !savedToken) {
+      // Half-cleared session — reset so authed calls don't 401.
+      localStorage.removeItem("auth_user");
+      setUser(null);
+      setIsLoggedIn(false);
     }
 
     const handleUserUpdate = () => {
       const updatedUser = localStorage.getItem("auth_user");
-      if (updatedUser) {
+      const updatedToken = localStorage.getItem("auth_token");
+      if (updatedUser && updatedToken) {
         try {
           const parsedUser = JSON.parse(updatedUser);
           setUser(parsedUser);

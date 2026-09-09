@@ -20,6 +20,8 @@ const PLACEHOLDER = "https://placehold.co/300x300/fee2e2/ef4444?text=No+Image"
 
 const getUserId = (): number | null => {
   try {
+    // No token => broken/guest session; treat as logged out.
+    if (!localStorage.getItem("auth_token")) return null
     const user = localStorage.getItem("auth_user")
     return user ? JSON.parse(user).id : null
   } catch { return null }

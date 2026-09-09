@@ -20,6 +20,8 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617
 
 const getUserId = (): number | null => {
   try {
+    // No token => broken/guest session; treat as logged out.
+    if (!localStorage.getItem("auth_token")) return null
     const user = localStorage.getItem("auth_user")
     return user ? JSON.parse(user).id : null
   } catch {
