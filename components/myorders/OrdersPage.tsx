@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import {
-    Package, Clock, CheckCircle, XCircle, Truck, ChevronRight,
-    MapPin, Calendar, ShoppingBag, RefreshCw, Search, Filter,
-    X, Phone, Mail, Download, Loader2
+    Package, Clock, CheckCircle, XCircle, Truck, ChevronRight, ChevronLeft,
+    MapPin, Calendar, CalendarDays, ShoppingBag, ShoppingCart, RefreshCw, Search, Filter,
+    X, Phone, Mail, Download, Loader2, Check
 } from "lucide-react";
 import OrderCancelSuccessModal from "../Cancellmodel";
 import { authHeaders, getToken } from "@/lib/auth";
@@ -287,6 +287,8 @@ function OrderDetailsModal({
     const [isCancelling, setIsCancelling] = useState(false);
     const [cancelReason, setCancelReason] = useState("");
     const [showCancelForm, setShowCancelForm] = useState(false);
+    const [isReordering, setIsReordering] = useState(false);
+    const [reorderMsg, setReorderMsg] = useState("");
 
     const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
     const StatusIcon = statusConfig.icon;
@@ -295,6 +297,39 @@ function OrderDetailsModal({
     const handleDownloadInvoice = () => {
         const token = getToken();
         window.open(`${API_BASE}/download_invoice.php?order_id=${order.id}&token=${token}`, '_blank');
+    };
+
+    // Re-add every line of this past order back into the cart via the existing
+    // cart.php endpoint (same call the festival page uses). Piece/kg unit is
+    // preserved per line. Fires `cart-updated` so the header count + drawer refresh.
+    const handleReorder = async () => {
+        const items = order.items || [];
+        if (!items.length || isReordering) return;
+        setIsReordering(true);
+        setReorderMsg("");
+        let added = 0;
+        for (const item of items) {
+            try {
+                const res = await fetch(`${API_BASE}/cart.php`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", ...authHeaders() },
+                    body: JSON.stringify({
+                        product_id: item.product_id,
+                        quantity: Number(item.quantity) || 1,
+                        unit: (item.unit || "").toLowerCase() === "piece" ? "piece" : null,
+                    }),
+                });
+                const data = await res.json().catch(() => ({} as any));
+                if (res.ok && (data.status === "success" || data.status === undefined)) added++;
+            } catch { /* keep going for the rest */ }
+        }
+        setIsReordering(false);
+        if (added > 0) {
+            window.dispatchEvent(new Event("cart-updated"));
+            setReorderMsg(`${added} item${added > 1 ? "s" : ""} added to your cart`);
+        } else {
+            setReorderMsg("Couldn't add these items to the cart. Please try again.");
+        }
     };
 
     const handleCancelOrder = async () => {
@@ -535,8 +570,29 @@ function OrderDetailsModal({
                     )}
                 </div>
 
+                {/* Reorder result message */}
+                {reorderMsg && (
+                    <div className="px-6 pt-4 bg-gray-50">
+                        <p className="text-sm text-green-700 flex items-center gap-2">
+                            <Check className="w-4 h-4 flex-shrink-0" />
+                            {reorderMsg}
+                            {reorderMsg.includes("added") && (
+                                <a href="/cart" className="underline font-semibold">View cart</a>
+                            )}
+                        </p>
+                    </div>
+                )}
+
                 {/* Footer Actions */}
                 <div className="border-t border-gray-200 p-6 bg-gray-50 flex flex-wrap gap-3">
+                    <button
+                        onClick={handleReorder}
+                        disabled={isReordering}
+                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 border-2 border-green-300 hover:border-green-400 text-green-700 rounded-lg font-medium transition disabled:opacity-50"
+                    >
+                        {isReordering ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
+                        {isReordering ? "Adding..." : "Reorder"}
+                    </button>
                     <button
                         onClick={handleDownloadInvoice}
                         className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition"
@@ -577,6 +633,109 @@ function OrdersDebugPanel({ debug }: { debug: any }) {
 }
 
 // ============================================================================
+// ORDER CALENDAR — highlights the dates this customer placed orders on
+// ============================================================================
+function OrderCalendar({
+    orderDates,
+    selected,
+    onSelect,
+}: {
+    orderDates: Set<string>;      // "YYYY-MM-DD" keys
+    selected: string;             // "YYYY-MM-DD" or ""
+    onSelect: (day: string) => void;
+}) {
+    const [view, setView] = useState(() => {
+        const t = new Date();
+        return new Date(t.getFullYear(), t.getMonth(), 1);
+    });
+    const year = view.getFullYear();
+    const month = view.getMonth();
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const cells: (number | null)[] = [];
+    for (let i = 0; i < firstWeekday; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+    const keyFor = (d: number) =>
+        `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+    return (
+        <div className="bg-white border border-gray-200 rounded-xl p-4 w-full max-w-sm shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+                <button
+                    type="button"
+                    onClick={() => setView(new Date(year, month - 1, 1))}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg"
+                >
+                    <ChevronLeft className="w-4 h-4" />
+                </button>
+                <p className="font-semibold text-gray-900">
+                    {view.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
+                </p>
+                <button
+                    type="button"
+                    onClick={() => setView(new Date(year, month + 1, 1))}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg"
+                >
+                    <ChevronRight className="w-4 h-4" />
+                </button>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-500 mb-1">
+                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+                    <div key={d} className="py-1 font-medium">{d}</div>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+                {cells.map((d, i) => {
+                    if (d === null) return <div key={`e${i}`} />;
+                    const k = keyFor(d);
+                    const hasOrder = orderDates.has(k);
+                    const isSelected = selected === k;
+                    return (
+                        <button
+                            key={k}
+                            type="button"
+                            disabled={!hasOrder}
+                            onClick={() => onSelect(isSelected ? "" : k)}
+                            className={`aspect-square rounded-lg text-sm flex items-center justify-center relative transition
+                                ${isSelected
+                                    ? "bg-green-600 text-white font-bold"
+                                    : hasOrder
+                                        ? "bg-green-100 text-green-800 font-semibold hover:bg-green-200 cursor-pointer"
+                                        : "text-gray-400 cursor-default"}`}
+                        >
+                            {d}
+                            {hasOrder && !isSelected && (
+                                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-green-600" />
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
+
+            <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+                <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-green-100 border border-green-300" />
+                    Order placed
+                </span>
+                {selected && (
+                    <button
+                        type="button"
+                        onClick={() => onSelect("")}
+                        className="text-green-700 hover:text-green-800 font-medium"
+                    >
+                        Clear
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ============================================================================
 // MAIN ORDERS PAGE COMPONENT
 // ============================================================================
 export default function OrdersPage() {
@@ -586,6 +745,11 @@ export default function OrdersPage() {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [filterStatus, setFilterStatus] = useState<string>("all");
     const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [dateFrom, setDateFrom] = useState("");   // YYYY-MM-DD
+    const [dateTo, setDateTo] = useState("");        // YYYY-MM-DD
+    const [showCalendar, setShowCalendar] = useState(false);
+    const [orderDates, setOrderDates] = useState<Set<string>>(new Set());
     const [pagination, setPagination] = useState<Pagination>({ page: 1, totalPages: 1 });
     const [debug, setDebug] = useState<any>(null); // ⚠️ TEMP debug panel
 
@@ -637,10 +801,12 @@ export default function OrdersPage() {
                 customer_id: String(customerId),  // backend requires this explicitly
                 customerId: String(customerId),   // accept either param name
                 status: filterStatus,
-                search: searchQuery,
+                search: debouncedSearch,
                 page: pagination.page.toString(),
                 limit: "20"
             });
+            if (dateFrom) params.set("from", dateFrom);
+            if (dateTo) params.set("to", dateTo);
 
             const url = `${API_BASE}/get_orderssite.php?${params}`;
             dbg.url = url;
@@ -687,9 +853,35 @@ export default function OrdersPage() {
         }
     };
 
+    // Debounce the search box so we don't refetch on every keystroke.
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 400);
+        return () => clearTimeout(t);
+    }, [searchQuery]);
+
     useEffect(() => {
         fetchOrders();
-    }, [filterStatus, searchQuery]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filterStatus, debouncedSearch, dateFrom, dateTo]);
+
+    // Load the distinct dates this customer ordered on (for the calendar highlights).
+    useEffect(() => {
+        const cid = getUserId();
+        if (!cid) return;
+        fetch(`${API_BASE}/get_orderssite.php?customer_id=${cid}&dates=1`)
+            .then((r) => r.json())
+            .then((d) => {
+                if (d?.status === "success" && Array.isArray(d.dates)) {
+                    setOrderDates(new Set(d.dates.map((x: any) => String(x.d).slice(0, 10))));
+                }
+            })
+            .catch(() => { /* calendar just shows no highlights */ });
+    }, []);
+
+    const handleCalendarSelect = (day: string) => {
+        setDateFrom(day);
+        setDateTo(day);
+    };
 
     const handleRefresh = () => {
         fetchOrders();
@@ -709,7 +901,7 @@ export default function OrdersPage() {
         setShowSuccessModal(true);
     };
 
-    if (!isLoading && orders.length === 0 && filterStatus === 'all' && !searchQuery) {
+    if (!isLoading && orders.length === 0 && filterStatus === 'all' && !searchQuery && !dateFrom && !dateTo) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 p-4 md:p-8">
                 <div className="max-w-7xl mx-auto">
@@ -783,6 +975,55 @@ export default function OrdersPage() {
                             </select>
                         </div>
                     </div>
+
+                    {/* Date filter + calendar toggle */}
+                    <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-gray-100">
+                        <button
+                            type="button"
+                            onClick={() => setShowCalendar((v) => !v)}
+                            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+                        >
+                            <CalendarDays className="w-4 h-4 text-green-600" />
+                            {showCalendar ? "Hide calendar" : "Order calendar"}
+                        </button>
+                        <div className="flex items-center gap-2 text-sm">
+                            <label className="text-gray-500">From</label>
+                            <input
+                                type="date"
+                                value={dateFrom}
+                                max={dateTo || undefined}
+                                onChange={(e) => setDateFrom(e.target.value)}
+                                className="border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            />
+                            <label className="text-gray-500">To</label>
+                            <input
+                                type="date"
+                                value={dateTo}
+                                min={dateFrom || undefined}
+                                onChange={(e) => setDateTo(e.target.value)}
+                                className="border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            />
+                            {(dateFrom || dateTo) && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setDateFrom(""); setDateTo(""); }}
+                                    className="text-green-700 hover:text-green-800 font-medium"
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {showCalendar && (
+                        <div className="mt-4 flex justify-center">
+                            <OrderCalendar
+                                orderDates={orderDates}
+                                selected={dateFrom && dateFrom === dateTo ? dateFrom : ""}
+                                onSelect={handleCalendarSelect}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Loading State */}

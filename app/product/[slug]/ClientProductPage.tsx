@@ -74,6 +74,8 @@ interface CartItem {
   slug?: string;
   category?: string;
   stock: number;
+  unit?: string;
+  unit_label?: string;
 }
 
 interface ClientProductPageProps {
@@ -131,7 +133,6 @@ function CartDrawer({
   const [mounted, setMounted] = useState(false);
 
   const { subtotal, tax, shipping, total } = cartTotals(cartItems);
-  const totalWeight = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   useEffect(() => {
     setMounted(true);
@@ -181,7 +182,7 @@ function CartDrawer({
             <div>
               <h3 className="font-bold text-lg text-gray-900 leading-tight">My Cart</h3>
               <p className="text-xs text-gray-500">
-                {itemCount} {itemCount === 1 ? 'item' : 'items'} · {totalWeight.toFixed(2)} kg
+                {itemCount} {itemCount === 1 ? 'item' : 'items'}
               </p>
             </div>
           </div>
@@ -230,7 +231,12 @@ function CartDrawer({
             {/* Items + bill (scrolls) */}
             <div className="flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
               <div className="p-3 space-y-2">
-                {cartItems.map((item) => (
+                {cartItems.map((item) => {
+                  const uIsPiece = (item.unit === "piece" || item.unit === "pieces")
+                  const uLabel = item.unit_label || (uIsPiece ? "Piece" : "kg")
+                  const uStep = uIsPiece ? 1 : 0.25
+                  const qShown = uIsPiece ? Math.round(Number(item.quantity)) : Number(item.quantity).toFixed(2)
+                  return (
                   <div
                     key={item.cart_id}
                     data-product-id={item.id}
@@ -259,7 +265,7 @@ function CartDrawer({
                       >
                         {item.name}
                       </Link>
-                      <p className="text-xs text-gray-400 mt-0.5">₹{Number(item.price).toFixed(2)} / kg</p>
+                      <p className="text-xs text-gray-400 mt-0.5">₹{Number(item.price).toFixed(2)} / {uLabel}</p>
                       <p className="text-sm font-bold text-gray-900 mt-1">
                         ₹{(Number(item.subtotal) || Number(item.price) * Number(item.quantity)).toFixed(2)}
                       </p>
@@ -277,18 +283,18 @@ function CartDrawer({
                       </button>
                       <div className="flex items-center bg-green-600 rounded-lg text-white shadow-sm">
                         <button
-                          onClick={() => onUpdateQuantity(item.id, Math.max(0.25, Number(item.quantity) - 0.25))}
+                          onClick={() => onUpdateQuantity(item.id, Math.max(uStep, Number(item.quantity) - uStep))}
                           disabled={deletingId === item.id}
                           className="w-8 h-8 flex items-center justify-center active:bg-green-700 rounded-l-lg"
                           aria-label="Decrease"
                         >
                           <Minus className="w-3.5 h-3.5" />
                         </button>
-                        <span className="px-1 min-w-[52px] text-center text-xs font-semibold">{Number(item.quantity).toFixed(2)} kg</span>
+                        <span className="px-1 min-w-[52px] text-center text-xs font-semibold">{qShown} {uLabel}</span>
                         <button
-                          onClick={() => onUpdateQuantity(item.id, Number(item.quantity) + 0.25)}
-                          disabled={deletingId === item.id || (Number(item.stock) > 0 && Number(item.quantity) + 0.25 > Number(item.stock))}
-                          title={Number(item.stock) > 0 && Number(item.quantity) + 0.25 > Number(item.stock) ? `Only ${Number(item.stock)} kg in stock` : undefined}
+                          onClick={() => onUpdateQuantity(item.id, Number(item.quantity) + uStep)}
+                          disabled={deletingId === item.id || (Number(item.stock) > 0 && Number(item.quantity) + uStep > Number(item.stock))}
+                          title={Number(item.stock) > 0 && Number(item.quantity) + uStep > Number(item.stock) ? `Only ${Number(item.stock)} ${uLabel} in stock` : undefined}
                           className="w-8 h-8 flex items-center justify-center active:bg-green-700 rounded-r-lg disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label="Increase"
                         >
@@ -297,7 +303,7 @@ function CartDrawer({
                       </div>
                     </div>
                   </div>
-                ))}
+                )})}
 
                 {/* Bill details */}
                 <div className="bg-white rounded-2xl p-4 !mt-3">
@@ -787,18 +793,34 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
   }, [product.id])
 
   const finalPrice = product.final_price || product.price_per_kg * (1 - product.discount_percent / 100);
-  const step = product.unit === "kg" ? 0.25 : 1;
   const stock = Number(product.stock) || 0;
   const isInStock = stock > 0;
-  const unit = unitPrice(product);
-  const minQ = Number(product.min_quantity) || step;
-  const maxQ = Number(product.max_quantity) || Infinity;
 
   // This product's live line in the cart — drives the in-cart stepper and keeps
   // the page synced with the header, home card and drawer (all share cart events).
   const cartLine = cartItems.find((i) => Number(i.id) === Number(product.id));
   const cartQty = Number(cartLine?.quantity) || 0;
   const inCart = cartQty > 0;
+  const cartUnit = (cartLine as any)?.unit as string | undefined;
+  const cartUnitLabel = (cartLine as any)?.unit_label as string | undefined;
+
+  // Effective selling unit: what's in the cart wins (e.g. added by the piece on a
+  // festival page), else the product's own unit.
+  const effUnit =
+    inCart && cartUnit
+      ? (cartUnit === "piece" || cartUnit === "pieces" ? "piece" : "kg")
+      : product.unit === "piece" || product.unit === "pieces"
+      ? "piece"
+      : "kg";
+  const isPieceUnit = effUnit === "piece";
+  const unitWord = inCart && cartUnitLabel ? cartUnitLabel : isPieceUnit ? "Piece" : product.unit;
+  const step = isPieceUnit ? 1 : 0.25;
+  // Per-unit price: the cart line's price (piece price) when it's in the cart.
+  const unit =
+    inCart && cartLine?.price != null ? Number(cartLine.price) : unitPrice(product);
+  const minQ = Number(product.min_quantity) || step;
+  const maxQ = Number(product.max_quantity) || Infinity;
+
   const displayQty = inCart ? cartQty : Number(quantity) || 0;
   // Same rule as the home card: never let quantity pass available stock.
   const atStockLimit = displayQty + step > stock + 1e-9;
@@ -1126,15 +1148,15 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
               {/* Price */}
               <div className="bg-gray-50 rounded-xl p-5 mb-6">
                 <div className="flex items-baseline gap-3 mb-2">
-                  <span className="text-3xl font-bold text-gray-900">₹{finalPrice.toFixed(2)}</span>
-                  <span className="text-gray-500">/ {product.unit}</span>
-                  {product.discount_percent > 0 && (
+                  <span className="text-3xl font-bold text-gray-900">₹{(inCart ? unit : finalPrice).toFixed(2)}</span>
+                  <span className="text-gray-500">/ {unitWord}</span>
+                  {!inCart && product.discount_percent > 0 && (
                     <span className="text-lg text-gray-400 line-through">₹{Number(product.price_per_kg.toFixed(2))}</span>
                   )}
                 </div>
-                {product.discount_percent > 0 && (
+                {!inCart && product.discount_percent > 0 && (
                   <p className="text-green-600 text-sm font-medium">
-                    You save ₹{(product.price_per_kg - finalPrice).toFixed(2)} per {product.unit}
+                    You save ₹{(product.price_per_kg - finalPrice).toFixed(2)} per {unitWord}
                   </p>
                 )}
               </div>
@@ -1162,13 +1184,13 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
                       <Minus className="w-5 h-5 text-gray-600" />
                     </button>
                     <div className="px-6 py-3 min-w-[100px] text-center border-x border-gray-300">
-                      <span className="text-xl font-semibold">{step < 1 ? displayQty.toFixed(2) : displayQty}</span>
-                      <span className="text-gray-500 ml-1">{product.unit}</span>
+                      <span className="text-xl font-semibold">{step < 1 ? displayQty.toFixed(2) : Math.round(displayQty)}</span>
+                      <span className="text-gray-500 ml-1">{unitWord}</span>
                     </div>
                     <button
                       onClick={increment}
                       disabled={atStockLimit}
-                      title={atStockLimit ? `Only ${stock} ${product.unit} in stock` : undefined}
+                      title={atStockLimit ? `Only ${stock} ${unitWord} in stock` : undefined}
                       className="p-3 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       aria-label="Increase"
                     >
@@ -1181,7 +1203,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
                   </div>
                 </div>
                 {atStockLimit && (
-                  <p className="text-xs text-amber-600 mt-2 font-medium">Max available: {stock} {product.unit}</p>
+                  <p className="text-xs text-amber-600 mt-2 font-medium">Max available: {stock} {unitWord}</p>
                 )}
               </div>
 
@@ -1190,7 +1212,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
                 {isInStock ? (
                   <>
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-green-700 text-sm font-medium">In Stock • {stock} {product.unit} available</span>
+                    <span className="text-green-700 text-sm font-medium">In Stock • {stock} {unitWord} available</span>
                   </>
                 ) : (
                   <>

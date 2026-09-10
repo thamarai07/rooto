@@ -91,6 +91,7 @@ interface Product {
   slug: string
   final_price?: number
   discount_percent?: number
+  unit?: string // 'kg' | 'piece' … from get-product.php
 }
 
 interface CartItem {
@@ -331,6 +332,9 @@ const ProductCard = memo(function ProductCard({
   onAddToCart,
   onUpdateQuantity,
   quantity,
+  cartUnit,
+  cartUnitLabel,
+  cartPrice,
   isLoading,
   priority = false
 }: {
@@ -340,6 +344,9 @@ const ProductCard = memo(function ProductCard({
   onAddToCart: (product: Product) => void
   onUpdateQuantity: (id: number, qty: number) => void
   quantity: number
+  cartUnit?: string
+  cartUnitLabel?: string
+  cartPrice?: number
   isLoading: boolean
   priority?: boolean
 }) {
@@ -347,8 +354,21 @@ const ProductCard = memo(function ProductCard({
   // `quantity + 0.25` concatenate instead of add. Always work with a number.
   const qty = Number(quantity) || 0
   const stock = Number(product.stock) || 0
-  const unit = Number(product.price_per_kg) || 0
-  const atStockLimit = qty + 0.25 > stock // next +0.25 would exceed available stock
+  const inCart = qty > 0
+  // Effective selling unit: what's in the cart wins, else the product's own unit.
+  const effUnit =
+    inCart && cartUnit
+      ? cartUnit
+      : (product.unit === "piece" || product.unit === "pieces")
+      ? "piece"
+      : "kg"
+  const isPiece = effUnit === "piece"
+  const step = isPiece ? 1 : 0.25
+  const unitLabel = inCart && cartUnitLabel ? cartUnitLabel : isPiece ? "Piece" : "kg"
+  const unitPrice =
+    inCart && cartPrice != null ? Number(cartPrice) : Number(product.price_per_kg) || 0
+  const qtyText = isPiece ? String(Math.round(qty)) : Number(qty.toFixed(2)).toString()
+  const atStockLimit = qty + step > stock // next step would exceed available stock
   return (
     <div className="group bg-white rounded-2xl border border-gray-100 hover:shadow-md transition-shadow duration-200 flex flex-col h-full">
 
@@ -388,20 +408,20 @@ const ProductCard = memo(function ProductCard({
         {qty > 0 ? (
           <div className="absolute -bottom-3 right-2 flex items-center bg-green-600 text-white rounded-lg shadow-md overflow-hidden">
             <button
-              onClick={() => onUpdateQuantity(product.id, qty - 0.25)}
+              onClick={() => onUpdateQuantity(product.id, qty - step)}
               aria-label="Decrease quantity"
               className="w-7 h-8 grid place-items-center active:bg-green-700 transition"
             >
               <Minus className="w-3.5 h-3.5" />
             </button>
             <span className="px-0.5 min-w-[34px] text-center leading-none">
-              <span className="block text-[11px] font-bold">{Number(qty.toFixed(2))}</span>
-              <span className="block text-[8px] font-medium opacity-90 -mt-0.5">kg</span>
+              <span className="block text-[11px] font-bold">{qtyText}</span>
+              <span className="block text-[8px] font-medium opacity-90 -mt-0.5">{unitLabel}</span>
             </span>
             <button
-              onClick={() => onUpdateQuantity(product.id, qty + 0.25)}
+              onClick={() => onUpdateQuantity(product.id, qty + step)}
               disabled={atStockLimit}
-              title={atStockLimit ? `Only ${stock} kg available` : undefined}
+              title={atStockLimit ? `Only ${stock} ${unitLabel} available` : undefined}
               aria-label="Increase quantity"
               className="w-7 h-8 grid place-items-center active:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
             >
@@ -429,13 +449,13 @@ const ProductCard = memo(function ProductCard({
         </Link>
         <div className="mt-auto pt-1.5">
           <div className="flex items-baseline gap-1">
-            <span className="text-sm font-extrabold text-gray-900">₹{product.price_per_kg}</span>
-            <span className="text-[10px] text-gray-400 font-medium">/kg</span>
+            <span className="text-sm font-extrabold text-gray-900">₹{Number(unitPrice.toFixed(2))}</span>
+            <span className="text-[10px] text-gray-400 font-medium">/{unitLabel}</span>
           </div>
           {qty > 0 && (
             <div className="mt-1.5 flex items-center justify-between rounded-lg bg-green-50 px-2 py-1">
-              <span className="text-[10px] font-medium text-green-700">{Number(qty.toFixed(2))} kg</span>
-              <span className="text-[11px] font-extrabold text-green-700">₹{(unit * qty).toFixed(2)}</span>
+              <span className="text-[10px] font-medium text-green-700">{qtyText} {unitLabel}</span>
+              <span className="text-[11px] font-extrabold text-green-700">₹{(unitPrice * qty).toFixed(2)}</span>
             </div>
           )}
         </div>
@@ -447,6 +467,8 @@ const ProductCard = memo(function ProductCard({
     prev.isWishlisted === next.isWishlisted &&
     prev.isLoading === next.isLoading &&
     prev.quantity === next.quantity &&
+    prev.cartUnit === next.cartUnit &&
+    prev.cartPrice === next.cartPrice &&
     prev.product.id === next.product.id &&
     prev.product.stock === next.product.stock
 )
@@ -675,8 +697,17 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
           setWishlistIds(new Set(data.data.map((i: any) => Number(i.id))))
       } catch { /* silent */ }
     }
+    // Guests: the header wishlist popup edits localStorage and fires this — mirror
+    // it here so the card hearts un-fill when an item is removed from the popup.
+    const handleGuestWishlistUpdate = () => {
+      setWishlistIds(new Set(getGuestWishlist().map(i => Number(i.id))))
+    }
     window.addEventListener('wishlist-updated', handleWishlistUpdate)
-    return () => window.removeEventListener('wishlist-updated', handleWishlistUpdate)
+    window.addEventListener('guest-wishlist-updated', handleGuestWishlistUpdate)
+    return () => {
+      window.removeEventListener('wishlist-updated', handleWishlistUpdate)
+      window.removeEventListener('guest-wishlist-updated', handleGuestWishlistUpdate)
+    }
   }, [])
 
   // ─── Wishlist toggle ─────────────────────────────────────────────────────────
@@ -1139,7 +1170,9 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
               </div>
             ) : (
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-4">
-                {filteredProducts.map((product, index) => (
+                {filteredProducts.map((product, index) => {
+                  const ci = cartItems.find(c => Number(c.id) === product.id)
+                  return (
                   <ProductCard
                     key={product.id}
                     product={product}
@@ -1147,11 +1180,14 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
                     onWishlistToggle={handleWishlistToggle}
                     onAddToCart={handleAddToCart}
                     onUpdateQuantity={handleUpdateQuantity}
-                    quantity={cartItems.find(ci => Number(ci.id) === product.id)?.quantity || 0}
+                    quantity={ci?.quantity || 0}
+                    cartUnit={ci?.unit}
+                    cartUnitLabel={ci?.unit_label}
+                    cartPrice={ci ? Number(ci.price) : undefined}
                     isLoading={actionLoading === product.id}
                     priority={index < 6}
                   />
-                ))}
+                )})}
               </div>
             )}
           </>

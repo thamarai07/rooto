@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react"
 import {
-  Phone, Mail, Facebook, Instagram, Twitter,
+  Phone, Mail, Instagram,
   Leaf, Truck, ShieldCheck, Clock, ChevronRight, MapPin,
 } from "lucide-react"
 import Link from "next/link"
+import { AREAS } from "@/lib/areas"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
@@ -51,6 +52,8 @@ export default function Footer() {
     { href: "/category/beverages", label: "Beverages" },
     { href: "/category/snacks", label: "Snacks" },
   ]
+  // Top delivery areas for footer internal linking (full list on /areas).
+  const footerAreas = AREAS.filter((a) => a.tier === "primary").slice(0, 8)
   const trust = [
     { icon: Leaf, label: "100% Fresh & Organic" },
     { icon: Truck, label: "Fast Doorstep Delivery" },
@@ -105,19 +108,13 @@ export default function Footer() {
               <span className="text-white text-lg">{logoName}</span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-              Fresh, organic fruits &amp; groceries delivered straight to your door across India.
+              Fresh, hand-picked fruits delivered straight to your door across South Chennai.
             </p>
             <div className="flex items-center gap-2 mt-3 text-gray-400 text-xs">
-              <MapPin className="w-4 h-4 text-green-400" /> Serving across India
+              <MapPin className="w-4 h-4 text-green-400" /> Medavakkam · Pallikaranai · Tambaram · Velachery &amp; nearby
             </div>
             {/* Social */}
             <div className="flex gap-2 mt-4">
-              <a href="#" aria-label="Facebook" className="w-9 h-9 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition">
-                <Facebook className="w-4 h-4" />
-              </a>
-              <a href="#" aria-label="Twitter" className="w-9 h-9 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition">
-                <Twitter className="w-4 h-4" />
-              </a>
               <a
                 href="https://www.instagram.com/rooto_in/"
                 target="_blank"
@@ -170,6 +167,25 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
+          </div>
+        </div>
+
+        {/* ── Delivery areas ── */}
+        <div className="mt-10 pt-8 border-t border-gray-800">
+          <h4 className="font-semibold text-sm mb-3 text-white">Fruit delivery areas</h4>
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+            {footerAreas.map((a) => (
+              <Link
+                key={a.slug}
+                href={`/areas/${a.slug}`}
+                className="text-gray-400 hover:text-green-400 transition"
+              >
+                {a.name}
+              </Link>
+            ))}
+            <Link href="/areas" className="text-green-400 font-medium hover:text-green-300 transition">
+              All areas →
+            </Link>
           </div>
         </div>
 

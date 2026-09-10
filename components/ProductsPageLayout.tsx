@@ -174,8 +174,10 @@ export default function ProductsPageLayout({ children }: { children: React.React
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
-      {/* Top Bar with Location and Search */}
-      <div className="sticky top-0 z-50 bg-white shadow-md">
+      {/* Top Bar with Location and Search — sticks BELOW the (sticky) <Header>.
+          top-14/16 = header height; z-40 keeps it under the header so the
+          header's wishlist/cart popups (z-[200]) still paint over it. */}
+      <div className="sticky top-14 sm:top-16 z-40 bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex flex-col md:flex-row items-center gap-4">
             {/* Location Display */}

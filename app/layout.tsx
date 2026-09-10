@@ -7,6 +7,7 @@ import CelebrationPopup from '@/components/ui/CelebrationPopup'
 import { AuthProvider } from '@/hooks/useAuth'
 import AuthInitializer from '@/components/auth/AuthInitializer'
 import AnnouncementBanner from '@/components/AnnouncementBanner'
+import JsonLd from '@/components/seo/JsonLd'
 import Script from 'next/script'
 
 const _geist = Geist({ subsets: ['latin'] })
@@ -14,25 +15,36 @@ const _geistMono = Geist_Mono({ subsets: ['latin'] })
 
 const BASE_URL = 'https://rooto.in'
 
+// Single source of truth for the business's contact + service-area details.
+// Reused by the metadata below and the JSON-LD schema further down.
+export const ROOTO_BUSINESS = {
+  name: 'Rooto',
+  legalName: 'Rooto',
+  url: BASE_URL,
+  phone: '+91-96770-28737',
+  email: 'talk@rooto.in',
+  instagram: 'https://www.instagram.com/rooto_in/',
+  // Service-area business (delivery only — no walk-in storefront).
+  areaServed: [
+    'Medavakkam', 'Pallikaranai', 'Tambaram', 'Camp Road', 'Kovilambakkam',
+    'Santhoshapuram', 'Selaiyur', 'Chromepet', 'Keelkattalai', 'Madipakkam',
+    'Velachery', 'Chennai',
+  ],
+  // Approximate centre of the current delivery zone (Medavakkam).
+  geo: { latitude: 12.9165, longitude: 80.1936 },
+} as const
+
+const DEFAULT_DESCRIPTION =
+  'Order fresh, hand-picked fruits online from Rooto with same-day and next-day home delivery across Medavakkam, Pallikaranai, Tambaram, Velachery and nearby South Chennai neighbourhoods.'
+
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    default: 'Rooto - Fresh Groceries Delivered',
+    default: 'Rooto — Fresh Fruit Delivery in South Chennai',
     template: '%s | Rooto',
   },
-  description:
-    'Order fresh fruits, vegetables, and groceries online at Rooto. Fast delivery to your doorstep.',
+  description: DEFAULT_DESCRIPTION,
   icons: { icon: '/favicon.png' },
-  keywords: [
-    'fresh groceries',
-    'fruits delivery',
-    'vegetables online',
-    'online grocery',
-    'rooto',
-    'grocery delivery India',
-    'fresh food delivery',
-    'buy groceries online',
-  ],
   authors: [{ name: 'Rooto', url: BASE_URL }],
   creator: 'Rooto',
   publisher: 'Rooto',
@@ -41,9 +53,8 @@ export const metadata: Metadata = {
     canonical: BASE_URL,
   },
   openGraph: {
-    title: 'Rooto — Fresh Groceries Delivered',
-    description:
-      'Order fresh fruits, vegetables, and groceries online at Rooto. Fast delivery to your doorstep.',
+    title: 'Rooto — Fresh Fruit Delivery in South Chennai',
+    description: DEFAULT_DESCRIPTION,
     url: BASE_URL,
     siteName: 'Rooto',
     locale: 'en_IN',
@@ -53,15 +64,14 @@ export const metadata: Metadata = {
         url: `${BASE_URL}/opengraph-image.png`,
         width: 1200,
         height: 630,
-        alt: 'Rooto — Fresh Groceries Delivered',
+        alt: 'Rooto — Fresh Fruit Delivery in South Chennai',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Rooto — Fresh Groceries Delivered',
-    description:
-      'Order fresh fruits, vegetables, and groceries online at Rooto.',
+    title: 'Rooto — Fresh Fruit Delivery in South Chennai',
+    description: DEFAULT_DESCRIPTION,
     images: [`${BASE_URL}/opengraph-image.png`],
   },
   robots: {
@@ -80,66 +90,70 @@ export const metadata: Metadata = {
   },
 }
 
-// JSON-LD Structured Data — tells Google exactly what your site is
+// JSON-LD Structured Data — tells Google exactly what this site is.
 const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'Rooto',
+  name: ROOTO_BUSINESS.name,
+  legalName: ROOTO_BUSINESS.legalName,
   url: BASE_URL,
   logo: `${BASE_URL}/favicon.png`,
-  description:
-    'Order fresh fruits, vegetables, and groceries online at Rooto. Fast delivery to your doorstep.',
+  description: DEFAULT_DESCRIPTION,
+  email: ROOTO_BUSINESS.email,
   contactPoint: {
     '@type': 'ContactPoint',
     contactType: 'customer service',
-    availableLanguage: ['English', 'Hindi', 'Tamil'],
+    telephone: ROOTO_BUSINESS.phone,
+    email: ROOTO_BUSINESS.email,
+    availableLanguage: ['English', 'Tamil'],
   },
-  sameAs: [
-    // Add your social media URLs here:
-    // 'https://www.instagram.com/rooto_in',
-    // 'https://twitter.com/rooto_in',
-  ],
+  sameAs: [ROOTO_BUSINESS.instagram],
 }
 
 const websiteSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
-  name: 'Rooto',
+  name: ROOTO_BUSINESS.name,
   url: BASE_URL,
-  description: 'Fresh Groceries Delivered to your doorstep',
-  // Enables Google Sitelinks Searchbox in search results!
+  description: DEFAULT_DESCRIPTION,
+  // Enables the Google Sitelinks search box (points at the real listing page).
   potentialAction: {
     '@type': 'SearchAction',
     target: {
       '@type': 'EntryPoint',
-      urlTemplate: `${BASE_URL}/search?q={search_term_string}`,
+      urlTemplate: `${BASE_URL}/products?search={search_term_string}`,
     },
     'query-input': 'required name=search_term_string',
   },
 }
 
+// Delivery-only fruit business serving specific South-Chennai neighbourhoods.
 const localBusinessSchema = {
   '@context': 'https://schema.org',
   '@type': 'GroceryStore',
-  name: 'Rooto',
+  '@id': `${BASE_URL}/#business`,
+  name: ROOTO_BUSINESS.name,
   url: BASE_URL,
   image: `${BASE_URL}/opengraph-image.png`,
-  description: 'Fresh groceries delivered fast to your doorstep.',
-  priceRange: '₹',
-  servesCuisine: 'Grocery',
-  areaServed: {
-    '@type': 'Country',
-    name: 'India',
+  description: DEFAULT_DESCRIPTION,
+  priceRange: '₹₹',
+  telephone: ROOTO_BUSINESS.phone,
+  email: ROOTO_BUSINESS.email,
+  currenciesAccepted: 'INR',
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Chennai',
+    addressRegion: 'Tamil Nadu',
+    addressCountry: 'IN',
   },
-  hasOfferCatalog: {
-    '@type': 'OfferCatalog',
-    name: 'Grocery Products',
-    itemListElement: [
-      { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Fresh Fruits' } },
-      { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Fresh Vegetables' } },
-      { '@type': 'Offer', itemOffered: { '@type': 'Product', name: 'Dairy & Eggs' } },
-    ],
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: ROOTO_BUSINESS.geo.latitude,
+    longitude: ROOTO_BUSINESS.geo.longitude,
   },
+  areaServed: ROOTO_BUSINESS.areaServed.map((name) => ({ '@type': 'City', name })),
+  sameAs: [ROOTO_BUSINESS.instagram],
+  knowsAbout: ['Fresh fruits', 'Seasonal fruits', 'Exotic fruits', 'Fruit home delivery'],
 }
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
@@ -162,25 +176,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="font-sans antialiased" suppressHydrationWarning>
-        {/* JSON-LD Structured Data — injected in <head> for Google */}
-        <Script
-          id="schema-organization"
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-          strategy="beforeInteractive"
-        />
-        <Script
-          id="schema-website"
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
-          strategy="beforeInteractive"
-        />
-        <Script
-          id="schema-local-business"
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
-          strategy="beforeInteractive"
-        />
+        {/* JSON-LD structured data — rendered as plain <script> tags so they are
+            present in the server HTML immediately (next/script beforeInteractive
+            serialises these into the RSC payload instead, which crawler tools
+            and the Rich Results Test do not reliably pick up). */}
+        <JsonLd data={[organizationSchema, websiteSchema, localBusinessSchema]} />
+
         <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
         strategy="afterInteractive"

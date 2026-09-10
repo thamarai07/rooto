@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next'
+import { AREA_SLUGS } from '@/lib/areas'
 
 const BASE_URL = 'https://rooto.in'
 const API_BASE =
@@ -51,6 +52,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
+      url: `${BASE_URL}/areas`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
       url: `${BASE_URL}/about`,
       lastModified: now,
       changeFrequency: 'monthly',
@@ -63,6 +70,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.4,
     },
   ]
+
+  const areaRoutes: MetadataRoute.Sitemap = AREA_SLUGS.map((slug) => ({
+    url: `${BASE_URL}/areas/${slug}`,
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }))
 
   const categoryRoutes: MetadataRoute.Sitemap = CATEGORY_SLUGS.map((slug) => ({
     url: `${BASE_URL}/category/${slug}`,
@@ -78,5 +92,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }))
 
-  return [...staticRoutes, ...categoryRoutes, ...productRoutes]
+  return [...staticRoutes, ...areaRoutes, ...categoryRoutes, ...productRoutes]
 }

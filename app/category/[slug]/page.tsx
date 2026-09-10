@@ -3,6 +3,8 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Header from '@/components/header'
 import Footer from '@/components/footer'
+import Breadcrumbs from '@/components/seo/Breadcrumbs'
+import JsonLd from '@/components/seo/JsonLd'
 import CategoryClient from './CategoryClient'
 
 const API_BASE =
@@ -127,12 +129,30 @@ export default async function CategoryPage({
 
     const products = await getCategoryProducts(categoryNameMap[slug] || category.title)
 
+    const crumbs = [
+        { name: 'Home', href: '/' },
+        { name: 'Fruits', href: '/products' },
+        { name: category.title, href: `/category/${slug}` },
+    ]
+
+    const collectionSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: `${category.title} | Rooto`,
+        description: category.description,
+        url: `https://rooto.in/category/${slug}`,
+    }
+
     return (
         <div className="flex flex-col min-h-screen">
             <Header />
+            <JsonLd data={collectionSchema} />
             <main className="flex-1">
+                <div className="max-w-7xl mx-auto px-4 pt-4">
+                    <Breadcrumbs items={crumbs} />
+                </div>
                 {/* ── Hero Banner ───────────────────────────────────── */}
-                <div className="bg-gradient-to-r from-green-600 to-green-500 text-white py-10 px-4">
+                <div className="bg-gradient-to-r from-green-600 to-green-500 text-white py-10 px-4 mt-3">
                     <div className="max-w-7xl mx-auto">
                         <div className="flex items-center gap-3">
                             <span className="text-5xl">{category.emoji}</span>
