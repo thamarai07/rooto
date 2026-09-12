@@ -295,8 +295,10 @@ function OrderDetailsModal({
     const customerId = getUserId();
 
     const handleDownloadInvoice = () => {
-        const token = getToken();
-        window.open(`${API_BASE}/download_invoice.php?order_id=${order.id}&token=${token}`, '_blank');
+        // download_invoice.php authorizes by `customer_id` (must match the
+        // order's owner), not a JWT — it never reads `token` at all, so
+        // sending only that made every download fail with "Invalid request".
+        window.open(`${API_BASE}/download_invoice.php?order_id=${order.id}&customer_id=${customerId}`, '_blank');
     };
 
     // Re-add every line of this past order back into the cart via the existing

@@ -92,6 +92,7 @@ interface Product {
   final_price?: number
   discount_percent?: number
   unit?: string // 'kg' | 'piece' … from get-product.php
+  piece_price?: number | null // set when the product ALSO sells by piece
 }
 
 interface CartItem {
@@ -341,7 +342,7 @@ const ProductCard = memo(function ProductCard({
   product: Product
   isWishlisted: boolean
   onWishlistToggle: (id: number) => void
-  onAddToCart: (product: Product) => void
+  onAddToCart: (product: Product, unit?: string) => void
   onUpdateQuantity: (id: number, qty: number) => void
   quantity: number
   cartUnit?: string
@@ -355,18 +356,33 @@ const ProductCard = memo(function ProductCard({
   const qty = Number(quantity) || 0
   const stock = Number(product.stock) || 0
   const inCart = qty > 0
-  // Effective selling unit: what's in the cart wins, else the product's own unit.
+
+  // Dual pricing: the product ALSO sells by piece (piece_price set on the API).
+  const piecePrice = product.piece_price != null ? Number(product.piece_price) : null
+  const hasDual = piecePrice != null && piecePrice > 0
+  const productIsPiece = product.unit === "piece" || product.unit === "pieces"
+
+  // The shopper's kg/piece choice — only meaningful for a dual product that
+  // isn't in the cart yet. Once in the cart, the cart line's unit wins.
+  const [pickedUnit, setPickedUnit] = useState<"kg" | "piece">(productIsPiece ? "piece" : "kg")
+
   const effUnit =
     inCart && cartUnit
-      ? cartUnit
-      : (product.unit === "piece" || product.unit === "pieces")
+      ? (cartUnit === "piece" || cartUnit === "pieces" ? "piece" : "kg")
+      : hasDual
+      ? pickedUnit
+      : productIsPiece
       ? "piece"
       : "kg"
   const isPiece = effUnit === "piece"
   const step = isPiece ? 1 : 0.25
   const unitLabel = inCart && cartUnitLabel ? cartUnitLabel : isPiece ? "Piece" : "kg"
   const unitPrice =
-    inCart && cartPrice != null ? Number(cartPrice) : Number(product.price_per_kg) || 0
+    inCart && cartPrice != null
+      ? Number(cartPrice)
+      : isPiece && piecePrice != null
+      ? piecePrice
+      : Number(product.price_per_kg) || 0
   const qtyText = isPiece ? String(Math.round(qty)) : Number(qty.toFixed(2)).toString()
   const atStockLimit = qty + step > stock // next step would exceed available stock
   return (
@@ -430,7 +446,7 @@ const ProductCard = memo(function ProductCard({
           </div>
         ) : (
           <button
-            onClick={() => onAddToCart(product)}
+            onClick={() => onAddToCart(product, effUnit)}
             disabled={isLoading || stock === 0}
             aria-label="Add to cart"
             className="absolute -bottom-3 right-2 flex items-center gap-0.5 bg-white border border-green-600 text-green-700 hover:bg-green-50 font-bold text-xs px-2.5 py-1.5 rounded-lg shadow-sm disabled:opacity-50 active:scale-95 transition"
@@ -447,6 +463,29 @@ const ProductCard = memo(function ProductCard({
             {product.name}
           </h3>
         </Link>
+
+        {/* KG / Piece toggle — only for dual-price products not yet in the cart */}
+        {hasDual && !inCart && (
+          <div className="mt-1.5 flex overflow-hidden rounded-lg border border-gray-200 text-[10px] font-bold">
+            <button
+              type="button"
+              onClick={() => setPickedUnit("kg")}
+              aria-pressed={!isPiece}
+              className={`flex-1 py-1 transition ${!isPiece ? "bg-green-600 text-white" : "bg-white text-gray-500 active:bg-gray-50"}`}
+            >
+              KG
+            </button>
+            <button
+              type="button"
+              onClick={() => setPickedUnit("piece")}
+              aria-pressed={isPiece}
+              className={`flex-1 py-1 transition ${isPiece ? "bg-green-600 text-white" : "bg-white text-gray-500 active:bg-gray-50"}`}
+            >
+              Piece
+            </button>
+          </div>
+        )}
+
         <div className="mt-auto pt-1.5">
           <div className="flex items-baseline gap-1">
             <span className="text-sm font-extrabold text-gray-900">₹{Number(unitPrice.toFixed(2))}</span>
@@ -779,15 +818,22 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
   }, [products, wishlistIds, showToast])
 
   // ─── Add to cart ─────────────────────────────────────────────────────────────
-  const handleAddToCart = useCallback(async (product: Product) => {
+  const handleAddToCart = useCallback(async (product: Product, unit?: string) => {
     setActionLoading(product.id)
     const userId = getUserId()
 
+    // Piece only when the card explicitly asked for it AND the product supports it.
+    const piecePrice = product.piece_price != null ? Number(product.piece_price) : null
+    const isPiece = unit === 'piece' && piecePrice != null && piecePrice > 0
+    const addQty = isPiece ? 1 : 0.25
+
     if (!userId) {
       addToGuestCart({
-        id: product.id, name: product.name, price: unitPrice(product),
+        id: product.id, name: product.name,
+        price: isPiece ? (piecePrice as number) : unitPrice(product),
         image: product.image, category: product.category, stock: product.stock, slug: product.slug,
-      })
+        ...(isPiece ? { unit: 'piece', unit_label: 'Piece' } : {}),
+      } as any, addQty)
       setCartItems(getGuestCart().map(i => ({ ...i, cart_id: i.id })))
       showToast('Added to cart!', 'success')
       window.dispatchEvent(new CustomEvent('guest-cart-updated', { detail: { highlightedProductId: product.id.toString() } }))
@@ -800,7 +846,11 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
       const res = await fetch(`${API_BASE}/cart.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ product_id: product.id, quantity: 0.25 })
+        body: JSON.stringify({
+          product_id: product.id,
+          quantity: addQty,
+          ...(isPiece ? { unit: 'piece' } : {}),
+        })
       })
       const data = await res.json()
       if (data.status === 'success') {

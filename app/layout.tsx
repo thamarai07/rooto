@@ -181,7 +181,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             serialises these into the RSC payload instead, which crawler tools
             and the Rich Results Test do not reliably pick up). */}
         <JsonLd data={[organizationSchema, websiteSchema, localBusinessSchema]} />
+{/* Meta Pixel */}
+  <Script id="meta-pixel" strategy="afterInteractive">
+    {`
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
 
+      fbq('init', '1065248729423336');
+      fbq('track', 'PageView');
+    `}
+  </Script>
         <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
         strategy="afterInteractive"
