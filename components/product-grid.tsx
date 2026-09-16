@@ -26,6 +26,7 @@ import { authHeaders } from "@/lib/auth"
 import { useAuth } from "@/hooks/useAuth"
 import { cartTotals, unitPrice, lineSubtotal } from "@/lib/pricing"
 import OutOfStockModal from "@/components/OutOfStockModal"
+import { trackPurchase } from "@/lib/fbPixel"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
@@ -996,10 +997,12 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
       const result = await res.json()
 
       if (result.success) {
+        const placedOrderId = result.data?.orderId || result.data?.id || result.data?.order_id
         if (orderData?.clearCart) {
-          try { await orderData.clearCart(result.data?.orderId || result.data?.id || result.data?.order_id) }
+          try { await orderData.clearCart(placedOrderId) }
           catch (e) { console.error("Error clearing cart:", e) }
         }
+        trackPurchase(total, placedOrderId)
         setCartItems([])
         setShowCheckoutSuccess(false)
         setIsCartOpen(false)

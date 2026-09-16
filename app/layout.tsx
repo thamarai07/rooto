@@ -7,6 +7,7 @@ import CelebrationPopup from '@/components/ui/CelebrationPopup'
 import { AuthProvider } from '@/hooks/useAuth'
 import AuthInitializer from '@/components/auth/AuthInitializer'
 import AnnouncementBanner from '@/components/AnnouncementBanner'
+import WhatsAppButton from '@/components/WhatsAppButton'
 import JsonLd from '@/components/seo/JsonLd'
 import Script from 'next/script'
 
@@ -218,6 +219,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
           <Analytics />
           <CelebrationPopup />
+          <WhatsAppButton />
           <div id="recaptcha-container" style={{ display: 'none' }} />
         </AuthProvider>
       </body>

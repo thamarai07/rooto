@@ -19,6 +19,7 @@ import { authHeaders, getToken } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { cartTotals, unitPrice, lineSubtotal, round2 } from "@/lib/pricing";
 import OutOfStockModal from "@/components/OutOfStockModal";
+import { trackPurchase } from "@/lib/fbPixel";
 // existing imports-க்கு கீழே add பண்ணு
 import {
   getGuestCart,
@@ -61,6 +62,7 @@ interface Product {
   final_price?: number;
   rating?: number;
   review_count?: number;
+  piece_price?: number | null; // set when the product ALSO sells by piece
 }
 
 interface CartItem {
@@ -402,6 +404,11 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
   }
 
   const [quantity, setQuantity] = useState(Number(initialProduct.min_quantity) || 0.25);
+  // Shopper's kg/piece choice when the product sells both (piece_price set)
+  // and it isn't in the cart yet — mirrors the home-card toggle.
+  const [pickedUnit, setPickedUnit] = useState<"kg" | "piece">(
+    initialProduct.unit === "piece" || initialProduct.unit === "pieces" ? "piece" : "kg"
+  );
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [notification, setNotification] = useState("");
   const [notificationType, setNotificationType] = useState<'success' | 'error' | 'info'>('success');
@@ -601,6 +608,7 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
 
       if (result.success) {
         await clearCart(result.data.orderId || result.data.id);
+        trackPurchase(totalAmount, result.data.orderId || result.data.id);
         setCartItems([]);
         setShowCheckoutSuccess(false);
         setIsCartOpen(false);
@@ -804,22 +812,41 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
   const cartUnit = (cartLine as any)?.unit as string | undefined;
   const cartUnitLabel = (cartLine as any)?.unit_label as string | undefined;
 
+  // Dual pricing: the product ALSO sells by piece (piece_price set on the API).
+  const piecePrice = product.piece_price != null ? Number(product.piece_price) : null;
+  const hasDual = piecePrice != null && piecePrice > 0;
+
   // Effective selling unit: what's in the cart wins (e.g. added by the piece on a
-  // festival page), else the product's own unit.
+  // festival page); else the shopper's own kg/piece pick for a dual product;
+  // else the product's own unit.
   const effUnit =
     inCart && cartUnit
       ? (cartUnit === "piece" || cartUnit === "pieces" ? "piece" : "kg")
+      : hasDual
+      ? pickedUnit
       : product.unit === "piece" || product.unit === "pieces"
       ? "piece"
       : "kg";
   const isPieceUnit = effUnit === "piece";
   const unitWord = inCart && cartUnitLabel ? cartUnitLabel : isPieceUnit ? "Piece" : product.unit;
   const step = isPieceUnit ? 1 : 0.25;
-  // Per-unit price: the cart line's price (piece price) when it's in the cart.
+  // Per-unit price: the cart line's price (piece price) when it's in the cart,
+  // else the piece price when the shopper picked Piece, else the usual kg price.
   const unit =
-    inCart && cartLine?.price != null ? Number(cartLine.price) : unitPrice(product);
-  const minQ = Number(product.min_quantity) || step;
+    inCart && cartLine?.price != null
+      ? Number(cartLine.price)
+      : isPieceUnit && piecePrice != null
+      ? piecePrice
+      : unitPrice(product);
+  const minQ = isPieceUnit ? 1 : Number(product.min_quantity) || step;
   const maxQ = Number(product.max_quantity) || Infinity;
+
+  // Switching kg <-> piece resets the not-yet-in-cart quantity to that unit's
+  // natural starting point (piece: 1, kg: the product's min_quantity).
+  const selectUnit = (u: "kg" | "piece") => {
+    setPickedUnit(u);
+    if (!inCart) setQuantity(u === "piece" ? 1 : Number(product.min_quantity) || 0.25);
+  };
 
   const displayQty = inCart ? cartQty : Number(quantity) || 0;
   // Same rule as the home card: never let quantity pass available stock.
@@ -865,12 +892,14 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
       addToGuestCart({
         id: product.id,
         name: product.name,
-        price: unitPrice(product),
+        price: isPieceUnit && piecePrice != null ? piecePrice : unitPrice(product),
         image: product.image,
         category: product.category,
         stock: product.stock,
         slug: product.slug,
-      }, quantity)
+        // extra field — spread through by addToGuestCart, ignored by old screens
+        ...(isPieceUnit ? { unit: "piece", unit_label: "Piece" } : {}),
+      } as any, quantity)
 
       // Cart state update
       setCartItems(getGuestCart().map(i => ({ ...i, cart_id: i.id })))
@@ -890,7 +919,8 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
           product_id: product.id,
           quantity: quantity,
           status: 'active',
-          last_added_at: new Date().toISOString()
+          last_added_at: new Date().toISOString(),
+          ...(isPieceUnit ? { unit: 'piece' } : {}),
         })
       });
 
@@ -1160,6 +1190,35 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
                   </p>
                 )}
               </div>
+
+              {/* KG / Piece toggle — only for dual-price products not yet in the cart */}
+              {hasDual && !inCart && (
+                <div className="mb-6">
+                  <label className="text-sm font-medium text-gray-700 mb-3 block">Buy by</label>
+                  <div className="flex overflow-hidden rounded-xl border border-gray-300 max-w-xs">
+                    <button
+                      type="button"
+                      onClick={() => selectUnit("kg")}
+                      aria-pressed={!isPieceUnit}
+                      className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
+                        !isPieceUnit ? "bg-green-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      KG
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => selectUnit("piece")}
+                      aria-pressed={isPieceUnit}
+                      className={`flex-1 py-2.5 text-sm font-semibold transition-colors border-l border-gray-300 ${
+                        isPieceUnit ? "bg-green-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      Piece
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Quantity Selector — when the item is already in the cart this
                   controls the cart directly (synced with header / card / drawer);
