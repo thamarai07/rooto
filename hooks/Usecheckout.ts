@@ -36,8 +36,10 @@ export function useCheckout() {
     setSavedAddress(address)
     setDeliveryView('success')
 
-    // If it's a newly created address, save it
-    if (!address.id) {
+    // If it's a newly created address, save it — only for logged-in users.
+    // Guests have no customerId/auth token to attach a saved address to;
+    // their address just flows straight into the order below.
+    if (!address.id && user) {
       try {
         const response = await fetch(`${API_BASE}/save_address.php`, {
           method: "POST",

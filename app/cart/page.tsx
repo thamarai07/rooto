@@ -20,6 +20,7 @@ import EmptyCart from "@/components/empty/EmptyCart"
 import OrderSummarySidebar from "@/components/order/OrderSummarySidebar"
 import OrderSuccessModal from "@/components/order/OrderSuccessModal"
 import { authHeaders } from "@/lib/auth"
+import type { UserData } from "@/components/types"
 
 // Custom hooks
 import { useCartData } from "@/hooks/Usecartdata"
@@ -34,6 +35,11 @@ const getUserId = (): number | null => {
     return user ? JSON.parse(user).id : null
   } catch { return null }
 }
+
+// Stand-in for a logged-out shopper going through checkout as a guest.
+// DeliveryModal/AddressFormView only read name/email/phone as optional
+// form defaults — this never touches any auth or saved-address API.
+const GUEST_USER: UserData = { id: 0, name: "", email: "" }
 export default function CartPage() {
   // User state
   const [showAuth, setShowAuth] = useState(false)
@@ -94,15 +100,12 @@ export default function CartPage() {
 
   const startCheckout = () => {
     setShowDeliveryModal(true)
-    setDeliveryView('saved')
+    // Guests have no saved addresses — send them straight to the map/form
+    // instead of the "saved addresses" list built for logged-in users.
+    setDeliveryView(user ? 'saved' : 'map')
   }
 
   const handleProceedToCheckout = () => {
-    if (!user) {
-      setShowAuth(true)
-      setAuthMode("login")
-      return
-    }
     if (outOfStockItems.length > 0) {
       setShowOOS(true)   // make the customer drop OOS items first
       return
@@ -255,10 +258,11 @@ export default function CartPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delivery Modal */}
-      {showDeliveryModal && user && (
+      {/* Delivery Modal — logged-in users get their real profile; guests get
+          a stand-in so the map/address-form flow still renders. */}
+      {showDeliveryModal && (
         <DeliveryModal
-          userData={user}
+          userData={user || GUEST_USER}
           currentView={deliveryView}
           onViewChange={setDeliveryView}
           onAddressComplete={(address) => handleAddressComplete(address, user)}

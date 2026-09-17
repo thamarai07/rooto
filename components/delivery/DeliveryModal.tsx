@@ -82,7 +82,10 @@ export default function DeliveryModal({
         )}
         
         {currentView === 'success' && savedAddress && (
-          <SuccessView address={savedAddress} onClose={onClose} />
+          // "Continue Shopping" here must actually take the customer to the
+          // place-order screen (same as picking a saved address does) —
+          // otherwise anyone adding a brand-new address hits a dead end.
+          <SuccessView address={savedAddress} onClose={onClose} onContinueShopping={onAddressSelected} />
         )}
       </div>
     </div>
