@@ -6,6 +6,7 @@ import Footer from '@/components/footer'
 import Breadcrumbs from '@/components/seo/Breadcrumbs'
 import JsonLd from '@/components/seo/JsonLd'
 import CategoryClient from './CategoryClient'
+import PromoStrip from '@/components/PromoStrip'
 
 const API_BASE =
     process.env.NEXT_PUBLIC_API_BASE ||
@@ -163,6 +164,8 @@ export default async function CategoryPage({
                         </div>
                     </div>
                 </div>
+
+                <PromoStrip placement="category" className="mt-6" />
 
                 {/* ── Product Grid (Client for cart/wishlist) ────────── */}
                 <section className="max-w-7xl mx-auto px-4 py-8">

@@ -6,6 +6,7 @@ import Footer from "@/components/footer";
 import Header from "@/components/header";
 import Breadcrumbs from "@/components/seo/Breadcrumbs";
 import JsonLd from "@/components/seo/JsonLd";
+import PromoStrip from "@/components/PromoStrip";
 import { API_BASE, IMAGE_BASE, SITE_URL } from "@/lib/config";
 
 async function getProduct(slug: string) {
@@ -180,6 +181,7 @@ export default async function ProductPage({
         <Breadcrumbs items={crumbs} />
       </div>
       <ClientProductPage initialProduct={product} relatedProducts={relatedProducts} />
+      <PromoStrip placement="product" className="my-8" />
       <Footer />
     </>
   )

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { Clock, Truck, BadgeIndianRupee, Wallet, MapPin, ArrowRight } from 'lucide-react'
 import Header from '@/components/header'
 import Footer from '@/components/footer'
+import PromoStrip from "@/components/PromoStrip"
 import Breadcrumbs from '@/components/seo/Breadcrumbs'
 import JsonLd from '@/components/seo/JsonLd'
 import { API_BASE, IMAGE_BASE, SITE_URL } from '@/lib/config'
@@ -269,6 +270,7 @@ export default async function AreaPage({
             </div>
           </section>
         )}
+        <PromoStrip placement="areas" className="pb-10" />
       </main>
 
       <Footer />

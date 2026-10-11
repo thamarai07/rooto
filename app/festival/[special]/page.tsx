@@ -9,6 +9,7 @@ import Footer from "@/components/footer"
 import FestivalHero from "@/components/festival/FestivalHero"
 import FestivalSearchBar from "@/components/festival/FestivalSearchBar"
 import FestivalProductCard from "@/components/festival/FestivalProductCard"
+import PromoStrip from "@/components/PromoStrip"
 import {
   getFestival,
   type Festival,
@@ -170,6 +171,7 @@ export default function FestivalPage() {
         <main className="flex-1 bg-gray-50/60">
           <FestivalHero festival={festival} />
           <FestivalSearchBar themeColor={festival.theme_color || undefined} />
+          <PromoStrip placement="festival" className="mt-4" />
 
           <section className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
             {items.length === 0 ? (

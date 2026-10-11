@@ -5,6 +5,7 @@ import CategoryProductView from "@/components/CategoryProductView"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import ProductGrid from "@/components/product-grid"
+import PromoStrip from "@/components/PromoStrip"
 
 export const metadata: Metadata = {
   title: "Buy Fresh Fruits Online",
@@ -26,6 +27,7 @@ export default function ProductsPage() {
     <ProductsPageLayout>
       <h1 className="sr-only">Buy fresh fruits online — Rooto</h1>
       {/* <CategoryProductView /> */}
+        <PromoStrip placement="products" contained={false} />
         <ProductGrid />
 
     </ProductsPageLayout>

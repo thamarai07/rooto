@@ -6,6 +6,7 @@ import { Heart, ArrowLeft, ShoppingCart, Loader2, TrendingUp, Star, Check, Trash
 import { Button } from "@/components/ui/button"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
+import PromoStrip from "@/components/PromoStrip"
 import { authHeaders } from "@/lib/auth"
 import {
   getGuestWishlist,
@@ -626,6 +627,7 @@ export default function WishlistPage() {
             </div>
           )}
         </div>
+        <PromoStrip placement="wishlist" className="pb-8" />
       </main>
 
       <Footer />

@@ -6,6 +6,7 @@ import Banner from "@/components/banner";
 import ProductGrid from "@/components/product-grid";
 import Footer from "@/components/footer";
 import MainBanner from "@/components/MainBanner";
+import PromoStrip from "@/components/PromoStrip";
 import { AREAS } from "@/lib/areas";
 
 export const metadata: Metadata = {
@@ -53,7 +54,9 @@ export default async function Home() {
           across South Chennai
         </h1>
         <MainBanner/>
+        <PromoStrip placement="home_top" className="mt-6" />
         <ProductGrid initialProducts={initialProducts} />
+        <PromoStrip placement="home_bottom" />
 
         {/* Local delivery areas — internal links to the /areas/* landing pages */}
         <section className="max-w-7xl mx-auto px-4 py-10">

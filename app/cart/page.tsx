@@ -27,6 +27,7 @@ import { useCartData } from "@/hooks/Usecartdata"
 import { useCheckout } from "@/hooks/Usecheckout"
 import { cartTotals } from "@/lib/pricing"
 import OutOfStockModal from "@/components/OutOfStockModal"
+import PromoStrip from "@/components/PromoStrip"
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
 
 const getUserId = (): number | null => {
@@ -228,6 +229,7 @@ export default function CartPage() {
             </div>
           )}
         </div>
+        <PromoStrip placement="cart" className="pb-8" />
       </main>
 
       {/* Auth Modal */}
