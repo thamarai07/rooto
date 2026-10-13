@@ -5,7 +5,6 @@ import Header from "@/components/header";
 import Banner from "@/components/banner";
 import ProductGrid from "@/components/product-grid";
 import Footer from "@/components/footer";
-import MainBanner from "@/components/MainBanner";
 import PromoStrip from "@/components/PromoStrip";
 import { AREAS } from "@/lib/areas";
 
@@ -48,12 +47,11 @@ export default async function Home() {
       </div>
       <main className="flex-1">
         {/* Primary page heading — the single H1 for the homepage. Visually
-            minimal on purpose; the marketing hero lives in <MainBanner />. */}
+            minimal on purpose. */}
         <h1 className="sr-only">
           Rooto — fresh fruit delivery in Medavakkam, Pallikaranai, Tambaram and
           across South Chennai
         </h1>
-        <MainBanner/>
         <PromoStrip placement="home_top" className="mt-6" />
         <ProductGrid initialProducts={initialProducts} />
         <PromoStrip placement="home_bottom" />
