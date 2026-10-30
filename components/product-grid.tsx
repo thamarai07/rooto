@@ -1127,7 +1127,8 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
           isUpdating={isUpdating}
           onQuantityChange={updateQuantityInCheckout}
           onRemoveItem={removeItemInCheckout}
-          onChangeAddress={() => { setShowCheckoutSuccess(false); setShowDeliveryModal(true) }}
+          // Re-open the picker at the saved-addresses list, not the "Address saved" step it was left on
+          onChangeAddress={() => { setShowCheckoutSuccess(false); setDeliveryView('saved'); setShowDeliveryModal(true) }}
           onPlaceOrder={handlePlaceOrder}
           onClose={() => setShowCheckoutSuccess(false)}
           isSubmitting={isSubmittingOrder}

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
-import Banner from "@/components/banner";
 
 export default function AboutPage() {
   const [scrollY, setScrollY] = useState(0)
@@ -18,7 +17,6 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-[#f9f6f0] font-['Cormorant_Garamond',serif]">
       <Header />
-        <Banner />
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');

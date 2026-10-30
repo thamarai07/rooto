@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { MapPin, Home, Briefcase, Star, ChevronLeft, ChevronRight, Loader2, Pencil } from 'lucide-react'
 import { UserData, SavedAddress } from '../types'
 
@@ -27,17 +27,33 @@ interface FormState {
   label: 'Home' | 'Work' | 'Other'
 }
 
+// What the customer typed, kept across the Back button (this form unmounts on every step
+// change). In memory only, and dropped once an order is placed.
+let addressDraft: { userId: any; coordinates?: { lat: number; lng: number }; form: FormState } | null = null
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('order-placed', () => {
+    addressDraft = null
+    window.__selectedLocation = undefined
+  })
+}
+
+const samePin = (a?: { lat: number; lng: number }, b?: { lat: number; lng: number }) =>
+  !!a && !!b && Math.abs(a.lat - b.lat) < 0.0002 && Math.abs(a.lng - b.lng) < 0.0002 // ~20 m
+
 export default function AddressFormView({ userData, onSave, onBack, selectedLocation }: AddressFormViewProps) {
   const win = typeof window !== 'undefined' ? (window as any).__selectedLocation : null
   const locationData: any = selectedLocation || win || {}
   const comp: Record<string, string> = win?.components || {}
 
-  const [formData, setFormData] = useState<FormState>({
+  const [formData, setFormData] = useState<FormState>(() => {
+    const fresh: FormState = {
     name: userData.name || '',
     email: userData.email || '',
     phoneNumber: userData.phone || '',
     flatNo: '',
-    building: '',
+    // Apartment / building name, when the customer picked one in the map search
+    building: comp.building || '',
     floor: '',
     landmark: '',
     // Auto-filled from the map's reverse-geocode (normalised by lib/googleMaps)
@@ -47,7 +63,20 @@ export default function AddressFormView({ userData, onSave, onBack, selectedLoca
     state: comp.state || '',
     pincode: comp.pincode || '',
     label: 'Home',
+    }
+    const draft = addressDraft?.userId === userData.id ? addressDraft : null
+    if (!draft) return fresh
+    // Same pin: restore everything. Moved pin: keep what they typed, but the street /
+    // area / city / pincode must describe the new spot.
+    if (samePin(draft.coordinates, locationData.coordinates)) return draft.form
+    const { street, area, city, state, pincode } = fresh
+    return { ...draft.form, street, area, city, state, pincode, building: fresh.building || draft.form.building }
   })
+
+  useEffect(() => {
+    addressDraft = { userId: userData.id, coordinates: locationData.coordinates, form: formData }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData])
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -158,6 +187,16 @@ export default function AddressFormView({ userData, onSave, onBack, selectedLoca
         {/* Auto-filled area details (editable) */}
         <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-3 space-y-3">
           <p className="text-[11px] font-semibold text-gray-500">Auto-filled from your pin — edit if needed</p>
+          {/* Street names from the map can be wrong or missing in some areas — let the customer fix it */}
+          <div>
+            <div className="relative">
+              <input className={field + " bg-white"} placeholder="e.g. 2nd Cross Street" value={formData.street} onChange={e => set('street', e.target.value)} disabled={loading} />
+              <label className={lbl}>Street / Road</label>
+            </div>
+            <p className="mt-1 px-1 text-[11px] text-gray-400">
+              {formData.street ? 'Please check — the map may pick a nearby road' : 'Not detected from the map — please type your street'}
+            </p>
+          </div>
           <div className="relative">
             <input className={field + " bg-white"} placeholder="Area / Locality" value={formData.area} onChange={e => set('area', e.target.value)} disabled={loading} />
             <label className={lbl}>Area / Locality</label>

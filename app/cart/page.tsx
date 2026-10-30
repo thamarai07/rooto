@@ -181,7 +181,7 @@ export default function CartPage() {
               <p className="text-gray-600 mt-2">
                 {cartItems.length > 0
                   ? `${cartItems.length} item${cartItems.length > 1 ? 's' : ''} in your cart`
-                  : 'Your cart is empty'}
+                  : 'Nothing here yet — let\'s change that!'}
               </p>
             )}
           </div>
@@ -284,6 +284,14 @@ export default function CartPage() {
           onRemoveItem={removeItem}
           onChangeAddress={() => {
             setShowCheckoutSuccess(false)
+            // Re-open the address picker at the start (saved list / map) — not the
+            // "Address saved" success step it was left on.
+            startCheckout()
+          }}
+          onBack={() => {
+            // Back one step: signed-in customers to their saved list, guests to the form they filled.
+            setShowCheckoutSuccess(false)
+            setDeliveryView(user ? 'saved' : 'form')
             setShowDeliveryModal(true)
           }}
           onPlaceOrder={(paymentMethod, orderData) => {

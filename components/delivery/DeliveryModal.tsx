@@ -60,6 +60,7 @@ export default function DeliveryModal({
             userData={userData}
             onSelectAddress={handleSavedAddressSelect}
             onAddNewAddress={() => onViewChange('map')}
+            selectedAddress={savedAddress}
             onClose={onClose}
           />
         )}
@@ -69,6 +70,8 @@ export default function DeliveryModal({
             userData={userData}
             onProceed={handleMapProceed}
             onClose={onClose}
+            // Guests start on the map (first step); signed-in customers came from the saved list.
+            onBack={userData.id ? () => onViewChange('saved') : undefined}
           />
         )}
         
@@ -85,7 +88,9 @@ export default function DeliveryModal({
           // "Continue Shopping" here must actually take the customer to the
           // place-order screen (same as picking a saved address does) —
           // otherwise anyone adding a brand-new address hits a dead end.
-          <SuccessView address={savedAddress} onClose={onClose} onContinueShopping={onAddressSelected} />
+          <SuccessView address={savedAddress} onClose={onClose} onContinueShopping={onAddressSelected}
+            // A signed-in customer's address is already saved — go to the list so it can't be saved twice.
+            onBack={() => onViewChange(userData.id ? 'saved' : 'form')} />
         )}
       </div>
     </div>

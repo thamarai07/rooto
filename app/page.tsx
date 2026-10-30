@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { MapPin, ArrowRight } from "lucide-react";
 import Header from "@/components/header";
-import Banner from "@/components/banner";
 import ProductGrid from "@/components/product-grid";
 import Footer from "@/components/footer";
 import PromoStrip from "@/components/PromoStrip";
@@ -40,11 +39,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Sticky wrapper for both header + search bar */}
-      <div className="sticky top-0 z-[50]">
-        <Header />
-        <Banner />
-      </div>
+      <Header />
       <main className="flex-1">
         {/* Primary page heading — the single H1 for the homepage. Visually
             minimal on purpose. */}

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { Search, X, Loader2, Package, Sparkles } from "lucide-react"
 
 // Festival-styled live search. Uses the SAME endpoint + debounced behaviour as
-// the homepage search bar (components/banner.tsx) — just a compact, centered,
+// the header search (components/HeaderSearch.tsx) — just a compact, centered,
 // theme-coloured shell. Isolated: does not touch the homepage component.
 
 const API_BASE =

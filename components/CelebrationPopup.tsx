@@ -8,7 +8,7 @@ interface CelebrationPopupProps {
   product: {
     image?: string
     name?: string
-    price?: number
+    price?: number | string
   } | null
 }
 
@@ -36,7 +36,8 @@ export default function CelebrationPopup({ show, action, product }: CelebrationP
               <span className="font-bold text-gray-800">{messages[action as keyof typeof messages]}</span>
             </div>
             <p className="text-sm text-gray-600 font-medium line-clamp-1">{product?.name}</p>
-            <p className="text-green-600 font-bold text-sm">₹{product?.price?.toFixed(2)}</p>
+            {/* price may arrive as a string ("260.00") from the API */}
+            <p className="text-green-600 font-bold text-sm">₹{(Number(product?.price) || 0).toFixed(2)}</p>
           </div>
           <Check className="w-6 h-6 text-green-600 flex-shrink-0" />
         </div>

@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import Header from "@/components/header"
-import Banner from "@/components/banner"
 import Footer from "@/components/footer"
 import { Truck, IndianRupee, MapPin, MessageSquare, Wallet, Clock } from "lucide-react"
 
@@ -25,7 +24,6 @@ export default function ShippingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Header />
-      <Banner />
       <main className="flex-1">
         <section className="bg-gradient-to-r from-green-600 to-emerald-600 text-white">
           <div className="max-w-4xl mx-auto px-4 py-12 sm:py-16">

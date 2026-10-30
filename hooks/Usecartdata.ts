@@ -193,7 +193,7 @@ export function useCartData() {
         new CustomEvent("celebrate-action", {
           detail: {
             action: "cart-add",
-            product: { name: product.name, price: product.price_per_kg, image: product.image },
+            product: { name: product.name, price: Number(product.price_per_kg ?? product.price) || 0, image: product.image },
           },
         })
       )

@@ -14,6 +14,7 @@ import { authHeaders } from "@/lib/auth"
 import { lineSubtotal } from "@/lib/pricing"
 import { addToGuestCart, updateGuestCartQty, removeFromGuestCart } from "@/lib/guestStorage"
 import LocationModal, { getDeliveryLocation, type DeliveryLocation } from "@/components/delivery/LocationModal"
+import HeaderSearch from "@/components/HeaderSearch"
 
 interface WishlistItem {
   id: string
@@ -465,6 +466,9 @@ export default function Header() {
 
             {/* ── Desktop actions ── */}
             <div className="hidden md:flex items-center gap-1.5">
+              {/* Search */}
+              <HeaderSearch />
+
               {/* Wishlist */}
               <div className="relative z-[200]" ref={wishlistRef}>
                 <button onClick={toggleWishlist} aria-label="Wishlist" className="relative p-2.5 hover:bg-gray-100 rounded-full transition">
@@ -540,6 +544,7 @@ export default function Header() {
 
             {/* ── Mobile actions ── */}
             <div className="flex md:hidden items-center gap-0.5">
+              <HeaderSearch iconClassName="w-[22px] h-[22px]" />
               <button onClick={toggleWishlist} aria-label="Wishlist" className="relative p-2.5 active:bg-gray-100 rounded-full transition">
                 <Heart className="w-[22px] h-[22px] text-gray-700" />
                 {displayWishlistCount > 0 && (

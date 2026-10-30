@@ -37,4 +37,9 @@ const nextConfig = {
 };
 
 export default nextConfig;
-import('@opennextjs/cloudflare').then(m => m.initOpenNextCloudflareForDev());
+
+// Cloudflare bindings emulation (spawns workerd) is only needed for `next dev`.
+// Running it during `next build` crashes the build when workerd can't start.
+if (process.env.NODE_ENV === 'development') {
+  import('@opennextjs/cloudflare').then(m => m.initOpenNextCloudflareForDev());
+}

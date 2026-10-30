@@ -1103,6 +1103,9 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
           onRemoveItem={removeItemInCheckout}
           onChangeAddress={() => {
             setShowCheckoutSuccess(false);
+            // Re-open the address picker at the saved-addresses list — not the
+            // "Address saved" success step it was left on.
+            setDeliveryView('saved');
             setShowDeliveryModal(true);
           }}
           onPlaceOrder={handlePlaceOrder}

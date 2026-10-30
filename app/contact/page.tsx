@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
-import Banner from "@/components/banner";
 
 export default function ContactPage() {
   const [scrollY, setScrollY] = useState(0)
@@ -19,7 +18,6 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-[#f8f5f0]" style={{ fontFamily: "'Fraunces', serif" }}>
       <Header />
-  <Banner />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,200;0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,200;1,9..144,300;1,9..144,400&family=Outfit:wght@300;400;500&display=swap');
 

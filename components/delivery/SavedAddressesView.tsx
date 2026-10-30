@@ -34,6 +34,8 @@ interface SavedAddressesViewProps {
   onSelectAddress: (address: any) => void
   onAddNewAddress: () => void
   onClose: () => void
+  /** The address already chosen in this checkout — stays selected when the customer comes back. */
+  selectedAddress?: { id?: number; fullAddress?: string } | null
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
@@ -63,6 +65,7 @@ export default function SavedAddressesView({
   onSelectAddress,
   onAddNewAddress,
   onClose,
+  selectedAddress,
 }: SavedAddressesViewProps) {
   const [addresses, setAddresses] = useState<SavedAddress[]>([])
   const [loading, setLoading] = useState(true)
@@ -117,7 +120,11 @@ export default function SavedAddressesView({
       if (result.success) {
         const data: SavedAddress[] = result.data || []
         setAddresses(data)
-        const def = data.find((a) => a.is_default === 1) ?? data[0]
+        // A just-added address has no id here yet, so also match it by its text.
+        const previous = data.find((a) =>
+          (selectedAddress?.id != null && a.id === selectedAddress.id) ||
+          (!!selectedAddress?.fullAddress && a.full_address === selectedAddress.fullAddress))
+        const def = previous ?? data.find((a) => a.is_default === 1) ?? data[0]
         if (def) setSelectedId(def.id)
       } else {
         setError(result.message || 'Failed to load addresses')

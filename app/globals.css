@@ -139,3 +139,50 @@ html, body, #__next {
 html {
   scroll-behavior: smooth;
 }
+/* Empty-cart illustration */
+@keyframes rooto-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(8deg); }
+}
+@keyframes rooto-bob {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-8px) rotate(4deg); }
+}
+@keyframes rooto-ring {
+  0% { transform: scale(0.85); opacity: 0.6; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+@keyframes rooto-shine {
+  0% { transform: translateX(-120%) skewX(-20deg); }
+  60%, 100% { transform: translateX(220%) skewX(-20deg); }
+}
+.rooto-float { animation: rooto-float 4s ease-in-out infinite; }
+.rooto-bob { animation: rooto-bob 3s ease-in-out infinite; }
+.rooto-ring { animation: rooto-ring 2.4s cubic-bezier(0, 0, 0.2, 1) infinite; }
+.rooto-shine { animation: rooto-shine 3s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rooto-float, .rooto-bob, .rooto-ring, .rooto-shine { animation: none; }
+}
+
+/* Success check: circle pops, tick draws itself */
+@keyframes rooto-pop {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+@keyframes rooto-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes rooto-burst {
+  0% { transform: translate(0, 0) scale(0); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(1); opacity: 0; }
+}
+.rooto-pop { animation: rooto-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.rooto-draw { stroke-dasharray: 30; stroke-dashoffset: 30; animation: rooto-draw 0.4s ease-out 0.35s forwards; }
+.rooto-burst { animation: rooto-burst 0.8s ease-out 0.3s both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rooto-pop, .rooto-burst { animation: none; }
+  .rooto-draw { animation: none; stroke-dashoffset: 0; }
+}
