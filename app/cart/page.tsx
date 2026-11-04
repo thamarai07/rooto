@@ -211,13 +211,10 @@ export default function CartPage() {
                   onRemoveItem={removeItem}
                   compact={false}
                 />
-
-                {/* Order Notes */}
-                <OrderNotes onSave={(notes) => setOrderNotes(notes)} />
               </div>
 
-              {/* Order Summary Sidebar */}
-              <div className="lg:col-span-1">
+              {/* Order Summary Sidebar — spans both rows so the notes sit under the items on desktop */}
+              <div className="lg:col-span-1 lg:row-span-2">
                 <OrderSummarySidebar
                   subtotal={subtotal}
                   tax={tax}
@@ -225,6 +222,11 @@ export default function CartPage() {
                   total={total}
                   onProceedToCheckout={handleProceedToCheckout}
                 />
+              </div>
+
+              {/* Order Notes — last on mobile, after the summary */}
+              <div className="lg:col-span-2">
+                <OrderNotes onSave={(notes) => setOrderNotes(notes)} />
               </div>
             </div>
           )}
