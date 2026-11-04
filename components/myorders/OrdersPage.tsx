@@ -292,13 +292,22 @@ function OrderDetailsModal({
 
     const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
     const StatusIcon = statusConfig.icon;
-    const customerId = getUserId();
-
-    const handleDownloadInvoice = () => {
-        // download_invoice.php authorizes by `customer_id` (must match the
-        // order's owner), not a JWT — it never reads `token` at all, so
-        // sending only that made every download fail with "Invalid request".
-        window.open(`${API_BASE}/download_invoice.php?order_id=${order.id}&customer_id=${customerId}`, '_blank');
+    const handleDownloadInvoice = async () => {
+        // download_invoice.php checks the logged-in customer from the JWT, so the
+        // invoice is fetched with the Authorization header and opened from a blob
+        // (a plain link can't carry the header, and the token never goes in a URL).
+        const tab = window.open('', '_blank');
+        try {
+            const res = await fetch(`${API_BASE}/download_invoice.php?order_id=${order.id}`, { headers: authHeaders() });
+            if (!res.ok) throw new Error(String(res.status));
+            const html = await res.text();
+            const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+            if (tab) tab.location.href = url; else window.open(url, '_blank');
+            setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        } catch {
+            tab?.close();
+            alert("Couldn't open the invoice. Please log in again and retry.");
+        }
     };
 
     // Re-add every line of this past order back into the cart via the existing
@@ -799,9 +808,8 @@ export default function OrdersPage() {
                 return;
             }
 
+            // The backend reads the customer from the JWT (Authorization header).
             const params = new URLSearchParams({
-                customer_id: String(customerId),  // backend requires this explicitly
-                customerId: String(customerId),   // accept either param name
                 status: filterStatus,
                 search: debouncedSearch,
                 page: pagination.page.toString(),
@@ -814,12 +822,7 @@ export default function OrdersPage() {
             dbg.url = url;
             dbg.step = "fetching";
 
-            // NOTE: get_orderssite.php authorizes by the customer_id query param, NOT
-            // the JWT — and its CORS Allow-Headers omits "Authorization". Sending an
-            // Authorization header here triggers a CORS preflight the endpoint rejects,
-            // which surfaced as "Failed to fetch" + an empty orders list. So we send a
-            // plain GET (no auth header) — a simple request that needs no preflight.
-            const response = await fetch(url);
+            const response = await fetch(url, { headers: authHeaders() });
             dbg.httpStatus = response.status;
 
             const raw = await response.text();
@@ -870,7 +873,7 @@ export default function OrdersPage() {
     useEffect(() => {
         const cid = getUserId();
         if (!cid) return;
-        fetch(`${API_BASE}/get_orderssite.php?customer_id=${cid}&dates=1`)
+        fetch(`${API_BASE}/get_orderssite.php?dates=1`, { headers: authHeaders() })
             .then((r) => r.json())
             .then((d) => {
                 if (d?.status === "success" && Array.isArray(d.dates)) {
