@@ -93,7 +93,7 @@ export default function OrderSummary({
       <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">Order Items</h3>
 
       {/* Items with edit capabilities */}
-      <div className="space-y-4 mb-6 pb-6 border-b-2 border-gray-100">
+      <div className="space-y-4">
         {items.map(item => (
           <div key={item.cart_id} className="bg-gray-50 rounded-xl p-3 sm:p-4 border-2 border-gray-100 hover:border-green-300 transition-all">
             <div className="flex gap-3 sm:gap-4">
@@ -154,26 +154,6 @@ export default function OrderSummary({
             )}
           </div>
         ))}
-      </div>
-
-      {/* Pricing Summary */}
-      <div className="space-y-3 mb-6 pb-6 border-b-2 border-gray-100">
-        <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span className="font-semibold">₹{subtotal.toFixed(2)}</span></div>
-        <div className="flex justify-between"><span className="text-gray-600">Tax (8%)</span><span className="font-semibold">₹{tax.toFixed(2)}</span></div>
-        <div className="flex justify-between"><span className="text-gray-600">Shipping</span><span className="font-semibold">{shipping === 0 ? <span className="text-green-600 font-bold">Free</span> : `₹${shipping.toFixed(2)}`}</span></div>
-        {shipping === 0 ? (
-          <p className="text-xs text-green-600 font-bold bg-green-50 px-2 py-1 rounded">✓ Free shipping applied!</p>
-        ) : (
-          <p className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">Add ₹{(500 - subtotal).toFixed(2)} more for free shipping</p>
-        )}
-      </div>
-
-      {/* Total */}
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border-2 border-green-100">
-        <div className="flex justify-between items-center">
-          <span className="text-lg font-bold text-gray-800">Total Amount</span>
-          <span className="text-3xl font-bold text-green-600">₹{total.toFixed(2)}</span>
-        </div>
       </div>
     </div>
   )

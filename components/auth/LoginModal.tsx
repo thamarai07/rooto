@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Phone, Lock } from "lucide-react";
+import { Loader2, Phone, Lock, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { clearGuestCart, getGuestCart, getGuestWishlist } from "@/lib/guestStorage";
 import { authHeaders } from "@/lib/auth";
@@ -14,6 +14,7 @@ export default function LoginModal({ onSuccess, onSwitchToSignup, onForgotPasswo
   const { setUser } = useAuth();
 
   const [formData, setFormData] = useState({ login: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -99,8 +100,8 @@ export default function LoginModal({ onSuccess, onSwitchToSignup, onForgotPasswo
 
       <div className="space-y-4">
         {/* Mobile / Email */}
-        <div className="space-y-1">
-          <label className="text-[10px] font-medium text-gray-600 tracking-wide">
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-gray-700 tracking-wide">
             MOBILE OR EMAIL
           </label>
           <div className="relative">
@@ -117,16 +118,16 @@ export default function LoginModal({ onSuccess, onSwitchToSignup, onForgotPasswo
         </div>
 
         {/* Password */}
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-[10px] font-medium text-gray-600 tracking-wide">
+            <label className="text-xs font-semibold text-gray-700 tracking-wide">
               PASSWORD
             </label>
             {/* Forgot Password */}
             <button
               type="button"
               onClick={onForgotPassword}
-              className="text-[10px] text-green-600 hover:underline font-medium"
+              className="text-xs sm:text-sm font-semibold text-green-600 hover:text-green-700 hover:underline cursor-pointer transition-colors"
             >
               Forgot password?
             </button>
@@ -134,13 +135,26 @@ export default function LoginModal({ onSuccess, onSwitchToSignup, onForgotPasswo
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-              className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
+              className="w-full pl-9 pr-10 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
               placeholder="Enter password"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-0.5 focus:outline-none"
+              title={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
+            </button>
           </div>
         </div>
 
@@ -166,16 +180,17 @@ export default function LoginModal({ onSuccess, onSwitchToSignup, onForgotPasswo
         <button
           onClick={handleLogin}
           disabled={isLoading}
-          className="w-full py-2.5 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-medium rounded-lg flex items-center justify-center transition-colors disabled:opacity-70"
+          className="w-full py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-semibold rounded-lg flex items-center justify-center transition-colors disabled:opacity-70 shadow-sm cursor-pointer"
         >
           {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : "LOGIN"}
         </button>
 
-        <p className="text-center text-[10px] text-gray-600">
+        <p className="text-center text-sm text-gray-600 pt-2">
           Don't have an account?{" "}
           <button
+            type="button"
             onClick={onSwitchToSignup}
-            className="text-green-600 font-medium hover:underline"
+            className="text-green-600 font-semibold hover:text-green-700 hover:underline cursor-pointer transition-colors ml-1"
           >
             Sign up
           </button>

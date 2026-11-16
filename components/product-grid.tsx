@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, memo } from "react"
 import dynamic from "next/dynamic"
-import { Heart, ShoppingCart, Star, Loader2, X, Plus, Minus, Trash2, User, LogIn, ArrowRight, Package } from "lucide-react"
+import { Heart, ShoppingCart, Star, Loader2, X, Plus, Minus, Trash2, User, LogIn, ArrowRight, Package, Sparkles, Leaf } from "lucide-react"
 import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { UserData, SavedAddress } from "@/components/types"
@@ -1162,48 +1162,83 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
 
         return (
           <>
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-4 text-center md:text-left">
-                <h2 className="text-3xl font-bold text-gray-900 inline-block border-b-2 border-green-600 pb-2">
-                  Fresh &amp; Healthy Choices
-                </h2>
-              </div>
-              <p className="text-gray-500 text-sm mb-4">
-                {filteredProducts.length === products.length
-                  ? `Showing all ${products.length} products`
-                  : `Showing ${filteredProducts.length} of ${products.length} products in "${selectedCategory}"`
-                }
-              </p>
+            <div className="mb-8">
+              {/* Header with Title and Counter */}
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/60 text-emerald-700 text-xs font-semibold tracking-wide uppercase mb-2.5 shadow-xs">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Farm-Fresh Selection</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight">
+                    Fresh &amp; <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600">Healthy Choices</span>
+                  </h2>
+                  <p className="text-gray-500 text-sm sm:text-base mt-1.5 max-w-xl font-normal">
+                    Hand-picked seasonal fruits straight from orchards, delivered ripe &amp; fresh.
+                  </p>
+                </div>
 
-              {/* Chip scroll row */}
-              <div
-                className="flex gap-2 overflow-x-auto pb-2"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
-                {uniqueCategories.map((cat) => {
-                  const isActive = selectedCategory === cat
-                  const count = cat === "All" ? products.length : products.filter(p => p.category === cat).length
-                  const emoji = categoryEmoji[cat] ?? "🏷️"
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 border-2 ${isActive
-                        ? "bg-green-600 text-white border-green-600 shadow-md scale-105"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-green-400 hover:text-green-700 hover:bg-green-50"
+                {/* Live Count Pill (Desktop / Tablet) */}
+                <div className="hidden sm:inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white border border-gray-200/80 shadow-xs text-xs font-medium text-gray-600 shrink-0">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span>
+                    {filteredProducts.length === products.length
+                      ? <><span className="font-semibold text-gray-900">{products.length}</span> Products Available</>
+                      : <>Showing <span className="font-semibold text-emerald-700">{filteredProducts.length}</span> of {products.length} in <span className="font-semibold text-gray-900">"{selectedCategory}"</span></>
+                    }
+                  </span>
+                </div>
+              </div>
+
+              {/* Category Filter Chips Bar */}
+              <div className="relative mt-5 pt-3 border-t border-gray-100">
+                <div
+                  className="flex items-center gap-2.5 overflow-x-auto pb-2 pt-1 px-0.5"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                  {uniqueCategories.map((cat) => {
+                    const isActive = selectedCategory === cat
+                    const count = cat === "All" ? products.length : products.filter(p => p.category === cat).length
+                    const emoji = categoryEmoji[cat] ?? "🏷️"
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`group relative flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-semibold transition-all duration-200 cursor-pointer ${
+                          isActive
+                            ? "bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-md shadow-emerald-600/25 ring-2 ring-emerald-500/20 translate-y-[-1px]"
+                            : "bg-white text-gray-700 border border-gray-200/90 hover:border-emerald-300 hover:text-emerald-700 hover:bg-emerald-50/50 shadow-xs active:scale-98"
                         }`}
-                    >
-                      <span>{emoji}</span>
-                      <span>{cat}</span>
-                      <span
-                        className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${isActive ? "bg-white/30 text-white" : "bg-gray-100 text-gray-500"
-                          }`}
                       >
-                        {count}
-                      </span>
-                    </button>
-                  )
-                })}
+                        <span className="text-base transition-transform duration-200 group-hover:scale-110">{emoji}</span>
+                        <span className="tracking-tight">{cat}</span>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full font-bold transition-colors ${
+                            isActive
+                              ? "bg-white/20 text-white backdrop-blur-xs"
+                              : "bg-gray-100 text-gray-500 group-hover:bg-emerald-100/70 group-hover:text-emerald-700"
+                          }`}
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Mobile count indicator */}
+                <div className="sm:hidden flex items-center gap-1.5 text-xs text-gray-500 mt-2 px-1">
+                  <Leaf className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>
+                    {filteredProducts.length === products.length
+                      ? `${products.length} products available`
+                      : `${filteredProducts.length} of ${products.length} in "${selectedCategory}"`
+                    }
+                  </span>
+                </div>
               </div>
             </div>
 
