@@ -7,6 +7,8 @@
 // real entry with its own `blurb`, `localities`, `nearby` and `faqs`.
 // ---------------------------------------------------------------------------
 
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from './pricing'
+
 export type AreaFaq = { q: string; a: string }
 
 export type Area = {
@@ -22,6 +24,11 @@ export type Area = {
   nearby: string[]
   /** Area-specific FAQs (used for the FAQ section + FAQPage schema). */
   faqs: AreaFaq[]
+  /**
+   * Optional extra hand-written paragraph for the area page (unique local
+   * context). Keep it factual: no delivery-time promises, no addresses.
+   */
+  intro?: string
   /** primary = one of the core launch areas; nearby = adjacent locality we also cover. */
   tier: 'primary' | 'nearby'
 }
@@ -33,16 +40,18 @@ export const AREAS: Area[] = [
     pincodes: ['600100'],
     tier: 'primary',
     blurb:
-      'Medavakkam is home base for Rooto — most orders here reach the doorstep within about an hour. We cover the full stretch from Medavakkam Koot Road to the 100 Feet Road and the residential pockets around Sabari Nagar and Cheran Nagar.',
+      'Medavakkam is home base for Rooto, so it is one of the quickest areas for us to reach. We cover the full stretch from Medavakkam Koot Road to the 100 Feet Road and the residential pockets around Sabari Nagar and Cheran Nagar.',
     localities: [
       'Medavakkam Main Road', 'Medavakkam Koot Road', '100 Feet Road',
       'Sabari Nagar', 'Cheran Nagar', 'Jalladianpet side', 'Nanmangalam border',
     ],
     nearby: ['jalladianpet', 'nanmangalam', 'kovilambakkam', 'pallikaranai', 'perumbakkam', 'santhoshapuram'],
+    intro:
+      "Medavakkam is Rooto's home base. Instead of stopping at a roadside fruit shop on the way home from Koot Road, you can pick fruits by the kilo or by the piece online and have them brought to your gate.",
     faqs: [
       {
-        q: 'How fast is fruit delivery in Medavakkam?',
-        a: 'Medavakkam is our core zone, so most orders are delivered within about an hour. Orders placed late at night are delivered the same day.',
+        q: 'How quickly can I get fruit delivered in Medavakkam?',
+        a: 'Medavakkam is our home base and core delivery zone. You will see the delivery details for your address when you place the order, or you can ask us on WhatsApp before ordering.',
       },
       {
         q: 'Do you deliver near Medavakkam Koot Road and 100 Feet Road?',
@@ -62,6 +71,8 @@ export const AREAS: Area[] = [
       'Vijayanagaram', 'Torur', 'Nemilichery side',
     ],
     nearby: ['velachery', 'medavakkam', 'perumbakkam', 'kovilambakkam', 'keelkattalai'],
+    intro:
+      'For families in the apartment blocks along the 200 Feet Radial Road and the streets around Kamakoti Nagar, Rooto works as an online fruit shop: choose what you need for the week, pay cash on delivery or online, and skip the trip to the market.',
     faqs: [
       {
         q: 'Which parts of Pallikaranai does Rooto deliver to?',
@@ -80,7 +91,9 @@ export const AREAS: Area[] = [
       'East Tambaram', 'West Tambaram', 'Tambaram Sanatorium', 'GST Road',
       'Irumbuliyur', 'Railway Station Road',
     ],
-    nearby: ['chromepet', 'selaiyur', 'camp-road', 'sembakkam', 'bharath-college'],
+    nearby: ['chromepet', 'selaiyur', 'camp-road', 'sembakkam'],
+    intro:
+      "Whether you live near Tambaram railway station, along GST Road or in Tambaram Sanatorium, you don't need to hunt for a fruit shop nearby. Order fresh fruits online from Rooto — by the kilo or by the piece — and we bring them to your home in East or West Tambaram.",
     faqs: [
       {
         q: 'Do you deliver to both East and West Tambaram?',
@@ -100,29 +113,12 @@ export const AREAS: Area[] = [
       'Agharam Road', 'Hasthinapuram border',
     ],
     nearby: ['selaiyur', 'rajakilpakkam', 'sembakkam', 'tambaram', 'medavakkam', 'santhoshapuram'],
+    intro:
+      'Camp Road is one continuous delivery route for us, from the Selaiyur end through Rajakilpakkam to Sembakkam, so wherever you are on the stretch you can order fresh fruits online for home delivery.',
     faqs: [
       {
         q: 'Does Rooto deliver along Camp Road in Selaiyur?',
         a: 'Yes. We deliver across the whole Camp Road stretch from the Tambaram end to Rajakilpakkam and Sembakkam, including the residential colonies on both sides.',
-      },
-    ],
-  },
-  {
-    slug: 'bharath-college',
-    name: 'Bharath College Area',
-    pincodes: ['600073'],
-    tier: 'primary',
-    blurb:
-      'Rooto delivers fresh fruit to the neighbourhood around Bharath Institute on Agharam Road, Selaiyur — convenient for students, hostels and families near the campus.',
-    localities: [
-      'Agharam Road', 'Bharath Institute campus surroundings', 'Selaiyur',
-      'Hasthinapuram side', 'Camp Road end',
-    ],
-    nearby: ['selaiyur', 'chromepet', 'tambaram', 'camp-road'],
-    faqs: [
-      {
-        q: 'Do you deliver fruit near Bharath Institute / Bharath College?',
-        a: 'Yes, we deliver to the area around Bharath Institute on Agharam Road, Selaiyur, including nearby hostels and apartments.',
       },
     ],
   },
@@ -141,7 +137,7 @@ export const AREAS: Area[] = [
     faqs: [
       {
         q: 'Is fruit delivery available in Kovilambakkam?',
-        a: 'Yes. We deliver across Kovilambakkam Main Road, Narayanapuram and the surrounding streets, usually within an hour given how close it is to our Medavakkam base.',
+        a: 'Yes. We deliver across Kovilambakkam Main Road, Narayanapuram and the surrounding streets — it is right next to our Medavakkam base.',
       },
     ],
   },
@@ -173,13 +169,19 @@ export const AREAS: Area[] = [
       'We deliver fresh fruit across Selaiyur — around Selaiyur lake, the Camp Road stretch and the Hasthinapuram border with East Tambaram.',
     localities: [
       'Selaiyur lake area', 'Camp Road', 'Hasthinapuram', 'East Tambaram border',
-      'Agharam Road',
+      'Agharam Road', 'Bharath Institute (Bharath College) surroundings',
     ],
-    nearby: ['tambaram', 'camp-road', 'chromepet', 'bharath-college', 'sembakkam'],
+    nearby: ['tambaram', 'camp-road', 'chromepet', 'sembakkam'],
+    intro:
+      'Selaiyur households, students around Bharath Institute and families near the lake can order everyday fruits from Rooto — a few pieces for the hostel room or a few kilos for the week — with cash on delivery available.',
     faqs: [
       {
         q: 'Which parts of Selaiyur do you cover?',
         a: 'We cover the Selaiyur lake area, Camp Road, Hasthinapuram and the streets bordering East Tambaram.',
+      },
+      {
+        q: 'Do you deliver fruit near Bharath Institute / Bharath College?',
+        a: 'Yes, we deliver to the area around Bharath Institute on Agharam Road, Selaiyur, including nearby hostels and apartments.',
       },
     ],
   },
@@ -195,6 +197,8 @@ export const AREAS: Area[] = [
       'Hasthinapuram', 'Radha Nagar', 'Bharathi Salai',
     ],
     nearby: ['tambaram', 'selaiyur', 'nanganallur', 'adambakkam', 'pallavaram'],
+    intro:
+      'In Chromepet, customers near the railway station, MIT and Radha Nagar can order fresh fruits online from Rooto instead of visiting a fruit shop on busy GST Road.',
     faqs: [
       {
         q: 'Do you deliver near Chromepet railway station and MIT?',
@@ -252,6 +256,8 @@ export const AREAS: Area[] = [
       'Taramani side', 'Guindy border', 'Vijayanagaram',
     ],
     nearby: ['pallikaranai', 'madipakkam', 'adambakkam'],
+    intro:
+      'From the apartments off the 100 Feet Road to the streets near the Vijayanagar bus terminus, Velachery customers can use Rooto as an online fruit shop for daily fruit — order on the website or WhatsApp.',
     faqs: [
       {
         q: 'Do you deliver fruit in Velachery?',
@@ -318,6 +324,8 @@ export const AREAS: Area[] = [
       'We deliver fresh fruit across Rajakilpakkam along Camp Road and the roads towards Sembakkam and Santhoshapuram.',
     localities: ['Camp Road', 'Rajakilpakkam junction', 'Sembakkam lake side'],
     nearby: ['camp-road', 'sembakkam', 'santhoshapuram', 'medavakkam'],
+    intro:
+      'Rajakilpakkam sits on Camp Road between Selaiyur and Sembakkam, right on our regular delivery route. Order fresh fruits online for home delivery instead of searching for a fruit shop nearby.',
     faqs: [
       {
         q: 'Do you deliver fruit in Rajakilpakkam?',
@@ -334,6 +342,8 @@ export const AREAS: Area[] = [
       'Rooto delivers fresh fruit across Sembakkam, around the lake and the colonies between Camp Road and GST Road.',
     localities: ['Sembakkam lake', 'Camp Road side', 'GST Road border', 'MMDA Colony'],
     nearby: ['camp-road', 'selaiyur', 'rajakilpakkam', 'tambaram'],
+    intro:
+      'In Sembakkam, Rooto delivers to homes around the lake and in the colonies between Camp Road and GST Road. Order online or on WhatsApp and pay cash on delivery if you prefer.',
     faqs: [
       {
         q: 'Is Rooto delivery available in Sembakkam?',
@@ -353,7 +363,7 @@ export const AREAS: Area[] = [
     faqs: [
       {
         q: 'Does Rooto deliver to Jalladianpet?',
-        a: 'Yes, Jalladianpet is on Medavakkam Main Road right next to our base, so orders usually arrive within an hour.',
+        a: 'Yes, Jalladianpet is on Medavakkam Main Road right next to our base, so it is one of our quickest routes.',
       },
     ],
   },
@@ -405,10 +415,17 @@ export function areasBySlugs(slugs: string[]): Area[] {
 
 // Shared, factual delivery information (same across areas by design — it is
 // business policy, not filler). The unique value per page is the local content.
+// Delivery fee + free-delivery threshold come from lib/pricing.ts, the same
+// constants the cart and checkout use, so landing pages can never drift from
+// what customers are actually charged.
+//
+// `hours` and `speed` are NOT shown on the /areas pages or in structured data:
+// they are not backed by any data yet (see SEO audit). Confirm them with the
+// business before surfacing them again.
 export const DELIVERY_INFO = {
   hours: 'Open 24 hours, every day',
   speed: 'Most orders in about 1 hour; otherwise same day',
-  freeAbove: 500,
-  feeBelow: 50,
+  freeAbove: FREE_SHIPPING_THRESHOLD,
+  feeBelow: SHIPPING_FEE,
   cod: true,
 }

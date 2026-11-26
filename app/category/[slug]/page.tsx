@@ -7,19 +7,13 @@ import Breadcrumbs from '@/components/seo/Breadcrumbs'
 import JsonLd from '@/components/seo/JsonLd'
 import CategoryClient from './CategoryClient'
 import PromoStrip from '@/components/PromoStrip'
+import { SITE_URL } from '@/lib/config'
+import { CATEGORY_DB_NAME, getCatalog } from '@/lib/catalog'
 
-const API_BASE =
-    process.env.NEXT_PUBLIC_API_BASE ||
-    'https://seashell-skunk-617240.hostingersite.com/vfs-admin/api'
+export const revalidate = 300
 
 // ─── Category definitions ────────────────────────────────────────────────────
 const CATEGORIES: Record<string, { title: string; description: string; emoji: string }> = {
-    'fruits-vegetables': {
-        title: 'Fresh Fruits & Vegetables',
-        description:
-            'Buy fresh fruits and vegetables online at Rooto. Farm-fresh produce delivered daily to your doorstep.',
-        emoji: '🥦',
-    },
     'dairy-eggs': {
         title: 'Dairy & Eggs',
         description:
@@ -59,6 +53,9 @@ const CATEGORIES: Record<string, { title: string; description: string; emoji: st
 }
 
 // ─── SEO Metadata per category ───────────────────────────────────────────────
+// A category is only indexable while the shop actually has products in it.
+// Today the catalogue is fruit-only, so these pages are noindex (and left out
+// of the sitemap) until the admin adds products to that category.
 export async function generateMetadata({
     params,
 }: {
@@ -67,18 +64,20 @@ export async function generateMetadata({
     const { slug } = await params
     const category = CATEGORIES[slug]
 
-    if (!category) return {}
+    if (!category) return { title: 'Category not found', robots: { index: false, follow: true } }
+
+    const products = await getCategoryProducts(slug)
+    const canonical = `${SITE_URL}/category/${slug}`
 
     return {
         title: category.title,
         description: category.description,
-        alternates: {
-            canonical: `https://rooto.in/category/${slug}`,
-        },
+        alternates: { canonical },
+        robots: products.length > 0 ? { index: true, follow: true } : { index: false, follow: true },
         openGraph: {
             title: `${category.title} | Rooto`,
             description: category.description,
-            url: `https://rooto.in/category/${slug}`,
+            url: canonical,
         },
     }
 }
@@ -87,23 +86,14 @@ export async function generateStaticParams() {
     return Object.keys(CATEGORIES).map((slug) => ({ slug }))
 }
 
-// ─── Server component: fetch products for this category ──────────────────────
-async function getCategoryProducts(categoryName: string) {
-    try {
-        const res = await fetch(`${API_BASE}/get-products.php`, {
-            next: { revalidate: 300 }, // revalidate every 5 minutes
-        })
-        if (!res.ok) return []
-        const data = await res.json()
-        if (data.status !== 'success') return []
-
-        // Filter by category (case-insensitive match)
-        return (data.data as any[]).filter(
-            (p) => p.category?.toLowerCase() === categoryName.toLowerCase()
-        )
-    } catch {
-        return []
-    }
+// ─── Server: products for this category (live list endpoint) ────────────────
+async function getCategoryProducts(slug: string) {
+    const dbName = (CATEGORY_DB_NAME[slug] || '').toLowerCase()
+    if (!dbName) return []
+    const all = await getCatalog(300)
+    return all
+        .filter((p) => (p.category || '').toLowerCase() === dbName)
+        .map((p) => ({ ...p, price: p.price_per_kg, category: p.category || '', description: p.description || '' }))
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -117,18 +107,7 @@ export default async function CategoryPage({
 
     if (!category) notFound()
 
-    // Map slug → category name used in DB (handle common variants)
-    const categoryNameMap: Record<string, string> = {
-        'fruits-vegetables': 'Fruits & Vegetables',
-        'dairy-eggs': 'Dairy & Eggs',
-        bakery: 'Bakery',
-        beverages: 'Beverages',
-        snacks: 'Snacks',
-        household: 'Household',
-        'personal-care': 'Personal Care',
-    }
-
-    const products = await getCategoryProducts(categoryNameMap[slug] || category.title)
+    const products = await getCategoryProducts(slug)
 
     const crumbs = [
         { name: 'Home', href: '/' },
@@ -141,7 +120,7 @@ export default async function CategoryPage({
         '@type': 'CollectionPage',
         name: `${category.title} | Rooto`,
         description: category.description,
-        url: `https://rooto.in/category/${slug}`,
+        url: `${SITE_URL}/category/${slug}`,
     }
 
     return (

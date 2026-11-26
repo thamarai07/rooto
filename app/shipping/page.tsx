@@ -5,7 +5,7 @@ import Footer from "@/components/footer"
 import { Truck, IndianRupee, MapPin, MessageSquare, Wallet, Clock } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Shipping Information",
+  title: "Delivery Charges & Delivery Areas",
   description:
     "Rooto delivery details — delivery time, charges, free delivery over ₹500, serviceable areas, order tracking and cash on delivery.",
   alternates: { canonical: "https://rooto.in/shipping" },
@@ -15,7 +15,7 @@ export default function ShippingPage() {
   const cards = [
     { icon: Clock, title: "Delivery Time", desc: "Orders are delivered within 1 hour across our serviceable areas." },
     { icon: IndianRupee, title: "Delivery Charges", desc: "FREE delivery on orders above ₹500. A flat ₹50 fee applies below ₹500." },
-    { icon: MapPin, title: "Serviceable Areas", desc: "We currently deliver across select areas in India and are expanding fast." },
+    { icon: MapPin, title: "Serviceable Areas", desc: "We deliver across South Chennai — Tambaram, Medavakkam, Pallikaranai, Selaiyur, Velachery and nearby areas. See all delivery areas below." },
     { icon: MessageSquare, title: "Order Updates", desc: "You'll receive order status updates over SMS at every step." },
     { icon: Wallet, title: "Cash on Delivery", desc: "Pay conveniently with cash when your fresh order arrives at your doorstep." },
     { icon: Truck, title: "Fresh & Careful", desc: "Every order is hand-packed and handled with care to stay farm-fresh." },
@@ -56,6 +56,7 @@ export default function ShippingPage() {
           </div>
 
           <p className="text-sm text-gray-500 mt-8">
+            <Link href="/areas" className="text-green-600 font-medium hover:underline">See all delivery areas</Link>.{" "}
             Questions about your delivery? Visit our{" "}
             <Link href="/support" className="text-green-600 font-medium hover:underline">Support</Link> page or check the{" "}
             <Link href="/faq" className="text-green-600 font-medium hover:underline">FAQ</Link>.

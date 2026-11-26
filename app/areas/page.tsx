@@ -1,22 +1,27 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ArrowRight, MapPin } from 'lucide-react'
+import { ArrowRight, MapPin, MessageCircle } from 'lucide-react'
 import Header from '@/components/header'
 import Footer from '@/components/footer'
 import Breadcrumbs from '@/components/seo/Breadcrumbs'
 import { SITE_URL } from '@/lib/config'
 import { AREAS, DELIVERY_INFO } from '@/lib/areas'
+import { whatsappLink } from '@/lib/catalog'
+
+const AREAS_TITLE = 'Online Fruit Delivery in South Chennai – Areas We Serve'
+const AREAS_DESCRIPTION =
+  'Rooto delivers fresh fruits to homes in Tambaram, Medavakkam, Pallikaranai, Selaiyur, Sembakkam, Velachery, Chromepet and more of South Chennai. Find your area and order online or on WhatsApp.'
 
 export const metadata: Metadata = {
-  title: 'Fruit Delivery Areas in South Chennai',
-  description:
-    'Rooto delivers fresh, hand-picked fruits across Medavakkam, Pallikaranai, Tambaram, Velachery, Chromepet, Madipakkam and more. See every area we deliver to and order online.',
+  title: AREAS_TITLE,
+  description: AREAS_DESCRIPTION,
   alternates: { canonical: `${SITE_URL}/areas` },
   openGraph: {
-    title: 'Fruit Delivery Areas in South Chennai | Rooto',
-    description:
-      'Every South-Chennai neighbourhood Rooto delivers fresh fruit to — order online for fast home delivery.',
+    title: `${AREAS_TITLE} | Rooto`,
+    description: AREAS_DESCRIPTION,
     url: `${SITE_URL}/areas`,
+    type: 'website',
+    images: [{ url: `${SITE_URL}/opengraph-image.png`, width: 1200, height: 630, alt: 'Rooto fruit delivery areas in South Chennai' }],
   },
 }
 
@@ -34,20 +39,31 @@ export default function AreasIndexPage() {
 
         <section className="max-w-5xl mx-auto px-4 pt-4 pb-8">
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900">
-            Fresh fruit delivery across South Chennai
+            Online fruit delivery across South Chennai
           </h1>
           <p className="mt-3 max-w-3xl text-gray-600 leading-relaxed">
-            Rooto brings fresh, hand-picked fruits to your door across South Chennai —
-            {' '}{DELIVERY_INFO.speed.toLowerCase()}, {DELIVERY_INFO.hours.toLowerCase()}, with free
-            delivery on orders above ₹{DELIVERY_INFO.freeAbove} and cash on delivery available.
-            Pick your neighbourhood below.
+            Looking for a fruit shop that delivers to your home? Rooto is an online fruit shop for
+            South Chennai: order fresh, hand-picked fruits on the website or on WhatsApp and we bring
+            them to your door. Delivery is free on orders above ₹{DELIVERY_INFO.freeAbove}
+            (otherwise a flat ₹{DELIVERY_INFO.feeBelow}), and cash on delivery is available. Pick your
+            neighbourhood below to see what you can order there today.
           </p>
-          <Link
-            href="/products"
-            className="mt-5 inline-flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 font-semibold text-white transition hover:bg-green-700"
-          >
-            Order fresh fruits <ArrowRight className="h-4 w-4" />
-          </Link>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link
+              href="/products"
+              className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 font-semibold text-white transition hover:bg-green-700"
+            >
+              Order fresh fruits <ArrowRight className="h-4 w-4" />
+            </Link>
+            <a
+              href={whatsappLink("Hi Rooto! Do you deliver fresh fruits to my area? My address: ")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border-2 border-green-300 px-5 py-2.5 font-semibold text-green-700 transition hover:border-green-400"
+            >
+              <MessageCircle className="h-4 w-4" /> Ask on WhatsApp
+            </a>
+          </div>
         </section>
 
         <section className="max-w-5xl mx-auto px-4 pb-8">
@@ -81,10 +97,14 @@ export default function AreasIndexPage() {
                   href={`/areas/${a.slug}`}
                   className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:border-green-300 hover:text-green-700"
                 >
-                  {a.name}
+                  Fruit delivery in {a.name}
                 </Link>
               ))}
             </div>
+            <p className="mt-6 text-sm text-gray-500">
+              Don&apos;t see your area? Message us on WhatsApp with your address — we&apos;ll tell you
+              honestly whether we can deliver there.
+            </p>
           </section>
         )}
       </main>

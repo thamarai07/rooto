@@ -44,16 +44,18 @@ export default function Footer() {
     { href: "/faq", label: "FAQ" },
     { href: "/support", label: "Support" },
   ]
-  // New section — uses your real category routes
+  // Shop links — only real, non-empty pages. (The old Dairy / Bakery /
+  // Beverages / Snacks links pointed at category pages with no products.)
   const categories = [
-    { href: "/category/fruits-vegetables", label: "Fruits & Vegetables" },
-    { href: "/category/dairy-eggs", label: "Dairy & Eggs" },
-    { href: "/category/bakery", label: "Bakery" },
-    { href: "/category/beverages", label: "Beverages" },
-    { href: "/category/snacks", label: "Snacks" },
+    { href: "/products", label: "All Fresh Fruits" },
+    { href: "/areas", label: "Delivery Areas" },
+    { href: "/areas/tambaram", label: "Fruit Delivery in Tambaram" },
+    { href: "/areas/medavakkam", label: "Fruit Delivery in Medavakkam" },
+    { href: "/shipping", label: "Delivery Charges" },
   ]
   // Top delivery areas for footer internal linking (full list on /areas).
-  const footerAreas = AREAS.filter((a) => a.tier === "primary").slice(0, 8)
+  // Every delivery area, so each /areas/* page gets a crawlable internal link.
+  const footerAreas = AREAS
   const trust = [
     { icon: Leaf, label: "100% Fresh & Organic" },
     { icon: Truck, label: "Fast Doorstep Delivery" },
@@ -143,7 +145,7 @@ export default function Footer() {
 
           {/* Shop by Category (NEW) */}
           <div>
-            <h4 className="font-semibold text-sm mb-3 text-white">Shop by Category</h4>
+            <h4 className="font-semibold text-sm mb-3 text-white">Shop</h4>
             <ul className="space-y-2 text-sm">
               {categories.map((l) => (
                 <li key={l.href}>

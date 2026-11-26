@@ -11,11 +11,14 @@ import AnnouncementBanner from '@/components/AnnouncementBanner'
 import WhatsAppButton from '@/components/WhatsAppButton'
 import JsonLd from '@/components/seo/JsonLd'
 import Script from 'next/script'
+import { AREAS } from '@/lib/areas'
+import { SITE_URL } from '@/lib/config'
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from '@/lib/pricing'
 
 const _geist = Geist({ subsets: ['latin'] })
 const _geistMono = Geist_Mono({ subsets: ['latin'] })
 
-const BASE_URL = 'https://rooto.in'
+const BASE_URL = SITE_URL
 
 // Single source of truth for the business's contact + service-area details.
 // Reused by the metadata below and the JSON-LD schema further down.
@@ -26,18 +29,15 @@ export const ROOTO_BUSINESS = {
   phone: '+91-96770-28737',
   email: 'talk@rooto.in',
   instagram: 'https://www.instagram.com/rooto_in/',
-  // Service-area business (delivery only — no walk-in storefront).
-  areaServed: [
-    'Medavakkam', 'Pallikaranai', 'Tambaram', 'Camp Road', 'Kovilambakkam',
-    'Santhoshapuram', 'Selaiyur', 'Chromepet', 'Keelkattalai', 'Madipakkam',
-    'Velachery', 'Chennai',
-  ],
-  // Approximate centre of the current delivery zone (Medavakkam).
-  geo: { latitude: 12.9165, longitude: 80.1936 },
+  // Service-area business (delivery only — no walk-in storefront), so the
+  // schema lists the delivery areas from lib/areas.ts and deliberately has NO
+  // street address or GPS point: publishing a made-up "shop location" would
+  // misrepresent the business to Google.
+  areaServed: [...AREAS.map((a) => a.name), 'Chennai'],
 } as const
 
 const DEFAULT_DESCRIPTION =
-  'Order fresh, hand-picked fruits online from Rooto with same-day and next-day home delivery across Medavakkam, Pallikaranai, Tambaram, Velachery and nearby South Chennai neighbourhoods.'
+  `Order fresh, hand-picked fruits online from Rooto for home delivery across Tambaram, Medavakkam, Pallikaranai, Velachery and nearby South Chennai areas. ₹${SHIPPING_FEE} delivery, free above ₹${FREE_SHIPPING_THRESHOLD}.`
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
@@ -50,10 +50,10 @@ export const metadata: Metadata = {
   authors: [{ name: 'Rooto', url: BASE_URL }],
   creator: 'Rooto',
   publisher: 'Rooto',
-  // Canonical URL
-  alternates: {
-    canonical: BASE_URL,
-  },
+  // NOTE: no `alternates.canonical` here on purpose. A canonical set in the
+  // root layout is inherited by every page that doesn't override it, which
+  // told Google that pages like /festival/* were duplicates of the homepage.
+  // Each indexable page declares its own self-canonical instead.
   openGraph: {
     title: 'Rooto — Fresh Fruit Delivery in South Chennai',
     description: DEFAULT_DESCRIPTION,
@@ -148,14 +148,14 @@ const localBusinessSchema = {
     addressRegion: 'Tamil Nadu',
     addressCountry: 'IN',
   },
-  geo: {
-    '@type': 'GeoCoordinates',
-    latitude: ROOTO_BUSINESS.geo.latitude,
-    longitude: ROOTO_BUSINESS.geo.longitude,
-  },
-  areaServed: ROOTO_BUSINESS.areaServed.map((name) => ({ '@type': 'City', name })),
+  areaServed: ROOTO_BUSINESS.areaServed.map((name) =>
+    name === 'Chennai'
+      ? { '@type': 'City', name: 'Chennai' }
+      : { '@type': 'Place', name: `${name}, Chennai` },
+  ),
   sameAs: [ROOTO_BUSINESS.instagram],
-  knowsAbout: ['Fresh fruits', 'Seasonal fruits', 'Exotic fruits', 'Fruit home delivery'],
+  paymentAccepted: 'Cash, UPI, Online payment',
+  knowsAbout: ['Fresh fruits', 'Seasonal fruits', 'Fruit home delivery'],
 }
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;

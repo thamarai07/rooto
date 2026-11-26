@@ -5,7 +5,7 @@ import Footer from "@/components/footer"
 import { HelpCircle, ChevronDown } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "FAQ",
+  title: "FAQ – Fruit Orders, Delivery & Payment",
   description:
     "Answers to common questions about Rooto — delivery time, free delivery, cash on delivery, order tracking, cancellations and more.",
   alternates: { canonical: "https://rooto.in/faq" },
@@ -15,7 +15,7 @@ const faqs = [
   { q: "How long does delivery take?", a: "Most orders are delivered within 1 hour across our serviceable areas in India." },
   { q: "Is there a delivery charge?", a: "Delivery is FREE on orders above ₹500. For orders below ₹500, a flat ₹50 delivery fee applies." },
   { q: "Do you offer Cash on Delivery (COD)?", a: "Yes! You can pay with cash at your doorstep when your order arrives." },
-  { q: "Which areas do you deliver to?", a: "We currently deliver to selected areas across India and are expanding to new locations regularly." },
+  { q: "Which areas do you deliver to?", a: "We deliver across South Chennai — Tambaram, Medavakkam, Pallikaranai, Selaiyur, Sembakkam, Velachery, Chromepet and nearby areas. See the full list on our Delivery Areas page (rooto.in/areas)." },
   { q: "How do I track my order?", a: "You'll get SMS updates at each step. You can also see live status anytime on your My Orders page." },
   { q: "Can I cancel my order?", a: "Yes, you can cancel an order from the My Orders page any time before it is dispatched." },
   { q: "What if my order arrives damaged or wrong?", a: "Report it within 24 hours with a photo and we'll arrange a free replacement or full refund. See our Returns page for details." },
@@ -52,6 +52,7 @@ export default function FaqPage() {
           </div>
 
           <p className="text-sm text-gray-500 mt-8">
+            See all our <Link href="/areas" className="text-green-600 font-medium hover:underline">delivery areas</Link>.
             Still have a question? Head to{" "}
             <Link href="/support" className="text-green-600 font-medium hover:underline">Support</Link> and we'll help you out.
           </p>

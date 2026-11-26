@@ -19,7 +19,8 @@ export default function robots(): MetadataRoute.Robots {
           '/addresses',
           '/wishlist',
           '/reset-password',
-          '/_next/',
+          // NOTE: /_next/ must stay crawlable — Googlebot needs the JS/CSS
+          // chunks there to render pages. Blocking it hurts indexing.
         ],
       },
     ],
