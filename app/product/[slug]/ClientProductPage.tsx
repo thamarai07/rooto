@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import {
   Heart, ShoppingCart, ArrowLeft, Plus, Minus, Truck, Leaf,
-  Star, Package, Award, X, Loader2, Trash2, User, LogIn, ArrowRight,
+  Package, Award, X, Loader2, Trash2, User, LogIn, ArrowRight,
   ShoppingBag, Shield, Clock, CheckCircle, ChevronRight, BadgeCheck
 } from "lucide-react";
 import Link from "next/link";
@@ -62,8 +62,6 @@ interface Product {
   description?: string;
   is_featured?: number;
   final_price?: number;
-  rating?: number;
-  review_count?: number;
   piece_price?: number | null; // set when the product ALSO sells by piece
 }
 
@@ -1159,12 +1157,9 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
                   )}
                 </div>
 
-                {/* Rating Badge */}
-                <div className="absolute top-4 right-4 bg-white/95 backdrop-blur px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5">
-                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  <span className="font-semibold text-sm">{product.rating || 4.7}</span>
-                  <span className="text-gray-500 text-xs">({product.review_count || 289})</span>
-                </div>
+                {/* No star rating here: there are no real customer reviews yet, and the
+                    API's rating / review_count were made-up numbers. Show a rating again
+                    only when it comes from real reviews. */}
               </div>
             </div>
 

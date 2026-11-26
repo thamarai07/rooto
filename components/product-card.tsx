@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Heart, ShoppingCart, Star, Plus, Check } from "lucide-react"
+import { Heart, ShoppingCart, Plus, Check } from "lucide-react"
 import { authHeaders } from "@/lib/auth"
 
 interface Product {
@@ -233,20 +233,6 @@ export default function ProductCard({ product }: { product: Product }) {
           <p className="text-sm text-gray-600 mb-3 line-clamp-2 leading-relaxed">
             {product.description}
           </p>
-
-          {/* Rating */}
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex gap-0.5">
-              {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  className={`w-4 h-4 ${i < 4 ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-                    }`}
-                />
-              ))}
-            </div>
-            <span className="text-xs text-gray-500 font-medium">(4.5)</span>
-          </div>
 
           {/* Price and Add to Cart */}
           <div className="flex items-center justify-between">
