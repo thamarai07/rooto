@@ -20,6 +20,7 @@ interface CartItem {
   quantity: number
   subtotal: number
   slug?: string
+  unit?: string
 }
 
 export function useCheckout() {
@@ -104,20 +105,31 @@ export function useCheckout() {
         const shippingCharge = orderData?.shipping || t.shipping
         const total = orderData?.total || t.total
 
-
+        // Read the token once so the "guest?" decision below matches exactly
+        // what is sent to the server in the Authorization header.
+        const headers = authHeaders()
+        const isGuest = !headers.Authorization
 
         const requestBody = {
           // customerId intentionally omitted — backend reads it from JWT Bearer token
-          items: cartItems.map(item => ({
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            image: item.image,
-            category: item.category || '',
-            slug: item.slug || '',
-            quantity: item.quantity,
-            subtotal: item.subtotal
-          })),
+          items: cartItems.map(item => {
+            const u = String(item.unit || '').toLowerCase()
+            return {
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              image: item.image,
+              category: item.category || '',
+              slug: item.slug || '',
+              quantity: item.quantity,
+              subtotal: item.subtotal,
+              // Guests: the server has no saved cart to read the unit from, so a
+              // piece line must say so — otherwise it is priced per kg and the
+              // order is rejected. Signed-in customers: leave it out; the server
+              // reads the unit from their saved cart row (unchanged behaviour).
+              ...(isGuest && (u === 'piece' || u === 'pieces') ? { unit: 'piece' } : {}),
+            }
+          }),
           address: {
             name: savedAddress?.name,
             phoneNumber: savedAddress?.phoneNumber,
@@ -143,7 +155,7 @@ export function useCheckout() {
 
         const response = await fetch(`${API_BASE}/create_order.php`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", ...authHeaders() },
+          headers: { "Content-Type": "application/json", ...headers },
           body: JSON.stringify(requestBody),
         })
 
