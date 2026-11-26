@@ -15,7 +15,7 @@ export async function generateMetadata({
   let festival: { name?: string; tagline?: string | null; description?: string | null; banner_image?: string | null } | null = null
   try {
     const res = await fetch(`${API_BASE}/get_festival.php?slug=${encodeURIComponent(slug)}`, {
-      next: { revalidate: 300 },
+      cache: "no-store",
     })
     if (res.ok) {
       const data = await res.json()

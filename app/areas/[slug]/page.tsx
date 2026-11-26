@@ -22,8 +22,8 @@ import {
   formatRupees,
 } from '@/lib/catalog'
 
-// Product list + prices on these pages come from the live API; refresh hourly.
-export const revalidate = 3600
+// Rendered per request (see lib/catalog.ts): product list + prices on these
+// pages always come straight from the live API.
 
 export function generateStaticParams() {
   return AREA_SLUGS.map((slug) => ({ slug }))
@@ -75,7 +75,7 @@ export async function generateMetadata({
   const area = getArea(slug)
   if (!area) return { title: 'Area not found', robots: { index: false, follow: true } }
 
-  const products = await getCatalog(3600)
+  const products = await getCatalog()
   const fruits = fruitList(products, 3)
   const min = lowestPrice(products)
   const canonical = `${SITE_URL}/areas/${slug}`
@@ -118,7 +118,7 @@ export default async function AreaPage({
   const area = getArea(slug)
   if (!area) notFound()
 
-  const products = (await getCatalog(3600)).slice(0, 12)
+  const products = (await getCatalog()).slice(0, 12)
   const inStockCount = products.filter((p) => p.in_stock).length
   const fruits = fruitList(products)
   const min = lowestPrice(products)

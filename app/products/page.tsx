@@ -8,11 +8,9 @@ import ProductGrid from "@/components/product-grid"
 import PromoStrip from "@/components/PromoStrip"
 import JsonLd from "@/components/seo/JsonLd"
 import FruitPriceList from "@/components/seo/FruitPriceList"
-import { API_BASE, SITE_URL } from "@/lib/config"
+import { SITE_URL } from "@/lib/config"
 import { DELIVERY_INFO } from "@/lib/areas"
-import { getCatalog, lowestPrice, sampleList, shortName, whatsappLink } from "@/lib/catalog"
-
-export const revalidate = 300
+import { getCatalog, getRawProducts, lowestPrice, sampleList, shortName, whatsappLink } from "@/lib/catalog"
 
 const PRODUCTS_TITLE = "Buy Fresh Fruits Online – Today's Fruit Prices"
 
@@ -20,7 +18,7 @@ const PRODUCTS_TITLE = "Buy Fresh Fruits Online – Today's Fruit Prices"
 // prices" intent. Description is built from the live catalogue so the fruits
 // and starting price it mentions are always true.
 export async function generateMetadata(): Promise<Metadata> {
-  const products = await getCatalog(300)
+  const products = await getCatalog()
   const fruits = products.filter((p) => p.in_stock).slice(0, 4).map((p) => shortName(p.name).toLowerCase())
   const min = lowestPrice(products)
   const description = `Order fresh fruits online from Rooto${
@@ -41,21 +39,11 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-// Server-render the product cards so the product links are in the HTML
-// (they were only fetched client-side before, so crawlers saw no products).
-async function getInitialProducts() {
-  try {
-    const res = await fetch(`${API_BASE}/get-product.php?limit=12`, { next: { revalidate: 300 } })
-    if (!res.ok) return []
-    const data = await res.json()
-    return data.status === "success" ? data.items : []
-  } catch {
-    return []
-  }
-}
-
 export default async function ProductsPage() {
-  const [initialProducts, catalog] = await Promise.all([getInitialProducts(), getCatalog(300)])
+  // Server-render the product cards so the product links are in the HTML
+  // (they used to be fetched client-side only). One API call per request.
+  const [raw, catalog] = await Promise.all([getRawProducts(), getCatalog()])
+  const initialProducts = raw.slice(0, 12)
 
   // ItemList of product URLs — no prices/ratings here; each Product page
   // carries its own Product + Offer schema from live data.

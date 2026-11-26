@@ -1,11 +1,19 @@
 import { MetadataRoute } from 'next'
 import { AREA_SLUGS } from '@/lib/areas'
-import { SITE_URL } from '@/lib/config'
+import { API_BASE, SITE_URL } from '@/lib/config'
 import { categoriesWithProducts, getCatalog } from '@/lib/catalog'
-import { getFestivals } from '@/lib/festivals.api'
 
-// Rebuilt hourly so new / removed products show up without a deploy.
-export const revalidate = 3600
+// Built per request from live data (see lib/catalog.ts for why no fetch cache).
+async function getActiveFestivals(): Promise<{ slug: string; is_active: number }[]> {
+  try {
+    const res = await fetch(`${API_BASE}/get_festivals.php`, { cache: 'no-store' })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.status === 'success' && Array.isArray(data.items) ? data.items : []
+  } catch {
+    return []
+  }
+}
 
 // Only canonical, indexable, 200-status URLs belong here:
 //  - products come from the LIVE list endpoint (get-product.php — the old
@@ -15,7 +23,7 @@ export const revalidate = 3600
 //    redirect and are intentionally absent.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
-  const [products, festivals] = await Promise.all([getCatalog(3600), getFestivals()])
+  const [products, festivals] = await Promise.all([getCatalog(), getActiveFestivals()])
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: SITE_URL, lastModified: now, changeFrequency: 'daily', priority: 1.0 },

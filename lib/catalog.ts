@@ -7,6 +7,7 @@
 // Never hard-code a product, price or availability in page content.
 // ---------------------------------------------------------------------------
 
+import { cache } from "react"
 import { API_BASE, IMAGE_BASE, SITE_URL } from "@/lib/config"
 
 export type CatalogProduct = {
@@ -27,43 +28,58 @@ export type CatalogProduct = {
 }
 
 /**
- * All active products (the API already filters is_active = 1).
- * Cached with ISR for `revalidate` seconds. Returns [] on any failure so a
- * slow/broken API never breaks a page render.
+ * Raw active-product list from get-product.php (the API filters
+ * is_active = 1). Returns [] on any failure so a slow/broken API never
+ * breaks a page render.
+ *
+ * Why `cache: "no-store"` + React `cache()`:
+ *  - This site runs on Cloudflare Workers via OpenNext with NO persistent
+ *    incremental cache (open-next.config.ts is the default), so Next's fetch
+ *    cache never hits — every request already re-fetches. Using
+ *    `next: { revalidate }` only adds Next's IncrementalCache lock path, and
+ *    because Next stores the per-request cache on `globalThis`, concurrent
+ *    requests in one Worker isolate can end up awaiting each other's lock
+ *    promises ("promise created by a request that has since ended"). That
+ *    took production down (500/503) when many routes shared this fetch.
+ *  - React `cache()` is per request: generateMetadata and the page share one
+ *    fetch + parse instead of doing it twice.
  */
-export async function getCatalog(revalidate = 600): Promise<CatalogProduct[]> {
+export const getRawProducts = cache(async (): Promise<any[]> => {
   try {
-    const res = await fetch(`${API_BASE}/get-product.php?limit=100`, {
-      next: { revalidate },
-    })
+    const res = await fetch(`${API_BASE}/get-product.php?limit=100`, { cache: "no-store" })
     if (!res.ok) return []
     const data = await res.json()
-    if (data.status !== "success" || !Array.isArray(data.items)) return []
-    return (data.items as any[])
-      .filter((p) => p && p.slug && p.name)
-      .map((p) => {
-        const stock = Number(p.stock) || 0
-        return {
-          id: Number(p.id),
-          name: String(p.name),
-          slug: String(p.slug),
-          category: p.category ? String(p.category) : null,
-          price_per_kg: Number(p.price_per_kg ?? p.price) || 0,
-          final_price: Number(p.final_price ?? p.price_per_kg ?? p.price) || 0,
-          discount_percent: Number(p.discount_percent) || 0,
-          unit: p.unit ? String(p.unit) : "kg",
-          piece_price: p.piece_price != null && Number(p.piece_price) > 0 ? Number(p.piece_price) : null,
-          image: p.image ? String(p.image) : "",
-          description: p.description ? String(p.description) : null,
-          stock,
-          in_stock: p.in_stock != null ? Boolean(p.in_stock) : stock > 0,
-          updated_at: p.updated_at ? String(p.updated_at) : undefined,
-        }
-      })
+    return data.status === "success" && Array.isArray(data.items) ? data.items : []
   } catch {
     return []
   }
-}
+})
+
+/** All active products, normalised for SEO content (prices, stock, names). */
+export const getCatalog = cache(async (): Promise<CatalogProduct[]> => {
+  const items = await getRawProducts()
+  return items
+    .filter((p) => p && p.slug && p.name)
+    .map((p) => {
+      const stock = Number(p.stock) || 0
+      return {
+        id: Number(p.id),
+        name: String(p.name),
+        slug: String(p.slug),
+        category: p.category ? String(p.category) : null,
+        price_per_kg: Number(p.price_per_kg ?? p.price) || 0,
+        final_price: Number(p.final_price ?? p.price_per_kg ?? p.price) || 0,
+        discount_percent: Number(p.discount_percent) || 0,
+        unit: p.unit ? String(p.unit) : "kg",
+        piece_price: p.piece_price != null && Number(p.piece_price) > 0 ? Number(p.piece_price) : null,
+        image: p.image ? String(p.image) : "",
+        description: p.description ? String(p.description) : null,
+        stock,
+        in_stock: p.in_stock != null ? Boolean(p.in_stock) : stock > 0,
+        updated_at: p.updated_at ? String(p.updated_at) : undefined,
+      }
+    })
+})
 
 /** Absolute URL for a product image (API returns a full URL or a bare filename). */
 export function productImage(image?: string | null): string {

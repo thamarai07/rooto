@@ -10,8 +10,6 @@ import PromoStrip from '@/components/PromoStrip'
 import { SITE_URL } from '@/lib/config'
 import { CATEGORY_DB_NAME, getCatalog } from '@/lib/catalog'
 
-export const revalidate = 300
-
 // ─── Category definitions ────────────────────────────────────────────────────
 const CATEGORIES: Record<string, { title: string; description: string; emoji: string }> = {
     'dairy-eggs': {
@@ -90,7 +88,7 @@ export async function generateStaticParams() {
 async function getCategoryProducts(slug: string) {
     const dbName = (CATEGORY_DB_NAME[slug] || '').toLowerCase()
     if (!dbName) return []
-    const all = await getCatalog(300)
+    const all = await getCatalog()
     return all
         .filter((p) => (p.category || '').toLowerCase() === dbName)
         .map((p) => ({ ...p, price: p.price_per_kg, category: p.category || '', description: p.description || '' }))

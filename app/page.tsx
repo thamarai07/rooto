@@ -7,8 +7,8 @@ import Footer from "@/components/footer";
 import PromoStrip from "@/components/PromoStrip";
 import FruitPriceList from "@/components/seo/FruitPriceList";
 import { AREAS, DELIVERY_INFO } from "@/lib/areas";
-import { API_BASE, SITE_URL } from "@/lib/config";
-import { getCatalog, lowestPrice, sampleList, shortName, whatsappLink } from "@/lib/catalog";
+import { SITE_URL } from "@/lib/config";
+import { getCatalog, getRawProducts, lowestPrice, sampleList, shortName, whatsappLink } from "@/lib/catalog";
 
 const HOME_TITLE = "Online Fruit Shop & Fruit Home Delivery in South Chennai | Rooto";
 
@@ -16,7 +16,7 @@ const HOME_TITLE = "Online Fruit Shop & Fruit Home Delivery in South Chennai | R
 // intent. "/products" owns "buy fruits online / fruit prices", and each
 // /areas/* page owns its own locality, so the three don't compete.
 export async function generateMetadata(): Promise<Metadata> {
-  const products = await getCatalog(300);
+  const products = await getCatalog();
   const fruits = products.filter((p) => p.in_stock).slice(0, 3).map((p) => shortName(p.name).toLowerCase());
   const description = `Online fruit shop for South Chennai. Order fresh fruits${
     fruits.length ? ` — ${sampleList(fruits)} —` : ""
@@ -42,22 +42,6 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [`${SITE_URL}/opengraph-image.png`],
     },
   };
-}
-
-// Fetch the home cards on the SERVER so they're already in the HTML.
-// Cached for 5 min (matches `revalidate`), so most visitors hit a warm cache
-// instead of waiting on a cold connection to Hostinger after hydration.
-async function getInitialProducts() {
-  try {
-    const res = await fetch(`${API_BASE}/get-product.php?limit=12`, {
-      next: { revalidate: 300 },
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.status === "success" ? data.items : [];
-  } catch {
-    return []; // fall back to client fetch inside ProductGrid
-  }
 }
 
 const HOME_FAQS = [
@@ -104,7 +88,10 @@ const HOME_FAQS = [
 ];
 
 export default async function Home() {
-  const [initialProducts, catalog] = await Promise.all([getInitialProducts(), getCatalog(300)]);
+  // One API call per request: the product cards (first 12, same order as the
+  // old ?limit=12 call) and the SEO price table share the same response.
+  const [raw, catalog] = await Promise.all([getRawProducts(), getCatalog()]);
+  const initialProducts = raw.slice(0, 12);
   const min = lowestPrice(catalog);
   const waOrder = whatsappLink("Hi Rooto! I'd like to order fresh fruits. My address: ");
   const primaryAreas = AREAS.filter((a) => a.tier === "primary");
@@ -221,4 +208,3 @@ export default async function Home() {
   )
 }
 
-export const revalidate = 300;
