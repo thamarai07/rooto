@@ -6,6 +6,7 @@ import './globals.css'
 import CelebrationPopup from '@/components/ui/CelebrationPopup'
 import { AuthProvider } from '@/hooks/useAuth'
 import AuthInitializer from '@/components/auth/AuthInitializer'
+import StoreSettingsInitializer from '@/components/StoreSettingsInitializer'
 import AnnouncementBanner from '@/components/AnnouncementBanner'
 import WhatsAppButton from '@/components/WhatsAppButton'
 import JsonLd from '@/components/seo/JsonLd'
@@ -215,6 +216,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <AuthProvider>
           <AuthInitializer />
+          <StoreSettingsInitializer />
           <AnnouncementBanner />
           {children}
           <Analytics />

@@ -6,7 +6,8 @@ import {
   Edit2, Truck, X, ChevronLeft, ArrowRight, MapPin, Tag, ReceiptText,
   ShoppingBasket, Plus, Minus, Trash2, Loader2
 } from 'lucide-react'
-import { cartTotals, FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from '@/lib/pricing'
+import { cartTotals, taxLabel, FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from '@/lib/pricing'
+import { useTaxRate } from '@/hooks/useTaxRate'
 import PaymentMethodSelector, { PaymentMethod } from './PaymentMethodSelector'
 
 
@@ -83,6 +84,7 @@ export default function CheckoutSuccessView({
   const [activeTab, setActiveTab] = useState<Tab>('address')
   const [mounted, setMounted] = useState(false)
   const [closing, setClosing] = useState(false)
+  const taxRatePercent = useTaxRate()
 
   useEffect(() => {
     setMounted(true)
@@ -106,7 +108,7 @@ export default function CheckoutSuccessView({
     return () => window.removeEventListener('keydown', onKey)
   }, [handleClose, showPaymentSelector])
 
-  const { subtotal, tax, shipping, total } = cartTotals(items)
+  const { subtotal, tax, shipping, total } = cartTotals(items, taxRatePercent)
   const totalQty = items.reduce((sum, item) => sum + item.quantity, 0)
 
   const handlePaymentMethodSelect = async (paymentMethod: PaymentMethod) => {
@@ -281,7 +283,7 @@ export default function CheckoutSuccessView({
             <span className="font-medium text-gray-900">₹{subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Taxes &amp; charges (GST)</span>
+            <span className="text-gray-500">{taxLabel(taxRatePercent)}</span>
             <span className="font-medium text-gray-900">₹{tax.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">

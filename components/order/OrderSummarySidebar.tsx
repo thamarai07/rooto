@@ -2,6 +2,8 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { taxLabel } from "@/lib/pricing"
+import { useTaxRate } from "@/hooks/useTaxRate"
 
 interface OrderSummarySidebarProps {
   subtotal: number
@@ -18,6 +20,7 @@ export default function OrderSummarySidebar({
   total,
   onProceedToCheckout
 }: OrderSummarySidebarProps) {
+  const taxRatePercent = useTaxRate()
   return (
     <div className="sticky top-24 bg-white rounded-2xl shadow-lg p-6 border-2 border-gray-100">
       <h2 className="text-xl font-bold mb-6 text-gray-800">Order Summary</h2>
@@ -28,7 +31,7 @@ export default function OrderSummarySidebar({
           <span className="font-semibold">₹{subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-600">Tax (8%)</span>
+          <span className="text-gray-600">{taxLabel(taxRatePercent)}</span>
           <span className="font-semibold">₹{tax.toFixed(2)}</span>
         </div>
         <div className="flex justify-between">

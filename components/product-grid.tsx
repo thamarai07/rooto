@@ -25,6 +25,7 @@ import {
 import { authHeaders } from "@/lib/auth"
 import { useAuth } from "@/hooks/useAuth"
 import { cartTotals, unitPrice, lineSubtotal } from "@/lib/pricing"
+import { refreshStoreSettings } from "@/lib/api/storeSettings.api"
 import OutOfStockModal from "@/components/OutOfStockModal"
 import { trackPurchase } from "@/lib/fbPixel"
 
@@ -1010,6 +1011,8 @@ export default function ProductGrid({ initialProducts = [] }: { initialProducts?
         window.dispatchEvent(new Event("order-placed"))
         window.dispatchEvent(new Event("cart-updated"))
       } else {
+        // If the tax rate changed in the admin panel, show the new totals.
+        refreshStoreSettings(true)
         alert(result.message || 'Failed to place order')
       }
     } catch {

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import OrderCancelSuccessModal from "../Cancellmodel";
 import { authHeaders, getToken } from "@/lib/auth";
+import { taxLabelForOrder } from "@/lib/pricing";
 
 // ============================================================================
 // CONFIGURATION
@@ -525,7 +526,7 @@ function OrderDetailsModal({
                                 <span>₹{parseFloat(order.subtotal.toString()).toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-gray-700">
-                                <span>Tax (8%)</span>
+                                <span>{taxLabelForOrder(order.tax, order.subtotal)}</span>
                                 <span>₹{parseFloat(order.tax.toString()).toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-gray-700">

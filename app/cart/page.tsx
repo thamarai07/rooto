@@ -26,6 +26,7 @@ import type { UserData } from "@/components/types"
 import { useCartData } from "@/hooks/Usecartdata"
 import { useCheckout } from "@/hooks/Usecheckout"
 import { cartTotals } from "@/lib/pricing"
+import { useTaxRate } from "@/hooks/useTaxRate"
 import OutOfStockModal from "@/components/OutOfStockModal"
 import PromoStrip from "@/components/PromoStrip"
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
@@ -48,6 +49,9 @@ export default function CartPage() {
 
   // Celebration state
   const [celebration, setCelebration] = useState({ show: false, action: "", product: null })
+
+  // Tax rate set in the admin panel (re-renders the totals when it loads)
+  const taxRatePercent = useTaxRate()
 
   // Custom hooks
   const {
@@ -161,7 +165,7 @@ export default function CartPage() {
   };
 
   // Calculations — shared formula (see lib/pricing.ts)
-  const { subtotal, tax, shipping, total } = cartTotals(cartItems)
+  const { subtotal, tax, shipping, total } = cartTotals(cartItems, taxRatePercent)
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-green-50 to-white">

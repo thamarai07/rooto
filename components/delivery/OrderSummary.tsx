@@ -2,7 +2,8 @@
 
 import { Plus, Minus, Trash2, Loader2 } from 'lucide-react'
 import Image from 'next/image'
-import { cartTotals } from '@/lib/pricing'
+import { cartTotals, taxLabel } from '@/lib/pricing'
+import { useTaxRate } from '@/hooks/useTaxRate'
 
 interface OrderItem {
   cart_id: number
@@ -40,7 +41,8 @@ export default function OrderSummary({
   onRemoveItem,
   compact = false
 }: OrderSummaryProps) {
-  const { subtotal, tax, shipping, total } = cartTotals(items)
+  const taxRatePercent = useTaxRate()
+  const { subtotal, tax, shipping, total } = cartTotals(items, taxRatePercent)
 
   if (compact) {
     return (
@@ -63,7 +65,7 @@ export default function OrderSummary({
         {/* Pricing Breakdown */}
         <div className="space-y-3 mb-6">
           <div className="flex justify-between"><span className="text-gray-600">Subtotal</span><span className="font-semibold">₹{subtotal.toFixed(2)}</span></div>
-          <div className="flex justify-between"><span className="text-gray-600">Tax (8%)</span><span className="font-semibold">₹{tax.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span className="text-gray-600">{taxLabel(taxRatePercent)}</span><span className="font-semibold">₹{tax.toFixed(2)}</span></div>
           <div className="flex justify-between">
             <span className="text-gray-600">Shipping</span>
             <span className="font-semibold">{shipping === 0 ? <span className="text-green-600">Free</span> : `₹${shipping.toFixed(2)}`}</span>

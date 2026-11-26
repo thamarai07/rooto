@@ -4,6 +4,7 @@ import { useState } from "react"
 import { UserData, SavedAddress } from "@/components/types"
 import { authHeaders } from "@/lib/auth"
 import { cartTotals } from "@/lib/pricing"
+import { refreshStoreSettings } from "@/lib/api/storeSettings.api"
 import { trackPurchase } from "@/lib/fbPixel"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://seashell-skunk-617240.hostingersite.com/vfs-admin/api"
@@ -199,6 +200,8 @@ export function useCheckout() {
           }
         } else {
           console.error("❌ [PLACE ORDER] Order failed:", result.message)
+          // If the tax rate changed in the admin panel, show the new totals.
+          refreshStoreSettings(true)
           alert(result.message || 'Failed to place order')
         }
       } else {

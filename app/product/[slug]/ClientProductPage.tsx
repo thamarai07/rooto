@@ -17,7 +17,9 @@ import CheckoutSuccessView from "@/components/delivery/CheckoutSuccessView";
 import { UserData, SavedAddress } from "@/components/types";
 import { authHeaders, getToken } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
-import { cartTotals, unitPrice, lineSubtotal, round2 } from "@/lib/pricing";
+import { cartTotals, unitPrice, lineSubtotal, round2, taxLabel } from "@/lib/pricing";
+import { useTaxRate } from "@/hooks/useTaxRate";
+import { refreshStoreSettings } from "@/lib/api/storeSettings.api";
 import OutOfStockModal from "@/components/OutOfStockModal";
 import { trackPurchase } from "@/lib/fbPixel";
 // existing imports-க்கு கீழே add பண்ணு
@@ -133,8 +135,9 @@ function CartDrawer({
 }) {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [mounted, setMounted] = useState(false);
+  const taxRatePercent = useTaxRate();
 
-  const { subtotal, tax, shipping, total } = cartTotals(cartItems);
+  const { subtotal, tax, shipping, total } = cartTotals(cartItems, taxRatePercent);
 
   useEffect(() => {
     setMounted(true);
@@ -316,7 +319,7 @@ function CartDrawer({
                       <span className="font-medium text-gray-900">₹{subtotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Tax (8%)</span>
+                      <span className="text-gray-500">{taxLabel(taxRatePercent)}</span>
                       <span className="font-medium text-gray-900">₹{tax.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
@@ -616,6 +619,8 @@ export default function ClientProductPage({ initialProduct, relatedProducts }: C
         window.dispatchEvent(new Event("order-placed"));
         window.dispatchEvent(new Event("cart-updated"));
       } else {
+        // If the tax rate changed in the admin panel, show the new totals.
+        refreshStoreSettings(true);
         showToast(result.message || 'Failed to place order', 'error');
       }
     } catch (error) {
